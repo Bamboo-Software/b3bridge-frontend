@@ -47,7 +47,7 @@ const router = useRouter();
           <Button 
             onClick={() => router.push("/swap")}
             size="lg" 
-            className="rounded-full bg-gradient-to-r from-green-500 to-emerald-700 hover:from-green-600 hover:to-emerald-800"
+           className="px-5 py-2.5 text-lg font-bold bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-full  shadow-lg hover:shadow-green-500/50 transition-all duration-300"
           >
             Get Started <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
