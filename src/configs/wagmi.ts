@@ -1,8 +1,7 @@
 // config/index.tsx
 
 import { cookieStorage, createStorage, http } from '@wagmi/core'
-import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
-import { mainnet, arbitrum, sepolia, arbitrumSepolia, avalancheFuji, baseSepolia, bscTestnet, optimismSepolia, polygonAmoy } from '@reown/appkit/networks'
+import { mainnet, arbitrum, sepolia, arbitrumSepolia, avalancheFuji, baseSepolia, bscTestnet, optimismSepolia, polygonAmoy } from 'wagmi/chains'
 import { createConfig } from 'wagmi'
 import { injected } from 'wagmi/connectors'
 
