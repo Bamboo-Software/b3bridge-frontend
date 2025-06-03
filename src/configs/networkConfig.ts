@@ -1,6 +1,26 @@
 import { Address } from "viem";
 import { arbitrumSepolia, avalancheFuji, baseSepolia, bscTestnet, Chain, optimismSepolia, polygonAmoy, sepolia } from "viem/chains";
-import NativeBridgeABI from "@/constants/abi/NativeBridge.json";
+import NativeBridgeABI from "@/constants/contracts/ccip-eth-sepolia.json";
+
+// Thêm Sei network config
+const seiTestnet = {
+  id: 1328,
+  name: 'Sei Testnet',
+  network: 'sei-testnet',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'Sei',
+    symbol: 'SEI',
+  },
+  rpcUrls: {
+    default: { http: ['https://rpc-testnet.sei.io'] },
+    public: { http: ['https://rpc-testnet.sei.io'] },
+  },
+  blockExplorers: {
+    default: { name: 'Sei Explorer', url: 'https://testnet.sei.io/explorer' },
+  },
+  testnet: true,
+} as const;
 
 export declare type Token = {
   /** The token's symbol that will be shown in the UI  */
@@ -43,10 +63,26 @@ export declare type NetworkConfig = {
 
 const tokensList: Token[] = [
   {
+    symbol: "ETH",
+    address: {
+      [arbitrumSepolia.id]: undefined,
+      [avalancheFuji.id]: undefined,
+      [baseSepolia.id]: undefined,
+      [bscTestnet.id]: undefined,
+      [optimismSepolia.id]: undefined,
+      [polygonAmoy.id]: undefined,
+      [sepolia.id]: undefined,
+      [seiTestnet.id]: undefined,
+    },
+    decimals: 18,
+    logoURL: "https://smartcontract.imgix.net/tokens/eth.webp?auto=compress%2Cformat",
+    tags: ["native", "default"],
+  },
+  {
     symbol: "CCIP-BnM",
     address: {
       [arbitrumSepolia.id]: "0xA8C0c11bf64AF62CDCA6f93D3769B88BdD7cb93D",
-      [avalancheFuji.id]: "0xD21341536c5cF5EB1bcb58f6723cE26e8D8E90e4", 
+      [avalancheFuji.id]: "0xD21341536c5cF5EB1bcb58f6723cE26e8D8E90e4",
       [baseSepolia.id]: "0x88A2d74F47a237a62e7A51cdDa67270CE381555e",
       [bscTestnet.id]: "0xbFA2ACd33ED6EEc0ed3Cc06bF1ac38d22b36B9e9",
       [optimismSepolia.id]: "0x8aF4204e30565DF93352fE8E1De78925F6664dA7",
@@ -62,7 +98,7 @@ const tokensList: Token[] = [
     address: {
       [arbitrumSepolia.id]: "0x139E99f0ab4084E14e6bb7DacA289a91a2d92927",
       [avalancheFuji.id]: "0x70F5c5C40b873EA597776DA2C21929A8282A3b35",
-      [baseSepolia.id]: "0xA98FA8A008371b9408195e52734b1768c0d1Cb5c", 
+      [baseSepolia.id]: "0xA98FA8A008371b9408195e52734b1768c0d1Cb5c",
       [bscTestnet.id]: "0x79a4Fc27f69323660f5Bfc12dEe21c3cC14f5901",
       [optimismSepolia.id]: "0x044a6B4b561af69D2319A2f4be5Ec327a6975D0a",
       [polygonAmoy.id]: "0x3d357fb52253e86c8Ee0f80F5FfE438fD9503FF2",
@@ -133,6 +169,10 @@ const chains = [
     chain: polygonAmoy,
     logoURL: "https://d2f70xi62kby8n.cloudfront.net/bridge/icons/networks/polygon.svg?auto=compress%2Cformat",
   },
+  {
+    chain: seiTestnet,
+    logoURL: "https://d2f70xi62kby8n.cloudfront.net/bridge/icons/networks/sei.svg?auto=compress%2Cformat",
+  },
 ];
 
 const linkContracts: AddressMap = {
@@ -143,6 +183,7 @@ const linkContracts: AddressMap = {
   [sepolia.id]: "0x779877A7B0D9E8603169DdbD7836e478b4624789",
   [optimismSepolia.id]: "0xE4aB69C077896252FAFBD49EFD26B5D171A32410",
   [polygonAmoy.id]: "0x0Fd9e8d3aF1aaee056EB9e802c3A762a667b1904",
+  [seiTestnet.id]: "0x..." as Address,
 };
 
 const routerAddresses: AddressMap = {
@@ -153,6 +194,7 @@ const routerAddresses: AddressMap = {
   [sepolia.id]: "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59",
   [optimismSepolia.id]: "0x114a20a10b43d4115e5aeef7345a1a71d2a60c57",
   [polygonAmoy.id]: "0x9C32fCB86BF0f4a1A8921a9Fe46de3198bb884B2",
+  [seiTestnet.id]: "0x59F5222c5d77f8D3F56e34Ff7E75A05d2cF3a98A",
 };
 
 const chainSelectors = {
@@ -163,26 +205,29 @@ const chainSelectors = {
   [sepolia.id]: "16015286601757825753",
   [optimismSepolia.id]: "5224473277236331295",
   [polygonAmoy.id]: "16281711391670634445",
+  [seiTestnet.id]: "1216300075444106652",
 };
 
 const ccipContracts = {
   sender: {
-    [arbitrumSepolia.id]: "0x..." as Address, // Add your deployed CCIP sender contract address
+    [arbitrumSepolia.id]: "0x..." as Address,
     [avalancheFuji.id]: "0x..." as Address,
     [baseSepolia.id]: "0x..." as Address,
     [bscTestnet.id]: "0x..." as Address,
-    [sepolia.id]: "0xEE151d0b700b4cD9C00EA7e92c678D273f73d53D" as Address,
+    [sepolia.id]: "0x471924070aC33f9b9173D45696Cd470C0ab6F228" as Address,
     [optimismSepolia.id]: "0x..." as Address,
     [polygonAmoy.id]: "0x..." as Address,
+    [seiTestnet.id]: "sei1wxy0plgymm6kka3lgnez67wu8pj47qqqc74l0fdgu74vxan2ykrszawfdx" as Address,
   },
   receiver: {
-    [arbitrumSepolia.id]: "0x..." as Address, // Add your deployed CCIP receiver contract address
+    [arbitrumSepolia.id]: "0x..." as Address,
     [avalancheFuji.id]: "0x..." as Address,
     [baseSepolia.id]: "0x..." as Address,
     [bscTestnet.id]: "0x..." as Address,
-    [sepolia.id]: "0x..." as Address,
+    [sepolia.id]: "0x471924070aC33f9b9173D45696Cd470C0ab6F228" as Address,
     [optimismSepolia.id]: "0x..." as Address,
     [polygonAmoy.id]: "0x..." as Address,
+    [seiTestnet.id]: "sei1wxy0plgymm6kka3lgnez67wu8pj47qqqc74l0fdgu74vxan2ykrszawfdx" as Address,
   },
 };
 
