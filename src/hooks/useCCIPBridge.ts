@@ -44,14 +44,14 @@ export function useBridge() {
 
   const { data: minFee } = useReadContract({
     address: contractAddress,
-    abi: SEPOLIA_BRIDGE_ABI,
+    abi: SEPOLIA_BRIDGE_ABI.abi,
     functionName: "minCCIPFee",
     chainId: fromChainId,
   });
 
   const { data: maxFee } = useReadContract({
     address: contractAddress,
-    abi: SEPOLIA_BRIDGE_ABI,
+    abi: SEPOLIA_BRIDGE_ABI.abi,
     functionName: "maxCCIPFee",
     chainId: fromChainId,
   });
@@ -68,13 +68,13 @@ export function useBridge() {
 
   const { data: routerAddress } = useReadContract({
     address: contractAddress,
-    abi: SEPOLIA_BRIDGE_ABI,
+    abi: SEPOLIA_BRIDGE_ABI.abi,
     functionName: "getRouter",
   });
 
   const { data: isPaused } = useReadContract({
     address: contractAddress,
-    abi: SEPOLIA_BRIDGE_ABI,
+    abi: SEPOLIA_BRIDGE_ABI.abi,
     functionName: "paused",
   });
 
@@ -268,10 +268,10 @@ export function useBridge() {
 
         const result = await writeNative({
           address: senderContractAddress as `0x${string}`,
-          abi: SEPOLIA_BRIDGE_ABI,
+          abi: SEPOLIA_BRIDGE_ABI.abi,
           functionName: "lockNative",
           args: [BigInt(destChainSelector), encodedDestAddress, encodedReceiverAddress, amountInWei],
-          value: totalRequired,
+          value: totalRequired
         });
         setNativeLockHash(result);
       } else if (options?.isOFT) {
@@ -283,7 +283,7 @@ export function useBridge() {
 
         const result = await writeERC20({
           address: senderContractAddress as `0x${string}`,
-          abi: SEPOLIA_BRIDGE_ABI,
+          abi: SEPOLIA_BRIDGE_ABI.abi,
           functionName: "lockOFT",
           args: [tokenAddress as `0x${string}`, amountInUnits, BigInt(destChainSelector), encodedDestAddress, encodedReceiverAddress],
         });
@@ -342,7 +342,7 @@ export function useBridge() {
         // Thêm phí CCIP vào transaction
         const result = await writeERC20({
           address: senderContractAddress as `0x${string}`,
-          abi: SEPOLIA_BRIDGE_ABI,
+          abi: SEPOLIA_BRIDGE_ABI.abi,
           functionName: "lockERC20",
           args: [tokenAddress as `0x${string}`, amountInUnits, BigInt(destChainSelector), encodedDestAddress, encodedReceiverAddress],
           value: ccipFee, // Thêm phí CCIP vào đây

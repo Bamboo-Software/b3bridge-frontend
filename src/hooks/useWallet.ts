@@ -1,10 +1,11 @@
-import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { useAccount, useChainId, useConnect, useDisconnect } from "wagmi";
 import { injected } from "wagmi/connectors";
 import { networkConfig } from "@/configs/networkConfig";
 
 export function useWallet() {
   const { address, isConnected } = useAccount();
-  const { connect } = useConnect();
+  const chainId = useChainId();
+  const { connect,status,connectors } = useConnect();
   const { disconnect } = useDisconnect();
 
   const connectWallet = async () => {
@@ -22,6 +23,10 @@ export function useWallet() {
 
   return {
     address,
+    status,
+    connect,
+    connectors,
+    chainId,
     isConnected,
     connectWallet,
     disconnect,

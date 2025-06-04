@@ -45,7 +45,7 @@ export default function BridgePage() {
   const [estimatedFee, setEstimatedFee] = useState<string>("0");
   const [estimatedTime, setEstimatedTime] = useState<string>("~15 minutes");
   const [estimatedAmount, setEstimatedAmount] = useState<string>("0");
-
+  const [, setSelectedTab] = useState("bridge");
   const selectedTokenConfig = useMemo(() => networkConfig.tokensList.find((t) => t.symbol === selectedToken), [selectedToken]);
 
   const { data: balance, refetch: refetchBalance } = useBalance({
@@ -147,19 +147,9 @@ export default function BridgePage() {
         transition={{ duration: 0.5 }}
         className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl rounded-2xl border border-green-500/40 shadow-2xl p-6"
       >
-        {!isConnected && (
-          <div className="flex justify-center mb-6">
-            <Button
-              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-xl px-6 py-2 text-lg shadow-lg"
-              onClick={connectWallet}
-            >
-              Connect Wallet
-            </Button>
-          </div>
-        )}
-
-        <Tabs defaultValue="bridge" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 bg-gray-800/60 border border-green-500/40 rounded-full p-1 h-12">
+        
+        <Tabs defaultValue="bridge" onValueChange={setSelectedTab}>
+          <TabsList className="grid w-full grid-cols-2 bg-gray-800/60 border border-green-500/40 rounded-full p-1 h-12 mb-8">
             <TabsTrigger
               value="bridge"
               className="text-lg font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white rounded-full transition-all"
@@ -176,13 +166,9 @@ export default function BridgePage() {
 
           <TabsContent value="bridge" className="space-y-6">
             <div className="space-y-2">
-              <label className="text-lg font-semibold text-gray-200">From Network</label>
-              <Select
-                value={fromChainId.toString()}
-                onValueChange={(v) => handleChainChange(Number(v), true)}
-                disabled={isBridging || isNativeLockPending || isERC20LockPending}
-              >
-                <SelectTrigger className="w-full border border-green-500/40 bg-gray-800/70 rounded-xl text-lg text-gray-100 font-medium focus:ring-2 focus:ring-green-500/60 hover:bg-gray-700/70 transition-all duration-200">
+              <label className="text-lg font-semibold text-gray-200">From</label>
+              <Select value={fromChainId.toString()} onValueChange={(v) => setFromChainId(Number(v))}>
+                <SelectTrigger className="w-full border border-green-500/40 bg-gray-800/70 rounded-xl text-lg text-gray-100 font-medium focus:ring-2 focus:ring-green-500/60 hover:bg-gray-700/70 transition-all duration-200 flex items-center justify-between px-4 py-2">
                   <SelectValue>
                     <div className="flex items-center gap-2">
                       {fromChain && (
@@ -281,7 +267,7 @@ export default function BridgePage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-lg font-semibold text-gray-200">To Network</label>
+              <label className="text-lg font-semibold text-gray-200">To</label>
               <Select
                 value={toChainId.toString()}
                 onValueChange={(v) => handleChainChange(Number(v), false)}
@@ -316,51 +302,28 @@ export default function BridgePage() {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center gap-1">
-                <label className="text-lg font-semibold text-gray-200">Receiver Address</label>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="h-4 w-4 text-gray-400" />
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-gray-900/95 border-green-500/40">
-                      <p className="w-[200px] text-xs font-poppins">
-                        The wallet address on the destination network to receive tokens. Defaults to your current wallet address.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <Input
-                placeholder="0x..."
-                value={receiverAddress}
-                onChange={(e) => setReceiverAddress(e.target.value)}
-                disabled={isBridging || isNativeLockPending || isERC20LockPending}
-                className="border-green-500/40 bg-gray-800/70 rounded-xl text-lg text-gray-100"
-              />
-            </div>
+            {/* Receiver Address */}
 
             <motion.div
               className="space-y-3 text-lg bg-gray-800/70 rounded-xl p-5 border border-green-500/40 shadow-lg hover:border-green-500/60 transition-colors"
               whileHover={{ scale: 1.02 }}
             >
               {[
-                { label: "CCIP Fee", value: `${estimatedFee} ETH` },
-                { label: "Estimated Time", value: estimatedTime },
-                { label: "Exchange Rate", value: "1 ETH = 1 ETH" },
-                { label: "Amount to Receive", value: `${estimatedAmount} ETH` },
+                { label: "Transaction fees", value: "0.002 ETH" },
+                { label: "Estimated time", value: "~15 phút" },
+                { label: "Conversion rate", value: "1 ETH = 1 ETH" },
+                { label: "Quantity received", value: amount ? `${amount} ETH` : "0.0 ETH" },
               ].map(({ label, value }) => (
                 <div key={label} className="flex justify-between">
                   <span className="text-gray-400 font-medium">{label}:</span>
-                  <span className={label === "Amount to Receive" ? "font-semibold text-green-400" : "font-medium"}>{value}</span>
+                  <span className={label === "Quantity received" ? "font-semibold text-green-400" : "font-medium"}>{value}</span>
                 </div>
               ))}
             </motion.div>
 
-            <Button
+              <Button
               className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-green-500/50 transition-all duration-300 py-3 text-lg mt-2"
-              disabled={!isConnected || !amount || isBridging || isNativeLockPending || isERC20LockPending || fromChainId === toChainId}
+              // disabled={!isConnected || !amount || isBridging || isNativeLockPending || isERC20LockPending || fromChainId === toChainId}
               onClick={handleBridgeClick}
             >
               {!isConnected
@@ -369,22 +332,22 @@ export default function BridgePage() {
                 ? "Bridging..."
                 : fromChainId === toChainId
                 ? "Select Different Networks"
-                : "Bridge ETH"}
+                : "Bridge"}
             </Button>
 
             {error && <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-500">{error}</div>}
           </TabsContent>
 
           <TabsContent value="history" className="pt-6 space-y-4">
-            <div className="text-lg text-gray-400 text-center mb-4">Lịch sử giao dịch gần đây</div>
+            <div className="text-lg text-gray-400 text-center mb-4">Recent transaction history</div>
 
-            <TransactionItem fromChain="Ethereum" toChain="Polygon" amount="0.5 ETH" status="completed" timestamp="2 giờ trước" />
-            <TransactionItem fromChain="Binance Smart Chain" toChain="Arbitrum" amount="200 USDT" status="pending" timestamp="5 giờ trước" />
-            <TransactionItem fromChain="Polygon" toChain="Optimism" amount="100 USDC" status="completed" timestamp="1 ngày trước" />
+            <TransactionItem fromChain="Ethereum" toChain="Polygon" amount="0.5 ETH" status="completed" timestamp="2 hours ago" />
+            <TransactionItem fromChain="Binance Smart Chain" toChain="Arbitrum" amount="200 USDT" status="pending" timestamp="5 hours ago" />
+            <TransactionItem fromChain="Polygon" toChain="Optimism" amount="100 USDC" status="completed" timestamp="1 day ago" />
 
             <div className="text-center mt-4">
-              <Button variant="outline" size="sm" className="text-xs border-green-500/40 text-green-400 hover:bg-green-500/20 rounded-lg">
-                Xem tất cả giao dịch
+              <Button variant="outline" size="sm"  className="px-5 py-2.5 text-lg font-semibold bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-full shadow-lg hover:shadow-green-500/50 transition-all duration-300 border-none">
+                View all transactions
               </Button>
             </div>
           </TabsContent>
@@ -416,19 +379,19 @@ function TransactionItem({ fromChain, toChain, amount, status, timestamp }: Tran
           {status === "pending" && (
             <div className="flex items-center text-yellow-400">
               <Clock className="h-4 w-4 mr-1" />
-              <span className="text-xs font-medium">Đang xử lý</span>
+              <span className="text-xs font-medium">Processing</span>
             </div>
           )}
           {status === "completed" && (
             <div className="flex items-center text-green-400">
               <CheckCircle2 className="h-4 w-4 mr-1" />
-              <span className="text-xs font-medium">Hoàn thành</span>
+              <span className="text-xs font-medium">Complete</span>
             </div>
           )}
           {status === "failed" && (
             <div className="flex items-center text-red-400">
               <Info className="h-4 w-4 mr-1" />
-              <span className="text-xs font-medium">Thất bại</span>
+              <span className="text-xs font-medium">Failure</span>
             </div>
           )}
         </div>
@@ -443,7 +406,7 @@ function TransactionItem({ fromChain, toChain, amount, status, timestamp }: Tran
 
       <div className="mt-3 text-xs">
         <Button variant="link" className="h-auto p-0 text-green-400 hover:text-green-300">
-          Xem chi tiết
+          See details
         </Button>
       </div>
     </motion.div>
