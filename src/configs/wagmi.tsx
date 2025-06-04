@@ -12,7 +12,7 @@ import {
   optimismSepolia,
   polygonAmoy,
 } from 'wagmi/chains'
-import { injected, metaMask, safe, walletConnect } from 'wagmi/connectors';
+import { metaMask, } from 'wagmi/connectors';
 export const config = createConfig({
   chains: [
     mainnet,
@@ -25,7 +25,7 @@ export const config = createConfig({
     optimismSepolia,
     polygonAmoy,
   ],
-  connectors: [walletConnect({ projectId:process.env.NEXT_PUBLIC_PROJECT_ID as string }), metaMask()
+  connectors: [metaMask()
   ],
   transports: {
     [mainnet.id]: http(),

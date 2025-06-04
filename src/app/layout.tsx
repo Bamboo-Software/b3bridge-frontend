@@ -28,7 +28,6 @@ const WagmiProviderWrapper = dynamic(() => import('@/app/_components/WagmiWrappe
         <link rel="icon" type="image/png" sizes="16x16" href={"/images/logo.svg"} />
       </head> 
       <body>
-
         <WagmiProviderWrapper>
       <ReactQueryClientProvider>
           <Toaster
