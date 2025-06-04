@@ -22,8 +22,22 @@
   }
 }
 
+/* Ẩn spin buttons trên Chrome, Safari, Edge, Opera */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
 
-
+/* Ẩn spin buttons trên Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
 @layer base {
   :root {
     --background: 0 0% 100%;

@@ -9,22 +9,12 @@ const layout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <>
-        {/* <AuthProvider> */}
-        
-          {/* <AppLayout> */}
-      <WagmiProvider config={config}>
-        
+
               <AppLayout>
             <Header/>
               {children}
           </AppLayout>
 
-   </WagmiProvider>
-
-              
-          {/* </AppLayout> */}
-            
-        {/* </AuthProvider> */}
 
     </>
   );

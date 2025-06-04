@@ -1,31 +1,58 @@
-import ModalAntd, { ModalAntdProps } from "@/components/ModalAntd";
-import { listWallets } from "@/provider/wagmi-provider";
-import Wallet from "@/provider/wagmi-provider/ui/Wallet";
-
-const ConnectWalletModal = ({
-  open,
-    onCancel,
-}: {
+// components/WalletConnectModal.tsx
+"use client";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useWallet } from "@/hooks/useWallet";
+import { Button } from "@/components/ui/button";
+import Image from "next/image";
+import { useState } from "react";
+const walletIcons: Record<string, string> = {
+  "metaMaskSDK": "/svg/metamask-icon.svg",
+  "app.phantom": "/svg/phantom-wallet.svg",
+  "com.okex.wallet": "/svg/okx-logo.svg",
+  "walletConnect": "/svg/phantom-wallet.svg",
+};
+type Props = {
   open: boolean;
-        onCancel: () => void;
-} & ModalAntdProps) => {
-  return (
-    <ModalAntd open={open} onCancel={onCancel} className="rounded-[20px] font-manrope">
-      <p className=" font-normal leading-[32px] text-[24px] text-center">
-        Connect a wallet
-      </p>
-      <p className="mt-[8px] font-normal text-[16px] leading-[24px] text-center text-gray">
-        Please connect your wallet to continue.
-      </p>
-      <div className="grid gap-4 py-4">
-        {listWallets.map((wallet) => (
-          <div key={wallet.metaData.name}>
-                <Wallet wallet={wallet} />
-          </div>
-        ))}
-      </div>
-    </ModalAntd>
-  );
+  onClose: () => void;
 };
 
-export default ConnectWalletModal;
+export const WalletConnectModal = ({ open, onClose }: Props) => {
+  const { connectors, connect, status, chainId } = useWallet();
+  const [connectingId, setConnectingId] = useState<string | null>(null);
+
+  const handleConnect = (connector: typeof connectors[0]) => {
+    setConnectingId(connector.id);
+    connect({ connector, chainId });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="bg-black border-none">
+        <DialogHeader>
+          <DialogTitle className="text-white">Select Wallet</DialogTitle>
+        </DialogHeader>
+        <div className="grid grid-cols-1 gap-4">
+          {connectors.map((connector) => (
+            <Button
+              key={connector.id}
+              onClick={() => handleConnect(connector)}
+              className="px-5 py-2.5 text-lg font-semibold bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-full shadow-lg hover:shadow-green-500/50 transition-all duration-300"
+            >
+              <Image
+                src={walletIcons[connector.id]}
+                width={20}
+                height={20}
+                alt={`${connector.name} logo`}
+              />
+              {status === "pending" && connectingId === connector.id ? (
+                <span className="ml-2">Connecting...</span>
+              ) : (
+                <span>{connector.name}</span>
+              )}
+            </Button>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};

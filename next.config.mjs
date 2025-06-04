@@ -4,11 +4,6 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'explorer-api.walletconnect.com',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
         hostname: 'd2f70xi62kby8n.cloudfront.net',
         pathname: '/bridge/icons/**',
       },

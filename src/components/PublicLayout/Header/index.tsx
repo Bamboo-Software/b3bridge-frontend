@@ -5,15 +5,22 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/hooks/useWallet";
+import { useEffect, useState } from "react";
+import { useDisconnect, useEnsAvatar, useEnsName } from "wagmi";
+import { WalletConnectModal } from "@/components/Modal/ConnectWalletModal";
+
 
 type Props = {};
 
 const Header = (props: Props) => {
   const pathname = usePathname();
-  const { address, isConnected, connectWallet, getCurrentChain } = useWallet();
-
+  const { address, isConnected, getCurrentChain } = useWallet();
+  console.log("🚀 ~ Header ~ isConnected:", isConnected)
+ const [openModal, setOpenModal] = useState(false);
   const isActive = (path: string) => pathname === path;
-
+  useEffect(() => {
+  if(address) setOpenModal(false)
+},[address])
   return (
     <div className="w-full">
 
@@ -59,7 +66,6 @@ const Header = (props: Props) => {
               ))}
             </motion.nav>
           </motion.div>
-
           {/* Connect Wallet Button */}
           <motion.div
             initial={{ opacity: 0, scale: 0.5 }}
@@ -69,15 +75,15 @@ const Header = (props: Props) => {
             whileTap={{ scale: 0.95 }}
           >
             <Button
-               onClick={connectWallet}
-              className="px-5 py-2.5 text-lg font-semibold bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-full  shadow-lg hover:shadow-green-500/50 transition-all duration-300"
+              onClick={() => setOpenModal(true)}
+              className="px-5 py-2.5 text-lg font-semibold bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-full shadow-lg hover:shadow-green-500/50 transition-all duration-300"
             >
               {isConnected ? `${address?.slice(0, 6)}...${address?.slice(-4)}` : "Connect Wallet"}
             </Button>
           </motion.div>
-          {/* <ConnectWalletModal open={open} onCancel={() => setOpen(false)} /> */}
         </motion.div>
       </motion.header>
+      <WalletConnectModal open={openModal} onClose={() => setOpenModal(false)} />
     </div>
   );
 };
