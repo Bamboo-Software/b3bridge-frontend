@@ -75,7 +75,7 @@ const tokensList: Token[] = [
       [seiTestnet.id]: undefined,
     },
     decimals: 18,
-    logoURL: "https://smartcontract.imgix.net/tokens/eth.webp?auto=compress%2Cformat",
+    logoURL: "/images/eth.avif",
     tags: ["native", "default"],
   },
   {
@@ -90,7 +90,7 @@ const tokensList: Token[] = [
       [sepolia.id]: "0xFd57b4ddBf88a4e07fF4e34C487b99af2Fe82a05",
     },
     decimals: 18,
-    logoURL: "https://smartcontract.imgix.net/tokens/ccip-bnm.webp?auto=compress%2Cformat",
+    logoURL: "/images/eth.avif",
     tags: ["chainlink", "default"],
   },
   {
@@ -105,7 +105,7 @@ const tokensList: Token[] = [
       [sepolia.id]: "0x466D489b6d36E7E3b824ef491C225F5830E81cC1",
     },
     decimals: 18,
-    logoURL: "https://smartcontract.imgix.net/tokens/ccip-lnm.webp?auto=compress%2Cformat",
+    logoURL: "/images/eth.avif",
     tags: ["chainlink", "default"],
   },
   {
@@ -120,7 +120,7 @@ const tokensList: Token[] = [
       [sepolia.id]: "0xc4bF5CbDaBE595361438F8c6a187bDc330539c60",
     },
     decimals: 18,
-    logoURL: "https://smartcontract.imgix.net/tokens/gho.webp?auto=compress%2Cformat",
+    logoURL: "/images/gho.avif",
     tags: ["stablecoin", "default"],
   },
   {
@@ -135,7 +135,7 @@ const tokensList: Token[] = [
       [sepolia.id]: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
     },
     decimals: 6,
-    logoURL: "https://smartcontract.imgix.net/tokens/usdc.webp?auto=compress%2Cformat",
+    logoURL: "/images/usdc.avif",
     tags: ["stablecoin", "default"],
   },
 ];
@@ -143,35 +143,35 @@ const tokensList: Token[] = [
 const chains = [
   {
     chain: arbitrumSepolia,
-    logoURL: "https://d2f70xi62kby8n.cloudfront.net/bridge/icons/networks/arbitrum.svg?auto=compress%2Cformat",
+    logoURL: "/svg/arbitrum.svg",
   },
   {
     chain: avalancheFuji,
-    logoURL: "https://d2f70xi62kby8n.cloudfront.net/bridge/icons/networks/avalanche.svg?auto=compress%2Cformat",
+    logoURL: "/svg/avalanche.svg",
   },
   {
     chain: baseSepolia,
-    logoURL: "https://d2f70xi62kby8n.cloudfront.net/bridge/icons/networks/base.svg?auto=compress%2Cformat",
+    logoURL: "/svg/base.svg",
   },
   {
     chain: bscTestnet,
-    logoURL: "https://d2f70xi62kby8n.cloudfront.net/bridge/icons/networks/bsc.svg?auto=compress%2Cformat",
+    logoURL: "/svg/bsc.svg"
   },
   {
     chain: sepolia,
-    logoURL: "https://d2f70xi62kby8n.cloudfront.net/bridge/icons/networks/ethereum.svg?auto=compress%2Cformat",
+    logoURL: "/svg/ethereum.svg"
   },
   {
     chain: optimismSepolia,
-    logoURL: "https://d2f70xi62kby8n.cloudfront.net/bridge/icons/networks/optimism.svg?auto=compress%2Cformat",
+    logoURL: "/svg/optimism.svg"
   },
   {
     chain: polygonAmoy,
-    logoURL: "https://d2f70xi62kby8n.cloudfront.net/bridge/icons/networks/polygon.svg?auto=compress%2Cformat",
+    logoURL: "/svg/polygon.svg"
   },
   {
     chain: seiTestnet,
-    logoURL: "https://d2f70xi62kby8n.cloudfront.net/bridge/icons/networks/sei.svg?auto=compress%2Cformat",
+    logoURL: "/svg/sei.svg"
   },
 ];
 
