@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
@@ -8,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import Image from "next/image";
+import img from "next/image";
 import { useWallet } from "@/hooks/useWallet";
 import { useBridge } from "@/hooks/useCCIPBridge";
 import { networkConfig } from "@/configs/networkConfig";
@@ -173,7 +174,7 @@ export default function BridgePage() {
                     <div className="flex items-center gap-2">
                       {fromChain && (
                         <>
-                          <Image src={fromChain.logoURL || ""} alt={fromChain.chain.name} width={20} height={20} className="rounded-full" />
+                          <img src={fromChain.logoURL || ""} alt={fromChain.chain.name} width={20} height={20} className="rounded-full" />
                           <span>{fromChain.chain.name}</span>
                         </>
                       )}
@@ -188,7 +189,7 @@ export default function BridgePage() {
                       disabled={isChainSelected(chain.chain.id) && chain.chain.id !== fromChainId}
                     >
                       <div className="flex items-center gap-2">
-                        <Image src={chain.logoURL || ""} alt={chain.chain.name} width={20} height={20} className="rounded-full" />
+                        <img src={chain.logoURL || ""} alt={chain.chain.name} width={20} height={20} className="rounded-full" />
                         <span>{chain.chain.name}</span>
                       </div>
                     </SelectItem>
@@ -226,7 +227,7 @@ export default function BridgePage() {
                       <div className="flex items-center gap-2">
                         {selectedTokenConfig && (
                           <>
-                            <Image src={selectedTokenConfig.logoURL} alt={selectedTokenConfig.symbol} width={20} height={20} className="rounded-full" />
+                            <img src={selectedTokenConfig.logoURL} alt={selectedTokenConfig.symbol} width={20} height={20} className="rounded-full" />
                             <span>{selectedTokenConfig.symbol}</span>
                           </>
                         )}
@@ -237,7 +238,7 @@ export default function BridgePage() {
                     {availableTokens.map((token) => (
                       <SelectItem key={token.symbol} value={token.symbol}>
                         <div className="flex items-center gap-2">
-                          <Image src={token.logoURL} alt={token.symbol} width={20} height={20} className="rounded-full" />
+                          <img src={token.logoURL} alt={token.symbol} width={20} height={20} className="rounded-full" />
                           <span>{token.symbol}</span>
                         </div>
                       </SelectItem>
@@ -278,7 +279,7 @@ export default function BridgePage() {
                     <div className="flex items-center gap-2">
                       {toChain && (
                         <>
-                          <Image src={toChain.logoURL || ""} alt={toChain.chain.name} width={20} height={20} className="rounded-full" />
+                          <img src={toChain.logoURL || ""} alt={toChain.chain.name} width={20} height={20} className="rounded-full" />
                           <span>{toChain.chain.name}</span>
                         </>
                       )}
@@ -293,7 +294,7 @@ export default function BridgePage() {
                       disabled={isChainSelected(chain.chain.id) && chain.chain.id !== toChainId}
                     >
                       <div className="flex items-center gap-2">
-                        <Image src={chain.logoURL || ""} alt={chain.chain.name} width={20} height={20} className="rounded-full" />
+                        <img src={chain.logoURL || ""} alt={chain.chain.name} width={20} height={20} className="rounded-full" />
                         <span>{chain.chain.name}</span>
                       </div>
                     </SelectItem>

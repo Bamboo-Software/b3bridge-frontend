@@ -1,7 +1,8 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import Image from "next/image";
+import img from "next/image";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/hooks/useWallet";
@@ -34,7 +35,7 @@ const Header = (props: Props) => {
           <motion.div className="flex flex-row justify-between items-center space-x-4">
             {/* Logo / Brand */}
             <Link href={"/"} className="flex items-center gap-2.5">
-              <Image className="size-12" src={"/images/logo.svg"} width={48} height={48} alt="B3 Bridge Logo" />
+              <img className="size-12" src={"/images/logo.svg"} width={48} height={48} alt="B3 Bridge Logo" />
               <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">
                 B3 Bridge
               </h1>

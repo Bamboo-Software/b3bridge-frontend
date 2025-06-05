@@ -1,8 +1,9 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 import { Suspense, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
-import Image from "next/image";
+import img from "next/image";
 import LoadingScreen from "@/components/LoadingScreen";
 import CanvasScene from "@/components/webgl/Canvas/scene";
 import { usePathname } from "next/navigation";
@@ -78,7 +79,7 @@ export default function AppLayout({ children }: LayoutProps) {
       <footer className="fixed bottom-4 w-full flex flex-col space-y-1 justify-center items-center z-10 text-center text-xs text-muted-foreground">
         <p>© 2025 B3 Bridge. Powered by </p>
         <div className="flex flex-row space-x-2 justify-center items-center">
-          <Image className="size-3.5" src={"/images/bamboo.png"} width={14} height={14} alt="" />
+          <img className="size-3.5" src={"/images/bamboo.png"} width={14} height={14} alt="" />
           <p>Bamboo Software Team.</p>
         </div>
       </footer>
@@ -94,7 +95,7 @@ function WalletOption({ name, icon, onClick }: IWalletOptionProps) {
       className="flex flex-col items-center justify-center gap-3 p-4 rounded-xl border border-green-500/20 hover:border-green-500/40 bg-background/50 hover:bg-background/70 transition-all"
       onClick={onClick}
     >
-      <Image src={icon} alt={name} width={48} height={48} className="w-12 h-12 object-contain" />
+      <img src={icon} alt={name} width={48} height={48} className="w-12 h-12 object-contain" />
       <span className="font-medium">{name}</span>
     </motion.button>
   );

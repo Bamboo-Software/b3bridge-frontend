@@ -1,8 +1,9 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 import { motion } from "framer-motion";
 import { ArrowRight, Zap, Shield, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Image, { StaticImageData } from "next/image";
+import img, { StaticImageData } from "next/image";
 import { useRouter } from "next/navigation";
 
 interface IFeatureCardProps {
@@ -122,7 +123,7 @@ function ChainLogo({ name, img } : IChainLogoProps) {
       <div className="size-10 rounded-full bg-background/50 border border-green-500/20 flex items-center justify-center">
         {/* Placeholder for chain logo */}
         <div className="size-6 rounded-full bg-transparent">
-            <Image src={img} alt="" width={24} height={24}/>
+            <img src={img as string} alt="" width={24} height={24}/>
         </div>
       </div>
       <span className="text-xs text-white">{name}</span>
