@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 import { useState } from "react";
 import { motion } from "framer-motion";
@@ -14,7 +15,7 @@ import {
 } from "@/components/ui/tooltip";
 
 
-import Image from "next/image";
+import img from "next/image";
 
 // Token data with icons
 const tokens = {
@@ -126,7 +127,7 @@ function PoolCard({ pool }:{pool: IPool} ) {
         <div className="flex items-center gap-3">
           <div className="flex -space-x-2">
             <div className="w-8 h-8 rounded-full border border-background z-10 overflow-hidden">
-                <Image 
+                <img 
                 width={32}
                 height={32}
                 src={tokens[pool.token1].icon} 
@@ -135,7 +136,7 @@ function PoolCard({ pool }:{pool: IPool} ) {
               />
             </div>
             <div className="w-8 h-8 rounded-full border border-background overflow-hidden">
-                <Image 
+                <img 
                 width={32}
                 height={32}
                 src={tokens[pool.token2].icon} 

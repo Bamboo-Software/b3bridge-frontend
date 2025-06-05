@@ -4,13 +4,8 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'd2f70xi62kby8n.cloudfront.net',
-        pathname: '/bridge/icons/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'smartcontract.imgix.net',
-        pathname: '/tokens/**',
+        hostname: 'b3bridge.bamboosoft.io',
+         pathname: '/**',
       },
     ],
     dangerouslyAllowSVG: true,

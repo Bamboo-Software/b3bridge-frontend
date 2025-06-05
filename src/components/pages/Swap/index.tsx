@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
@@ -28,7 +29,7 @@ import {
 
 // Import token icons
 
-import Image from "next/image";
+import img from "next/image";
 
 // Token data with icons
 const tokens = {
@@ -124,7 +125,7 @@ export default function SwapPage() {
                     <div className="flex items-center gap-2">
                       {tokenData && (
                             <>
-                                <Image
+                                <img
                                 src={tokenData.icon}
                                 alt={tokenData.name}
                                 className="w-5 h-5"
@@ -143,7 +144,7 @@ export default function SwapPage() {
                       <div className="flex items-center gap-2">
                         {tokenData && (
                             <>
-                                <Image
+                                <img
                                 src={tokenData.icon}
                                 alt={tokenData.name}
                                 className="w-5 h-5"
@@ -209,7 +210,7 @@ export default function SwapPage() {
                     <div className="flex items-center gap-2">
                       {tokenData && (
                             <>
-                                <Image
+                                <img
                                 src={tokenData.icon}
                                 alt={tokenData.name}
                                 className="w-5 h-5"
@@ -226,7 +227,7 @@ export default function SwapPage() {
                   {Object.entries(tokens).map(([value, { name, icon }]) => (
                     <SelectItem key={value} value={value}>
                       <div className="flex items-center gap-2">
-                        <Image src={icon} alt={name} className="w-5 h-5" width={20} height={20}/>
+                        <img src={icon} alt={name} className="w-5 h-5" width={20} height={20}/>
                         <span>{name}</span>
                       </div>
                     </SelectItem>
@@ -327,7 +328,7 @@ export default function SwapPage() {
               <div className="flex items-center gap-2">
                {tokenData && (
                     <>
-                        <Image
+                        <img
                         src={tokenData.icon}
                         alt={tokenData.name}
                         className="w-5 h-5"
@@ -342,7 +343,7 @@ export default function SwapPage() {
               <div className="flex items-center gap-2">
                 {tokenData && (
                     <>
-                        <Image
+                        <img
                         src={tokenData.icon}
                         alt={tokenData.name}
                         className="w-5 h-5"
