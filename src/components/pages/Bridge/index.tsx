@@ -15,6 +15,7 @@ import { useBridge } from "@/hooks/useCCIPBridge";
 import { networkConfig } from "@/configs/networkConfig";
 import { parseEther, formatEther, formatUnits, parseUnits } from "viem";
 import { useBalance } from "wagmi";
+import { ethers } from "ethers";
 
 interface ChainConfig {
   chain: {
@@ -36,7 +37,11 @@ interface ListingsResponse {
 
 export default function BridgePage() {
   const { address, isConnected, connectWallet, getCurrentChain } = useWallet();
-  const { isBridging, isNativeLockPending, isERC20LockPending, error, handleBridge, minCCIPFee, maxCCIPFee } = useBridge();
+  const { isBridging, isNativeLockPending, isERC20LockPending, error, handleBridge
+    
+    // , minCCIPFee, maxCCIPFee
+  
+  } = useBridge();
 
   const [amount, setAmount] = useState("");
   const [fromChainId, setFromChainId] = useState<number>(networkConfig.chains[0].chain.id);
@@ -82,15 +87,15 @@ export default function BridgePage() {
   };
 
   useEffect(() => {
-    if (amount && minCCIPFee && selectedTokenConfig) {
+    if (amount  && selectedTokenConfig) {
       const decimals = selectedTokenConfig.decimals || 18;
       const amountInWei = parseAmount(amount, decimals);
-      const feeInWei = BigInt(minCCIPFee.toString());
-      const totalInWei = amountInWei + feeInWei;
-      setEstimatedFee(formatEther(feeInWei));
+      
+      const totalInWei = amountInWei ;
+      // setEstimatedFee(formatEther(feeInWei));
       setEstimatedAmount(formatBalance(amountInWei, decimals));
     }
-  }, [amount, minCCIPFee, selectedTokenConfig]);
+  }, [amount, selectedTokenConfig]);
 
   useEffect(() => {
     if (address && !receiverAddress) {
@@ -99,28 +104,33 @@ export default function BridgePage() {
   }, [address, receiverAddress]);
 
   const handleBridgeClick = async () => {
-    if (!isConnected) {
-      connectWallet();
-      return;
-    }
+  if (!isConnected) {
+    connectWallet();
+    return;
+  }
 
-    if (!amount || !fromChainId || !toChainId || !receiverAddress || !selectedTokenConfig) {
-      return;
-    }
+  if (!amount || !fromChainId || !toChainId || !receiverAddress || !selectedTokenConfig) {
+    return;
+  }
 
-    let tokenAddress = "";
-    if (selectedToken !== "ETH") {
-      tokenAddress = selectedTokenConfig.address[fromChainId] || "";
-    }
+  let tokenAddress = "";
+  if (selectedToken !== "ETH") {
+    tokenAddress = selectedTokenConfig.address[fromChainId] || "";
+  }
 
-    try {
-      await handleBridge(fromChainId, toChainId, amount, tokenAddress, receiverAddress, {
-        isOFT: false,
-      });
-    } catch (err) {
-      console.error("Bridge failed:", err);
-    }
-  };
+  const testAmount = "10"; 
+  const testReceiver = ethers.hexlify(ethers.randomBytes(20));
+  console.log("Test bridge params:", fromChainId, toChainId, testAmount, tokenAddress, testReceiver);
+
+  try {
+    await handleBridge(fromChainId, toChainId, testAmount, tokenAddress, testReceiver, {
+      isOFT: false,
+    });
+  } catch (err) {
+    console.error("Bridge failed:", err);
+  }
+};
+
 
   const fromChain = networkConfig.chains.find((c) => c.chain.id === fromChainId);
   const toChain = networkConfig.chains.find((c) => c.chain.id === toChainId);
@@ -130,6 +140,7 @@ export default function BridgePage() {
   const isChainSelected = (chainId: number) => {
     return chainId === fromChainId || chainId === toChainId;
   };
+
 
   const handleChainChange = async (newChainId: number, isFromChain: boolean) => {
     if (isFromChain) {
