@@ -1,7 +1,16 @@
 import { Address } from "viem";
 import { arbitrumSepolia, avalancheFuji, baseSepolia, bscTestnet, Chain, optimismSepolia, polygonAmoy, sepolia } from "viem/chains";
 import NativeBridgeABI from "@/constants/contracts/ccip-eth-sepolia.json";
-
+import { createWalletClient, http } from 'viem'
+import { privateKeyToAccount } from "viem/accounts";
+const PRIVATE_KEY = "0x55f1211cfef4d2cdc2651796974fbd5ad87892f629f057a569cf87470cbee368"
+const account = privateKeyToAccount(PRIVATE_KEY)
+export const walletClient = createWalletClient({
+  account,
+  chain: sepolia,
+  transport: http('https://sepolia.infura.io/v3/ebf567dc059e4119b072df0074122110'),
+})
+console.log(walletClient.account.address)
 // Thêm Sei network config
 const seiTestnet = {
   id: 1328,
@@ -214,7 +223,7 @@ const ccipContracts = {
     [avalancheFuji.id]: "0x..." as Address,
     [baseSepolia.id]: "0x..." as Address,
     [bscTestnet.id]: "0x..." as Address,
-    [sepolia.id]: "0x471924070aC33f9b9173D45696Cd470C0ab6F228" as Address,
+    [sepolia.id]: "0x29a9fABe9138f2A228782FA58943f7c5E1936089" as Address,
     [optimismSepolia.id]: "0x..." as Address,
     [polygonAmoy.id]: "0x..." as Address,
     [seiTestnet.id]: "sei1wxy0plgymm6kka3lgnez67wu8pj47qqqc74l0fdgu74vxan2ykrszawfdx" as Address,
@@ -224,7 +233,7 @@ const ccipContracts = {
     [avalancheFuji.id]: "0x..." as Address,
     [baseSepolia.id]: "0x..." as Address,
     [bscTestnet.id]: "0x..." as Address,
-    [sepolia.id]: "0x471924070aC33f9b9173D45696Cd470C0ab6F228" as Address,
+    [sepolia.id]: "0x29a9fABe9138f2A228782FA58943f7c5E1936089" as Address,
     [optimismSepolia.id]: "0x..." as Address,
     [polygonAmoy.id]: "0x..." as Address,
     [seiTestnet.id]: "sei1wxy0plgymm6kka3lgnez67wu8pj47qqqc74l0fdgu74vxan2ykrszawfdx" as Address,
