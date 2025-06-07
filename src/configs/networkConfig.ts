@@ -21,13 +21,20 @@ const seiTestnet = {
     name: 'Sei',
     symbol: 'SEI',
   },
+  // rpcUrls: {
+  //   default: { http: ['https://rpc-testnet.sei.io'] },
+  //   public: { http: ['https://rpc-testnet.sei.io'] },
+  // },
   rpcUrls: {
-    default: { http: ['https://rpc-testnet.sei.io'] },
-    public: { http: ['https://rpc-testnet.sei.io'] },
-  },
+  default: { http: ['https://evm-rpc.atlantic-2.seinetwork.io'] },
+  public: { http: ['https://evm-rpc.atlantic-2.seinetwork.io'] },
+},
+  // blockExplorers: {
+  //   default: { name: 'Sei Explorer', url: 'https://testnet.sei.io/explorer' },
+  // },
   blockExplorers: {
-    default: { name: 'Sei Explorer', url: 'https://testnet.sei.io/explorer' },
-  },
+  default: { name: 'Sei EVM Explorer', url: 'https://sei.explorers.guru' },
+},
   testnet: true,
 } as const;
 
