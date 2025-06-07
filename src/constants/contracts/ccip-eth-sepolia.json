@@ -19,10 +19,51 @@
           "internalType": "uint256",
           "name": "_threshold",
           "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "link",
+          "type": "address"
         }
       ],
       "stateMutability": "nonpayable",
       "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "AmountToBridgeZero",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "DesWalletAddressZero",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "DestAddressZero",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "sent",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "required",
+          "type": "uint256"
+        }
+      ],
+      "name": "InsufficientFeeSent",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidDestChainSelector",
+      "type": "error"
     },
     {
       "inputs": [
@@ -34,6 +75,32 @@
       ],
       "name": "InvalidRouter",
       "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "allowance",
+          "type": "uint256"
+        }
+      ],
+      "name": "DebugAllowance",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "balance",
+          "type": "uint256"
+        }
+      ],
+      "name": "DebugBalance",
+      "type": "event"
     },
     {
       "anonymous": false,
@@ -70,6 +137,32 @@
         }
       ],
       "name": "DebugERC20Unlock",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "fee",
+          "type": "uint256"
+        }
+      ],
+      "name": "DebugFee",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "message",
+          "type": "string"
+        }
+      ],
+      "name": "DebugMsg",
       "type": "event"
     },
     {
@@ -126,7 +219,7 @@
           "type": "address"
         },
         {
-          "indexed": false,
+          "indexed": true,
           "internalType": "address",
           "name": "token",
           "type": "address"
@@ -140,14 +233,14 @@
         {
           "indexed": false,
           "internalType": "uint64",
-          "name": "destChainId",
+          "name": "destChainSelector",
           "type": "uint64"
         },
         {
-          "indexed": false,
-          "internalType": "bytes",
+          "indexed": true,
+          "internalType": "address",
           "name": "destAddress",
-          "type": "bytes"
+          "type": "address"
         },
         {
           "indexed": false,
@@ -182,9 +275,9 @@
         },
         {
           "indexed": false,
-          "internalType": "bytes",
+          "internalType": "address",
           "name": "destAddress",
-          "type": "bytes"
+          "type": "address"
         },
         {
           "indexed": false,
@@ -231,6 +324,19 @@
         }
       ],
       "name": "MessageReceived",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "messageId",
+          "type": "bytes32"
+        }
+      ],
+      "name": "MessageSent",
       "type": "event"
     },
     {
@@ -327,6 +433,31 @@
         }
       ],
       "name": "ThresholdUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "TokenLocked",
       "type": "event"
     },
     {
@@ -489,6 +620,50 @@
           "type": "uint64"
         },
         {
+          "internalType": "address",
+          "name": "receiver",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        },
+        {
+          "internalType": "address",
+          "name": "feeToken",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "usdcAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "usdcAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "estimateFee",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint64",
+          "name": "destChainSelector",
+          "type": "uint64"
+        },
+        {
           "components": [
             {
               "internalType": "bytes",
@@ -571,10 +746,38 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "i_link",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "contract IERC20",
           "name": "token",
+          "type": "address"
+        },
+        {
+          "internalType": "uint64",
+          "name": "destChainSelector",
+          "type": "uint64"
+        },
+        {
+          "internalType": "address",
+          "name": "destAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "desWalletAddress",
           "type": "address"
         },
         {
@@ -583,23 +786,19 @@
           "type": "uint256"
         },
         {
-          "internalType": "uint64",
-          "name": "destChainSelector",
-          "type": "uint64"
-        },
-        {
-          "internalType": "bytes",
-          "name": "destAddress",
-          "type": "bytes"
-        },
-        {
-          "internalType": "address",
-          "name": "desWalletAddress",
-          "type": "address"
+          "internalType": "enum NativeBridge.PayFeesIn",
+          "name": "payFeesIn",
+          "type": "uint8"
         }
       ],
       "name": "lockERC20",
-      "outputs": [],
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "messageId",
+          "type": "bytes32"
+        }
+      ],
       "stateMutability": "payable",
       "type": "function"
     },
@@ -611,9 +810,9 @@
           "type": "uint64"
         },
         {
-          "internalType": "bytes",
+          "internalType": "address",
           "name": "destAddress",
-          "type": "bytes"
+          "type": "address"
         },
         {
           "internalType": "address",
@@ -649,9 +848,9 @@
           "type": "uint64"
         },
         {
-          "internalType": "bytes",
+          "internalType": "address",
           "name": "destAddress",
-          "type": "bytes"
+          "type": "address"
         },
         {
           "internalType": "address",
@@ -682,9 +881,9 @@
           "type": "uint64"
         },
         {
-          "internalType": "bytes",
+          "internalType": "address",
           "name": "destAddress",
-          "type": "bytes"
+          "type": "address"
         },
         {
           "internalType": "address",

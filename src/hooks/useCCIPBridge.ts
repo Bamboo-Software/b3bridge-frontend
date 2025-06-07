@@ -7,6 +7,7 @@ import { networkConfig, SEPOLIA_BRIDGE_ABI, Token, walletClient } from "@/config
 import { useWallet } from "./useWallet";
 import { getBytes, getAddress } from "ethers";
 import { waitForTransactionReceipt, writeContract } from "viem/actions";
+
 export const ERC20_ABI = [
   {
     constant: true,
@@ -57,47 +58,44 @@ export const ERC20_ABI = [
     type: "function",
   },
 ];
+
 export function useBridge() {
   const [isBridging, setIsBridging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [nativeLockHash, setNativeLockHash] = useState<`0x${string}` | undefined>();
   const [erc20LockHash, setErc20LockHash] = useState<`0x${string}` | undefined>();
-  const { address, isConnected, getCurrentChain } = useWallet();
+  const { wallets, getCurrentChain } = useWallet();
   const { switchChainAsync } = useSwitchChain();
   const [tokenAddress, setTokenAddress] = useState<`0x${string}` | undefined>();
   const [contractAddress, setContractAddress] = useState<`0x${string}` | undefined>();
   const [selectedTokenConfig, setSelectedTokenConfig] = useState<Token | undefined>();
   const [fromChainId, setFromChainId] = useState<number | undefined>();
-  //  const testFromChainId = 11155111;
   const testFromChainId = 11155111;
-  const testToChainId = 1328; //chain goc
-  const testDestChainSelector = 1216300075444106652; // Sei chain selector của chainlink
-  // const testSenderContractAddress = "0x29f4B6073F6900f6132a7630e999C3eF594A59B6";
-  const smETH = "0x5DB5E771EAe9481Afe8840497A20C9b94a0983d0"; // Bridge smartcontract
-  const testSender = "0xAfB4305a792Bb9e90816A26E4ecCcD53D8D0298D"; // dia chi vi gui
+  const testToChainId = 1328;
+  const testDestChainSelector = 1216300075444106652;
+  const smETH = "0x740edCEcACf42130f3f72e9ae86202b05D725adE";// Bridge smartcontract
+  const testSender = "0x308B995e0b6C43CF00b65192f76AFa0E292B42b1";  // dia chi vi gui
+  const smSEI = "0x8d85d2ffc10cc36B499F1D3021D4e19D23A6de3e";// destination wallet nếu là sei thì địa chỉ ví keplr
+  const walletSEI = "0x8d85d2ffc10cc36B499F1D3021D4e19D23A6de3e";// destination wallet nếu là sei thì địa chỉ ví keplr
+  const testTokenAddress = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";// USDC token address
+  const testAmount = "0.01";
 
-  const smSEI = "0xAb2A4D46982E2a511443324368A0777C7f41faF6"; // destination wallet nếu là sei thì địa chỉ ví keplr
-  const walletSEI = "0x8d85d2ffc10cc36B499F1D3021D4e19D23A6de3e"; // destination wallet nếu là sei thì địa chỉ ví keplr
-
-  const testTokenAddress = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"; // USDC token address
-  
-  const testAmount = "1";
-  // Lấy balance dựa vào chain nguồn (fromChainId)
+  // Chỉ gọi useBalance khi fromChainId tồn tại
   const { data: balance, refetch: refetchBalance } = useBalance({
-    address,
+    address: fromChainId ? wallets[fromChainId] as `0x${string}` | undefined : undefined,
     chainId: fromChainId,
-    token: selectedTokenConfig?.symbol === "ETH" ? undefined : selectedTokenConfig?.address[fromChainId || 0],
+    token: fromChainId && selectedTokenConfig?.symbol === "ETH" ? undefined : (fromChainId ? selectedTokenConfig?.address[fromChainId] as `0x${string}` | undefined : undefined),
   });
 
   // Chỉ query allowance khi có cả token và contract address
   const { data: allowance } = useReadContract(
     tokenAddress && contractAddress
       ? {
-        address: tokenAddress,
-        abi: erc20Abi,
-        functionName: "allowance",
-        args: [smETH, smSEI],
-      }
+          address: tokenAddress,
+          abi: erc20Abi,
+          functionName: "allowance",
+          args: [smETH as `0x${string}`, smSEI as `0x${string}`],
+        }
       : undefined
   );
 
@@ -106,22 +104,6 @@ export function useBridge() {
 
   const { isLoading: isNativeLockPending } = useTransaction({ hash: nativeLockHash });
   const { isLoading: isERC20LockPending } = useTransaction({ hash: erc20LockHash });
-
-  // const { data: minFee } = useReadContract({
-  //   address: contractAddress,
-  //   abi: SEPOLIA_BRIDGE_ABI.abi,
-  //   functionName: "minCCIPFee",
-  //   chainId: fromChainId,
-  // });
-
-  // const { data: maxFee } = useReadContract({
-  //   address: contractAddress,
-  //   abi: SEPOLIA_BRIDGE_ABI.abi,
-  //   functionName: "maxCCIPFee",
-  //   chainId: fromChainId,
-  // });
-
-
 
   const { data: routerAddress } = useReadContract({
     address: contractAddress,
@@ -145,17 +127,15 @@ export function useBridge() {
       isOFT?: boolean;
     }
   ) => {
-    if (!isConnected) {
+    if (!wallets[fromChainId]) {
       setError("Vui lòng kết nối ví trước");
       return;
     }
 
     try {
-
       setIsBridging(true);
       setError(null);
       setFromChainId(fromChainId);
-
 
       // Validate inputs
       if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
@@ -165,7 +145,7 @@ export function useBridge() {
         throw new Error("Địa chỉ receiver không hợp lệ");
       }
 
-      const currentChain = getCurrentChain();
+      const currentChain = getCurrentChain(fromChainId);
       if (currentChain?.id !== fromChainId) {
         await switchChainAsync({ chainId: fromChainId });
         await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -194,7 +174,6 @@ export function useBridge() {
       const tokenConfig = testTokenAddress
         ? networkConfig.tokensList.find((t) => Object.values(t.address).includes(testTokenAddress as `0x${string}`))
         : networkConfig.tokensList.find((t) => t.symbol === "ETH");
-      console.log("🚀 ~ useBridge ~ destChainSelector:", destChainSelector)
       if (!tokenConfig && testTokenAddress) {
         throw new Error("Cấu hình token không hợp lệ");
       }
@@ -204,22 +183,22 @@ export function useBridge() {
       let encodedReceiverAddress: `0x${string}`;
       if (toChainId === 1328) {
         const seiAddressBytes = Buffer.from(smSEI.replace(/^0x/, ""), "hex");
-        const receiverBytes = Buffer.from(testSender.replace(/^0x/, ""), "hex");
+        const receiverBytes = Buffer.from(receiver.replace(/^0x/, ""), "hex");
         encodedDestAddress = encodeAbiParameters([{ type: "bytes" }], [`0x${seiAddressBytes.toString("hex")}`]);
         encodedReceiverAddress = encodeAbiParameters([{ type: "bytes" }], [`0x${receiverBytes.toString("hex")}`]);
       } else {
         if (!smSEI.match(/^0x[a-fA-F0-9]{40}$/)) {
           throw new Error(`Địa chỉ hợp đồng receiver không hợp lệ cho chain ${toChainId}`);
         }
-        if (!testSender.match(/^0x[a-fA-F0-9]{40}$/)) {
+        if (!receiver.match(/^0x[a-fA-F0-9]{40}$/)) {
           throw new Error("Định dạng địa chỉ receiver không hợp lệ");
         }
         encodedDestAddress = encodeAbiParameters([{ type: "address" }], [smSEI as `0x${string}`]);
-        encodedReceiverAddress = encodeAbiParameters([{ type: "address" }], [testSender as `0x${string}`]);
+        encodedReceiverAddress = encodeAbiParameters([{ type: "address" }], [receiver as `0x${string}`]);
       }
 
       if (!testTokenAddress) {
-        const amountInWei = parseEther(testAmount);
+        const amountInWei = parseEther(amount);
         if (!balance || balance.value < amountInWei) {
           throw new Error(`Số dư ETH không đủ. Yêu cầu: ${formatEther(amountInWei)} ETH`);
         }
@@ -235,9 +214,9 @@ export function useBridge() {
         });
         setNativeLockHash(result);
       } else if (options?.isOFT) {
-        const amountInUnits = parseUnits(testAmount, tokenConfig?.decimals || 18);
+        const amountInUnits = parseUnits(amount, tokenConfig?.decimals || 18);
         if (!balance || balance.value < amountInUnits) {
-          throw new Error(`Số dư ${tokenConfig?.symbol} không đủ. Yêu cầu: ${testAmount} ${tokenConfig?.symbol}`);
+          throw new Error(`Số dư ${tokenConfig?.symbol} không đủ. Yêu cầu: ${amount} ${tokenConfig?.symbol}`);
         }
         if (!writeERC20) {
           throw new Error("Contract write không sẵn sàng");
@@ -247,7 +226,7 @@ export function useBridge() {
           abi: SEPOLIA_BRIDGE_ABI.abi,
           functionName: "lockOFT",
           args: [
-            testTokenAddress as `0x${string}`,
+            tokenAddress as `0x${string}`,
             amountInUnits,
             BigInt(destChainSelector),
             encodedDestAddress,
@@ -256,9 +235,9 @@ export function useBridge() {
         });
         setErc20LockHash(result);
       } else {
-        const amountInUnits = parseUnits(testAmount, tokenConfig?.decimals || 18);
+        const amountInUnits = parseUnits(amount, tokenConfig?.decimals || 18);
         if (!balance || balance.value < amountInUnits) {
-          throw new Error(`Số dư ${tokenConfig?.symbol} không đủ. Yêu cầu: ${testAmount} ${tokenConfig?.symbol}`);
+          throw new Error(`Số dư ${tokenConfig?.symbol} không đủ. Yêu cầu: ${amount} ${tokenConfig?.symbol}`);
         }
         if (!writeERC20) {
           throw new Error("Contract write không sẵn sàng");
@@ -267,64 +246,53 @@ export function useBridge() {
         if (!allowance || allowance < amountInUnits) {
           console.log("Đang phê duyệt chuyển token...");
           const approveTx = await writeERC20({
-            address: testTokenAddress as `0x${string}`,
+            address: tokenAddress as `0x${string}`,
             abi: ERC20_ABI,
             functionName: "approve",
-            args: [smETH,
-              amountInUnits],
+            args: [smETH as `0x${string}`, amountInUnits],
           });
           await waitForTransactionReceipt(walletClient, { hash: approveTx });
           console.log("Phê duyệt thành công, allowance được đặt thành:", formatUnits(amountInUnits, tokenConfig?.decimals || 18));
         }
+        
         console.log(`🚀 ~ useBridge ~ {
-        addre smETH  as,
-        abi: SEPOLIA_BRIDGE_ABI.abi,
-        functionName: "lockERC20",
-        args: [
-          testTokenAddress,
-          amountInUnits,
-          BigInt(destChainSelector),
-          address20Bytes,
-          testSender,
-        ],
-        value: parseEther("0.01"),
-      }:`, {
+          address: smETH as ,
+          abi: SEPOLIA_BRIDGE_ABI.abi,
+          functionName: "lockERC20",
+          args: [
+            tokenAddress as ,
+            amountInUnits,
+            BigInt(destChainSelector),
+            encodedDestAddress,
+            encodedReceiverAddress,
+          ],
+          value: parseEther("0.02"),
+        }:`, {
           address: smETH as `0x${string}`,
           abi: SEPOLIA_BRIDGE_ABI.abi,
           functionName: "lockERC20",
           args: [
-            testTokenAddress,
+            tokenAddress as `0x${string}`,
             amountInUnits,
-            BigInt(testDestChainSelector),
-            hexlify(smSEI),
-            smSEI,
+            BigInt(destChainSelector),
+            encodedDestAddress,
+            encodedReceiverAddress,
           ],
-          value: parseEther("0.01"),
+          value: parseEther("0.02"),
         })
-        await writeContract(walletClient, {
-          address: testTokenAddress,
-          abi: ERC20_ABI,
-          functionName: "approve",
-          args: [
-            hexlify(smETH),
-            amountInUnits,
-          ],
-        });
-
         const result = await writeERC20({
           address: smETH as `0x${string}`,
           abi: SEPOLIA_BRIDGE_ABI.abi,
           functionName: "lockERC20",
           args: [
-            testTokenAddress,
+            tokenAddress as `0x${string}`,
             amountInUnits,
-            BigInt(testDestChainSelector),
-            hexlify(smSEI),
-            walletSEI,
+            BigInt(destChainSelector),
+            encodedDestAddress,
+            encodedReceiverAddress,
           ],
-          value: parseEther("0.02"),
+          value: parseEther("0.01"),
         });
-        console.log('qua result', result)
         setErc20LockHash(result);
       }
     } catch (err) {
