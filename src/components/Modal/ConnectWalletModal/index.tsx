@@ -101,7 +101,6 @@ export const WalletConnectModal = () => {
       await window.keplr.enable("atlantic-2");
       const offlineSigner = window.getOfflineSigner("atlantic-2");
       const accounts = await offlineSigner.getAccounts();
-      console.log("Keplr connected:", accounts[0]);
 
       // TODO: Lưu account vào global store nếu cần
       closeWalletModal();
@@ -137,7 +136,6 @@ export const WalletConnectModal = () => {
       });
 
       const [account] = await window.ethereum.request({ method: "eth_requestAccounts" });
-      console.log("🚀 ~ handleConnect ~ account:", account)
       setWallets((prev:any) => ({
         ...prev,
         [1328]: {

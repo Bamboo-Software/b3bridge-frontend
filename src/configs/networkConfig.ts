@@ -10,7 +10,6 @@ export const walletClient = createWalletClient({
   chain: sepolia,
   transport: http('https://sepolia.infura.io/v3/ebf567dc059e4119b072df0074122110'),
 })
-console.log(walletClient.account.address)
 // Thêm Sei network config
 const seiTestnet = {
   id: 1328,

@@ -70,23 +70,31 @@ export function useBridge() {
   const [contractAddress, setContractAddress] = useState<`0x${string}` | undefined>();
   const [selectedTokenConfig, setSelectedTokenConfig] = useState<Token | undefined>();
   const [fromChainId, setFromChainId] = useState<number | undefined>();
-  const testFromChainId = 11155111;
-  const testToChainId = 1328;
+  // const testFromChainId = 11155111;
+  // const testToChainId = 1328;
   const testDestChainSelector = 1216300075444106652;
   const smETH = "0x740edCEcACf42130f3f72e9ae86202b05D725adE";// Bridge smartcontract
-  const testSender = "0x308B995e0b6C43CF00b65192f76AFa0E292B42b1";  // dia chi vi gui
-  const smSEI = "0x8d85d2ffc10cc36B499F1D3021D4e19D23A6de3e";// destination wallet nếu là sei thì địa chỉ ví keplr
-  const walletSEI = "0x8d85d2ffc10cc36B499F1D3021D4e19D23A6de3e";// destination wallet nếu là sei thì địa chỉ ví keplr
+  // const testSender = "0x308B995e0b6C43CF00b65192f76AFa0E292B42b1";  // dia chi vi gui
+  const smSEI = "0xAb2A4D46982E2a511443324368A0777C7f41faF6";// destination wallet nếu là sei thì địa chỉ ví keplr
+  // const walletSEI = "0x8d85d2ffc10cc36B499F1D3021D4e19D23A6de3e";// destination wallet nếu là sei thì địa chỉ ví keplr
   const testTokenAddress = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";// USDC token address
-  const testAmount = "0.01";
+  // const testAmount = "0.01";
 
   // Chỉ gọi useBalance khi fromChainId tồn tại
-  const { data: balance, refetch: refetchBalance } = useBalance({
-    address: fromChainId ? wallets[fromChainId] as `0x${string}` | undefined : undefined,
+  // const { data: balance, refetch: refetchBalance } = useBalance({
+  //   address: fromChainId ? wallets[fromChainId] as `0x${string}` | undefined : undefined,
+  //   chainId: fromChainId,
+  //   token: fromChainId && selectedTokenConfig?.symbol === "ETH" ? undefined : (fromChainId ? selectedTokenConfig?.address[fromChainId] as `0x${string}` | undefined : undefined),
+  // });
+  const address = fromChainId ? wallets[fromChainId]?.address : undefined;
+ const { data: balance, refetch: refetchBalance } = useBalance({
+    address: address as `0x${string}` | undefined,
     chainId: fromChainId,
-    token: fromChainId && selectedTokenConfig?.symbol === "ETH" ? undefined : (fromChainId ? selectedTokenConfig?.address[fromChainId] as `0x${string}` | undefined : undefined),
+    token:
+      fromChainId && selectedTokenConfig
+        ? (selectedTokenConfig.address[fromChainId] as `0x${string}`)
+        : undefined,
   });
-
   // Chỉ query allowance khi có cả token và contract address
   const { data: allowance } = useReadContract(
     tokenAddress && contractAddress
@@ -121,12 +129,20 @@ export function useBridge() {
     fromChainId: number,
     toChainId: number,
     amount: string,
+    balance: {
+    decimals: number;
+    formatted: string;
+    symbol: string;
+    value: bigint;
+} | undefined,
     tokenAddress: string,
     receiver: string,
     options?: {
       isOFT?: boolean;
     }
   ) => {
+    console.log("🚀 ~ useBridge ~ receiver:", receiver)
+    console.log("🚀 ~ useBridge ~ balance:", balance)
     if (!wallets[fromChainId]) {
       setError("Vui lòng kết nối ví trước");
       return;
@@ -152,8 +168,8 @@ export function useBridge() {
         await refetchBalance();
       }
 
-      const fromChainConfig = networkConfig.chains.find((c) => c.chain.id === testFromChainId);
-      const toChainConfig = networkConfig.chains.find((c) => c.chain.id === testToChainId);
+      const fromChainConfig = networkConfig.chains.find((c) => c.chain.id === fromChainId);
+      const toChainConfig = networkConfig.chains.find((c) => c.chain.id === toChainId);
       if (!fromChainConfig || !toChainConfig) {
         throw new Error("Cấu hình chain không hợp lệ");
       }
@@ -196,10 +212,10 @@ export function useBridge() {
         encodedDestAddress = encodeAbiParameters([{ type: "address" }], [smSEI as `0x${string}`]);
         encodedReceiverAddress = encodeAbiParameters([{ type: "address" }], [receiver as `0x${string}`]);
       }
-
+      
       if (!testTokenAddress) {
         const amountInWei = parseEther(amount);
-        if (!balance || balance.value < amountInWei) {
+        if (!balance || balance?.value < amountInWei) {
           throw new Error(`Số dư ETH không đủ. Yêu cầu: ${formatEther(amountInWei)} ETH`);
         }
         if (!writeNative) {
@@ -215,7 +231,9 @@ export function useBridge() {
         setNativeLockHash(result);
       } else if (options?.isOFT) {
         const amountInUnits = parseUnits(amount, tokenConfig?.decimals || 18);
-        if (!balance || balance.value < amountInUnits) {
+          console.log("🚀 ~ useBridge ~ balance:", balance)
+        console.log("🚀 ~ useBridge ~ amountInUnits:", amountInUnits)
+        if (!balance || balance?.value < amountInUnits) {
           throw new Error(`Số dư ${tokenConfig?.symbol} không đủ. Yêu cầu: ${amount} ${tokenConfig?.symbol}`);
         }
         if (!writeERC20) {
@@ -236,7 +254,9 @@ export function useBridge() {
         setErc20LockHash(result);
       } else {
         const amountInUnits = parseUnits(amount, tokenConfig?.decimals || 18);
-        if (!balance || balance.value < amountInUnits) {
+        console.log("🚀 ~ useBridge ~ balance:", balance)
+        console.log("🚀 ~ useBridge ~ amountInUnits:", amountInUnits)
+        if (!balance || balance?.value < amountInUnits) {
           throw new Error(`Số dư ${tokenConfig?.symbol} không đủ. Yêu cầu: ${amount} ${tokenConfig?.symbol}`);
         }
         if (!writeERC20) {
@@ -248,8 +268,13 @@ export function useBridge() {
           const approveTx = await writeERC20({
             address: tokenAddress as `0x${string}`,
             abi: ERC20_ABI,
-            functionName: "approve",
-            args: [smETH as `0x${string}`, amountInUnits],
+            functionName: "approve", 
+            args: [
+              smETH as `0x${string}`, // contract cần được cấp quyền lock token
+              
+              amountInUnits // số lượng cần approve: 0.01 USDC = 10,000
+            
+            ],
           });
           await waitForTransactionReceipt(walletClient, { hash: approveTx });
           console.log("Phê duyệt thành công, allowance được đặt thành:", formatUnits(amountInUnits, tokenConfig?.decimals || 18));
@@ -273,27 +298,30 @@ export function useBridge() {
           functionName: "lockERC20",
           args: [
             tokenAddress as `0x${string}`,
+            BigInt("1216300075444106652"),
+            smSEI, 
+            receiver, 
             amountInUnits,
-            BigInt(destChainSelector),
-            encodedDestAddress,
-            encodedReceiverAddress,
+            0,
           ],
           value: parseEther("0.02"),
         })
-        const result = await writeERC20({
-          address: smETH as `0x${string}`,
-          abi: SEPOLIA_BRIDGE_ABI.abi,
-          functionName: "lockERC20",
-          args: [
-            tokenAddress as `0x${string}`,
-            amountInUnits,
-            BigInt(destChainSelector),
-            encodedDestAddress,
-            encodedReceiverAddress,
-          ],
-          value: parseEther("0.01"),
-        });
-        setErc20LockHash(result);
+       const result = await writeERC20({
+      address: smETH as `0x${string}`,
+      abi: SEPOLIA_BRIDGE_ABI.abi,
+      functionName: "lockERC20",
+      args: [
+        tokenAddress as `0x${string}`,
+        BigInt("1216300075444106652"),
+        smSEI, 
+        // encodedReceiverAddress, 
+        receiver,
+        amountInUnits,
+        0,
+      ],
+      value: parseEther("0.01"),
+    });
+setErc20LockHash(result);
       }
     } catch (err) {
       console.error("Lỗi bridge:", err);

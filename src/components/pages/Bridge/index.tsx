@@ -6,7 +6,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWallet } from "@/hooks/useWallet";
 import { useBridge } from "@/hooks/useCCIPBridge";
 import { networkConfig } from "@/configs/networkConfig";
-import { parseUnits } from "viem";
+import { parseUnits, formatUnits } from "viem";
 import { useBalance } from "wagmi";
 import BridgeTab from "./BridgeTab";
 import { bridgeTabs } from "@/constants";
@@ -29,10 +29,10 @@ export default function BridgePage() {
   const { wallets, connectWallet } = useWallet();
   const { isBridging, isNativeLockPending, isERC20LockPending, error, handleBridge } = useBridge();
   const { openWalletModal } = useModalStore();
-  const [amount, setAmount] = useState("");
-  const [fromChainId, setFromChainId] = useState<number | undefined>(undefined);
+  const [fromChainId, setFromChainId] = useState<number | undefined>(networkConfig.chains[0]?.chain.id);
   const [toChainId, setToChainId] = useState<number | undefined>(undefined);
-  const [selectedToken, setSelectedToken] = useState<string>("");
+  const [amount, setAmount] = useState("");
+  const [selectedToken, setSelectedToken] = useState<string>(networkConfig.tokensList[0]?.symbol || "ETH");
   const [receiverAddress, setReceiverAddress] = useState<string>("");
   const [selectedTab, setSelectedTab] = useState("bridge");
 
@@ -41,74 +41,61 @@ export default function BridgePage() {
     [selectedToken]
   );
 
-  const address = fromChainId ? wallets[fromChainId] : undefined;
-
-  const { data: balance, refetch: refetchBalance } = useBalance({
-    address: address as `0x${string}` | undefined,
-    chainId: fromChainId,
-    token: selectedToken !== "ETH" ? (fromChainId ? selectedTokenConfig?.address[fromChainId] as `0x${string}` | undefined : undefined) : undefined,
-  });
+  const address = fromChainId ? wallets[fromChainId]?.address : undefined;
 
   const availableTokens = useMemo(() => {
-    if (!fromChainId) return []; // Trả về mảng rỗng nếu chưa chọn chain From
+    if (!fromChainId) return [];
     return networkConfig.tokensList.filter((token) => {
       if (token.symbol === "ETH") return true;
       return token.address[fromChainId] !== undefined;
     });
   }, [fromChainId]);
 
-  // Đồng bộ receiverAddress với địa chỉ ví
-  // useEffect(() => {
-  //   if (address && !receiverAddress) {
-  //     setReceiverAddress(address);
-  //   }
-  // }, [address, receiverAddress]);
+  const { data: balance, refetch: refetchBalance } = useBalance({
+    address: address as `0x${string}` | undefined,
+    chainId: fromChainId,
+    token:
+      selectedToken !== "ETH" && fromChainId && selectedTokenConfig
+        ? (selectedTokenConfig.address[fromChainId] as `0x${string}`)
+        : undefined,
+  });
 
-  // Refetch balance khi chain hoặc token thay đổi
   useEffect(() => {
     if (address && fromChainId && selectedTokenConfig) {
       refetchBalance();
     }
   }, [address, fromChainId, selectedToken, selectedTokenConfig, refetchBalance]);
 
-  const parseAmount = (amount: string, decimals: number = 18) => {
+  const handleBridgeClick = async (data: {
+    fromChainId: number;
+    toChainId: number;
+    amount: string;
+    tokenAddress: string;
+    receiverAddress: `0x${string}`;
+    balance: {
+    decimals: number;
+    formatted: string;
+    symbol: string;
+    value: bigint;
+} | undefined
+  }) => {
+    console.log("🚀 ~ BridgePage ~  data.fromChainId",
+    data.fromChainId,
+    data.toChainId,
+      data.amount,
+    balance,
+    data.tokenAddress,
+    data.receiverAddress)
     try {
-      return parseUnits(amount, decimals);
-    } catch (e) {
-      return BigInt(0);
-    }
-  };
-
-  const handleBridgeClick = async () => {
-    if (!address || !fromChainId) {
-      if (fromChainId) {
-        await connectWallet(fromChainId);
-        openWalletModal();
-      }
-      return;
-    }
-
-    if (!toChainId || !wallets[toChainId]) {
-      if (toChainId) {
-        await connectWallet(toChainId);
-        openWalletModal();
-      }
-      return;
-    }
-
-    if (!amount || !fromChainId || !toChainId || !receiverAddress || !selectedTokenConfig) {
-      console.error("Missing required bridge parameters");
-      return;
-    }
-
-    const tokenAddress = selectedToken !== "ETH" ? (selectedTokenConfig.address[fromChainId] as `0x${string}`) || "" : "";
-    const decimals = selectedTokenConfig.decimals || 18;
-    const amountInWei = parseAmount(amount, decimals);
-
-    try {
-      await handleBridge(fromChainId, toChainId, amount, tokenAddress, receiverAddress as `0x${string}`, {
-        isOFT: false,
-      });
+      await handleBridge(
+        data.fromChainId,
+        data.toChainId,
+        data.amount,
+        balance,
+        data.tokenAddress,
+        data.receiverAddress,
+        { isOFT: false }
+      );
     } catch (err) {
       console.error("Bridge failed:", err);
     }
@@ -167,3 +154,8 @@ export default function BridgePage() {
     </div>
   );
 }
+
+// export const formatBalance = (value: bigint | undefined, decimals: number = 18) => {
+//   if (!value) return "0";
+//   return formatUnits(value, decimals);
+// };
