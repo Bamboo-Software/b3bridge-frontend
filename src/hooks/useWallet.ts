@@ -25,7 +25,6 @@ export function useWallet() {
   const { disconnect } = useDisconnect();
   const { switchChain } = useSwitchChain();
   const [wallets, setWallets] = useState<WalletData>({});
-  console.log("🚀 ~ useWallet ~ wallets:", wallets)
 const [keplrAddress, setKeplrAddress] = useState<string | null>(null);
   // Khi kết nối thành công qua wagmi thì lưu vào state
   // useEffect(() => {
