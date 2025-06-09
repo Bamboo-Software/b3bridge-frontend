@@ -46,18 +46,11 @@ const router = useRouter();
 
         <div className="flex flex-wrap gap-4 justify-center pt-4">
           <Button 
-            onClick={() => router.push("/swap")}
+            onClick={() => router.push("/bridge")}
             size="lg" 
            className="px-5 py-2.5 text-lg font-bold bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-full  shadow-lg hover:shadow-green-500/50 transition-all duration-300"
           >
-            Get Started <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-          <Button 
-            variant="outline" 
-            size="lg" 
-            className="rounded-full border-green-500/50"
-          >
-            Learn More
+            Get Started Bridge <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
 

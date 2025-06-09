@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWallet } from "@/hooks/useWallet";
-import { useBridge } from "@/hooks/useCCIPBridge";
+import { useCCIPBridge } from "@/hooks/useCCIPBridge";
 import { networkConfig } from "@/configs/networkConfig";
 import { parseUnits, formatUnits } from "viem";
 import { useBalance } from "wagmi";
@@ -27,9 +27,9 @@ interface Token {
 
 export default function BridgePage() {
   const { wallets, connectWallet } = useWallet();
-  const { isBridging, isNativeLockPending, isERC20LockPending, error, handleBridge } = useBridge();
+  const { isBridging, isNativeLockPending, isERC20LockPending, error, handleBridge } = useCCIPBridge();
   const { openWalletModal } = useModalStore();
-  const [fromChainId, setFromChainId] = useState<number | undefined>(networkConfig.chains[0]?.chain.id);
+  const [fromChainId, setFromChainId] = useState<number | undefined>(undefined);
   const [toChainId, setToChainId] = useState<number | undefined>(undefined);
   const [amount, setAmount] = useState("");
   const [selectedToken, setSelectedToken] = useState<string>(networkConfig.tokensList[0]?.symbol || "ETH");
@@ -72,12 +72,13 @@ export default function BridgePage() {
     amount: string;
     tokenAddress: string;
     receiverAddress: `0x${string}`;
+    toChainSelector: string;
     balance: {
     decimals: number;
     formatted: string;
     symbol: string;
     value: bigint;
-} | undefined
+} |undefined
   }) => {
     console.log("🚀 ~ BridgePage ~  data.fromChainId",
     data.fromChainId,
@@ -87,15 +88,16 @@ export default function BridgePage() {
     data.tokenAddress,
     data.receiverAddress)
     try {
-      await handleBridge(
+       await handleBridge(
         data.fromChainId,
         data.toChainId,
         data.amount,
         balance,
         data.tokenAddress,
         data.receiverAddress,
+        data.toChainSelector,
         { isOFT: false }
-      );
+      )
     } catch (err) {
       console.error("Bridge failed:", err);
     }

@@ -3,13 +3,13 @@ import { arbitrumSepolia, avalancheFuji, baseSepolia, bscTestnet, Chain, optimis
 import NativeBridgeABI from "@/constants/contracts/ccip-eth-sepolia.json";
 import { createWalletClient, http } from 'viem'
 import { privateKeyToAccount } from "viem/accounts";
-const PRIVATE_KEY = "0x55f1211cfef4d2cdc2651796974fbd5ad87892f629f057a569cf87470cbee368"
-const account = privateKeyToAccount(PRIVATE_KEY)
-export const walletClient = createWalletClient({
-  account,
-  chain: sepolia,
-  transport: http('https://sepolia.infura.io/v3/ebf567dc059e4119b072df0074122110'),
-})
+// const PRIVATE_KEY = "0x55f1211cfef4d2cdc2651796974fbd5ad87892f629f057a569cf87470cbee368"
+// const account = privateKeyToAccount(PRIVATE_KEY)
+// export const walletClient = createWalletClient({
+//   account,
+//   chain: sepolia,
+//   transport: http('https://sepolia.infura.io/v3/ebf567dc059e4119b072df0074122110'),
+// })
 // Thêm Sei network config
 const seiTestnet = {
   id: 1328,
@@ -67,7 +67,7 @@ export declare type NetworkConfig = {
   routerAddresses: AddressMap;
   /** Selectors for the chains that should be supported */
   chainSelectors: {
-    [chainId: number]: string | undefined;
+    [chainId: number]: string;
   };
   /** CCIP contracts for separate token transfers */
   ccipContracts: {
@@ -93,51 +93,51 @@ const tokensList: Token[] = [
     logoURL: "/images/eth.avif",
     tags: ["native", "default"],
   },
-  {
-    symbol: "CCIP-BnM",
-    address: {
-      [arbitrumSepolia.id]: "0xA8C0c11bf64AF62CDCA6f93D3769B88BdD7cb93D",
-      [avalancheFuji.id]: "0xD21341536c5cF5EB1bcb58f6723cE26e8D8E90e4",
-      [baseSepolia.id]: "0x88A2d74F47a237a62e7A51cdDa67270CE381555e",
-      [bscTestnet.id]: "0xbFA2ACd33ED6EEc0ed3Cc06bF1ac38d22b36B9e9",
-      [optimismSepolia.id]: "0x8aF4204e30565DF93352fE8E1De78925F6664dA7",
-      [polygonAmoy.id]: "0xcab0EF91Bee323d1A617c0a027eE753aFd6997E4",
-      [sepolia.id]: "0xFd57b4ddBf88a4e07fF4e34C487b99af2Fe82a05",
-    },
-    decimals: 18,
-    logoURL: "/images/eth.avif",
-    tags: ["chainlink", "default"],
-  },
-  {
-    symbol: "CCIP-LnM",
-    address: {
-      [arbitrumSepolia.id]: "0x139E99f0ab4084E14e6bb7DacA289a91a2d92927",
-      [avalancheFuji.id]: "0x70F5c5C40b873EA597776DA2C21929A8282A3b35",
-      [baseSepolia.id]: "0xA98FA8A008371b9408195e52734b1768c0d1Cb5c",
-      [bscTestnet.id]: "0x79a4Fc27f69323660f5Bfc12dEe21c3cC14f5901",
-      [optimismSepolia.id]: "0x044a6B4b561af69D2319A2f4be5Ec327a6975D0a",
-      [polygonAmoy.id]: "0x3d357fb52253e86c8Ee0f80F5FfE438fD9503FF2",
-      [sepolia.id]: "0x466D489b6d36E7E3b824ef491C225F5830E81cC1",
-    },
-    decimals: 18,
-    logoURL: "/images/eth.avif",
-    tags: ["chainlink", "default"],
-  },
-  {
-    symbol: "GHO",
-    address: {
-      [arbitrumSepolia.id]: "0xb13Cfa6f8B2Eed2C37fB00fF0c1A59807C585810",
-      [avalancheFuji.id]: "0x9c04928Cc678776eC1C1C0E46ecC03a5F47A7723",
-      [baseSepolia.id]: "0x7CFa3f3d1cded0Da930881c609D4Dbf0012c14Bb",
-      [bscTestnet.id]: undefined,
-      [optimismSepolia.id]: undefined,
-      [polygonAmoy.id]: undefined,
-      [sepolia.id]: "0xc4bF5CbDaBE595361438F8c6a187bDc330539c60",
-    },
-    decimals: 18,
-    logoURL: "/images/gho.avif",
-    tags: ["stablecoin", "default"],
-  },
+  // {
+  //   symbol: "CCIP-BnM",
+  //   address: {
+  //     [arbitrumSepolia.id]: "0xA8C0c11bf64AF62CDCA6f93D3769B88BdD7cb93D",
+  //     [avalancheFuji.id]: "0xD21341536c5cF5EB1bcb58f6723cE26e8D8E90e4",
+  //     [baseSepolia.id]: "0x88A2d74F47a237a62e7A51cdDa67270CE381555e",
+  //     [bscTestnet.id]: "0xbFA2ACd33ED6EEc0ed3Cc06bF1ac38d22b36B9e9",
+  //     [optimismSepolia.id]: "0x8aF4204e30565DF93352fE8E1De78925F6664dA7",
+  //     [polygonAmoy.id]: "0xcab0EF91Bee323d1A617c0a027eE753aFd6997E4",
+  //     [sepolia.id]: "0xFd57b4ddBf88a4e07fF4e34C487b99af2Fe82a05",
+  //   },
+  //   decimals: 18,
+  //   logoURL: "/images/eth.avif",
+  //   tags: ["chainlink", "default"],
+  // },
+  // {
+  //   symbol: "CCIP-LnM",
+  //   address: {
+  //     [arbitrumSepolia.id]: "0x139E99f0ab4084E14e6bb7DacA289a91a2d92927",
+  //     [avalancheFuji.id]: "0x70F5c5C40b873EA597776DA2C21929A8282A3b35",
+  //     [baseSepolia.id]: "0xA98FA8A008371b9408195e52734b1768c0d1Cb5c",
+  //     [bscTestnet.id]: "0x79a4Fc27f69323660f5Bfc12dEe21c3cC14f5901",
+  //     [optimismSepolia.id]: "0x044a6B4b561af69D2319A2f4be5Ec327a6975D0a",
+  //     [polygonAmoy.id]: "0x3d357fb52253e86c8Ee0f80F5FfE438fD9503FF2",
+  //     [sepolia.id]: "0x466D489b6d36E7E3b824ef491C225F5830E81cC1",
+  //   },
+  //   decimals: 18,
+  //   logoURL: "/images/eth.avif",
+  //   tags: ["chainlink", "default"],
+  // },
+  // {
+  //   symbol: "GHO",
+  //   address: {
+  //     [arbitrumSepolia.id]: "0xb13Cfa6f8B2Eed2C37fB00fF0c1A59807C585810",
+  //     [avalancheFuji.id]: "0x9c04928Cc678776eC1C1C0E46ecC03a5F47A7723",
+  //     [baseSepolia.id]: "0x7CFa3f3d1cded0Da930881c609D4Dbf0012c14Bb",
+  //     [bscTestnet.id]: undefined,
+  //     [optimismSepolia.id]: undefined,
+  //     [polygonAmoy.id]: undefined,
+  //     [sepolia.id]: "0xc4bF5CbDaBE595361438F8c6a187bDc330539c60",
+  //   },
+  //   decimals: 18,
+  //   logoURL: "/images/gho.avif",
+  //   tags: ["stablecoin", "default"],
+  // },
   {
     symbol: "USDC",
     address: {
@@ -156,34 +156,34 @@ const tokensList: Token[] = [
 ];
 
 const chains = [
-  {
-    chain: arbitrumSepolia,
-    logoURL: "/svg/arbitrum.svg",
-  },
-  {
-    chain: avalancheFuji,
-    logoURL: "/svg/avalanche.svg",
-  },
-  {
-    chain: baseSepolia,
-    logoURL: "/svg/base.svg",
-  },
-  {
-    chain: bscTestnet,
-    logoURL: "/svg/bsc.svg"
-  },
+  // {
+  //   chain: arbitrumSepolia,
+  //   logoURL: "/svg/arbitrum.svg",
+  // },
+  // {
+  //   chain: avalancheFuji,
+  //   logoURL: "/svg/avalanche.svg",
+  // },
+  // {
+  //   chain: baseSepolia,
+  //   logoURL: "/svg/base.svg",
+  // },
+  // {
+  //   chain: bscTestnet,
+  //   logoURL: "/svg/bsc.svg"
+  // },
   {
     chain: sepolia,
     logoURL: "/svg/ethereum.svg"
   },
-  {
-    chain: optimismSepolia,
-    logoURL: "/svg/optimism.svg"
-  },
-  {
-    chain: polygonAmoy,
-    logoURL: "/svg/polygon.svg"
-  },
+  // {
+  //   chain: optimismSepolia,
+  //   logoURL: "/svg/optimism.svg"
+  // },
+  // {
+  //   chain: polygonAmoy,
+  //   logoURL: "/svg/polygon.svg"
+  // },
   {
     chain: seiTestnet,
     logoURL: "/svg/sei.svg"
@@ -212,7 +212,7 @@ const routerAddresses: AddressMap = {
   [seiTestnet.id]: "0x59F5222c5d77f8D3F56e34Ff7E75A05d2cF3a98A",
 };
 
-const chainSelectors = {
+export const chainSelectors: Record<number, string> = {
   [arbitrumSepolia.id]: "3478487238524512106",
   [avalancheFuji.id]: "14767482510784806043",
   [baseSepolia.id]: "10344971235874465080",
