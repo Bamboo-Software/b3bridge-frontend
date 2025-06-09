@@ -7,6 +7,7 @@ import img from "next/image";
 import LoadingScreen from "@/components/LoadingScreen";
 import CanvasScene from "@/components/webgl/Canvas/scene";
 import { usePathname } from "next/navigation";
+import { manrope } from "@/assests/fonts";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -44,7 +45,7 @@ export default function AppLayout({ children }: LayoutProps) {
 
 
   return (
-    <div className="relative w-full h-screen overflow-hidden flex flex-col items-center justify-center">
+    <div className={`relative w-full h-screen overflow-hidden flex flex-col items-center justify-center font-manrope`}  >
       {/* Custom cursor effect */}
       <motion.div
         className={`magic-cursor ${isPointerDown ? "active" : ""}`}

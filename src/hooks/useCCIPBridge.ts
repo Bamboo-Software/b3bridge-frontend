@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
-import { useWriteContract, useTransaction, useSwitchChain, useBalance, useReadContract } from "wagmi";
+import { useWriteContract, useTransaction, useSwitchChain, useBalance, useReadContract, useWalletClient } from "wagmi";
 import { parseEther, parseUnits, encodeAbiParameters, formatEther, formatUnits, decodeErrorResult } from "viem";
 import { erc20Abi } from "viem";
 import { ethers, hexlify } from "ethers";
-import { networkConfig, SEPOLIA_BRIDGE_ABI, Token, walletClient } from "@/configs/networkConfig";
+import { networkConfig, SEPOLIA_BRIDGE_ABI, Token } from "@/configs/networkConfig";
 import { useWallet } from "./useWallet";
 import { getBytes, getAddress } from "ethers";
 import { waitForTransactionReceipt, writeContract } from "viem/actions";
+import { getBridgeAddress } from "@/utils";
 
 export const ERC20_ABI = [
   {
@@ -59,8 +60,9 @@ export const ERC20_ABI = [
   },
 ];
 
-export function useBridge() {
+export function useCCIPBridge() {
   const [isBridging, setIsBridging] = useState(false);
+  const { data: walletClient } = useWalletClient()
   const [error, setError] = useState<string | null>(null);
   const [nativeLockHash, setNativeLockHash] = useState<`0x${string}` | undefined>();
   const [erc20LockHash, setErc20LockHash] = useState<`0x${string}` | undefined>();
@@ -70,14 +72,14 @@ export function useBridge() {
   const [contractAddress, setContractAddress] = useState<`0x${string}` | undefined>();
   const [selectedTokenConfig, setSelectedTokenConfig] = useState<Token | undefined>();
   const [fromChainId, setFromChainId] = useState<number | undefined>();
+  const smETH = getBridgeAddress("ethereum");// Bridge smartcontract
+  const smSEI = getBridgeAddress("sei");// destination wallet nếu là sei thì địa chỉ ví keplr
   // const testFromChainId = 11155111;
   // const testToChainId = 1328;
-  const testDestChainSelector = 1216300075444106652;
-  const smETH = "0x740edCEcACf42130f3f72e9ae86202b05D725adE";// Bridge smartcontract
+  // const testDestChainSelector = 1216300075444106652;
   // const testSender = "0x308B995e0b6C43CF00b65192f76AFa0E292B42b1";  // dia chi vi gui
-  const smSEI = "0xAb2A4D46982E2a511443324368A0777C7f41faF6";// destination wallet nếu là sei thì địa chỉ ví keplr
   // const walletSEI = "0x8d85d2ffc10cc36B499F1D3021D4e19D23A6de3e";// destination wallet nếu là sei thì địa chỉ ví keplr
-  const testTokenAddress = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";// USDC token address
+  // const testTokenAddress = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";// USDC token address
   // const testAmount = "0.01";
 
   // Chỉ gọi useBalance khi fromChainId tồn tại
@@ -95,7 +97,7 @@ export function useBridge() {
         ? (selectedTokenConfig.address[fromChainId] as `0x${string}`)
         : undefined,
   });
-  // Chỉ query allowance khi có cả token và contract address
+  console.log("🚀 ~ useCCIPBridge ~ address:", address)
   const { data: allowance } = useReadContract(
     tokenAddress && contractAddress
       ? {
@@ -137,12 +139,12 @@ export function useBridge() {
 } | undefined,
     tokenAddress: string,
     receiver: string,
+    toChainSelector: string,
     options?: {
       isOFT?: boolean;
     }
   ) => {
-    console.log("🚀 ~ useBridge ~ receiver:", receiver)
-    console.log("🚀 ~ useBridge ~ balance:", balance)
+
     if (!wallets[fromChainId]) {
       setError("Vui lòng kết nối ví trước");
       return;
@@ -174,7 +176,7 @@ export function useBridge() {
         throw new Error("Cấu hình chain không hợp lệ");
       }
 
-      const destChainSelector = testDestChainSelector;
+      const destChainSelector = toChainSelector;
 
       if (!smETH || !smETH.match(/^0x[a-fA-F0-9]{40}$/)) {
         throw new Error(`Địa chỉ hợp đồng sender không hợp lệ cho chain ${fromChainId}`);
@@ -184,13 +186,13 @@ export function useBridge() {
       }
 
       setContractAddress(smETH as `0x${string}`);
-      setTokenAddress(testTokenAddress as `0x${string}`);
+      setTokenAddress(tokenAddress as `0x${string}`);
 
       // Get token config
-      const tokenConfig = testTokenAddress
-        ? networkConfig.tokensList.find((t) => Object.values(t.address).includes(testTokenAddress as `0x${string}`))
+      const tokenConfig = tokenAddress
+        ? networkConfig.tokensList.find((t) => Object.values(t.address).includes(tokenAddress as `0x${string}`))
         : networkConfig.tokensList.find((t) => t.symbol === "ETH");
-      if (!tokenConfig && testTokenAddress) {
+      if (!tokenConfig && tokenAddress) {
         throw new Error("Cấu hình token không hợp lệ");
       }
       setSelectedTokenConfig(tokenConfig);
@@ -213,7 +215,7 @@ export function useBridge() {
         encodedReceiverAddress = encodeAbiParameters([{ type: "address" }], [receiver as `0x${string}`]);
       }
       
-      if (!testTokenAddress) {
+      if (!tokenAddress) {
         const amountInWei = parseEther(amount);
         if (!balance || balance?.value < amountInWei) {
           throw new Error(`Số dư ETH không đủ. Yêu cầu: ${formatEther(amountInWei)} ETH`);
@@ -231,8 +233,7 @@ export function useBridge() {
         setNativeLockHash(result);
       } else if (options?.isOFT) {
         const amountInUnits = parseUnits(amount, tokenConfig?.decimals || 18);
-          console.log("🚀 ~ useBridge ~ balance:", balance)
-        console.log("🚀 ~ useBridge ~ amountInUnits:", amountInUnits)
+
         if (!balance || balance?.value < amountInUnits) {
           throw new Error(`Số dư ${tokenConfig?.symbol} không đủ. Yêu cầu: ${amount} ${tokenConfig?.symbol}`);
         }
@@ -254,8 +255,7 @@ export function useBridge() {
         setErc20LockHash(result);
       } else {
         const amountInUnits = parseUnits(amount, tokenConfig?.decimals || 18);
-        console.log("🚀 ~ useBridge ~ balance:", balance)
-        console.log("🚀 ~ useBridge ~ amountInUnits:", amountInUnits)
+
         if (!balance || balance?.value < amountInUnits) {
           throw new Error(`Số dư ${tokenConfig?.symbol} không đủ. Yêu cầu: ${amount} ${tokenConfig?.symbol}`);
         }
@@ -273,38 +273,40 @@ export function useBridge() {
               smETH as `0x${string}`, // contract cần được cấp quyền lock token
               
               amountInUnits // số lượng cần approve: 0.01 USDC = 10,000
-            
+              
             ],
           });
-          await waitForTransactionReceipt(walletClient, { hash: approveTx });
+          await waitForTransactionReceipt(walletClient!, { hash: approveTx })
           console.log("Phê duyệt thành công, allowance được đặt thành:", formatUnits(amountInUnits, tokenConfig?.decimals || 18));
         }
-        
-        console.log(`🚀 ~ useBridge ~ {
+        console.log(`🚀 ~ useCCIPBridge ~ {
           address: smETH as ,
           abi: SEPOLIA_BRIDGE_ABI.abi,
           functionName: "lockERC20",
           args: [
             tokenAddress as ,
-            amountInUnits,
             BigInt(destChainSelector),
-            encodedDestAddress,
-            encodedReceiverAddress,
+            smSEI, 
+            // encodedReceiverAddress,
+            receiver,
+            amountInUnits,
+            0,
           ],
-          value: parseEther("0.02"),
+          value: parseEther("0.01"),
         }:`, {
           address: smETH as `0x${string}`,
           abi: SEPOLIA_BRIDGE_ABI.abi,
           functionName: "lockERC20",
           args: [
             tokenAddress as `0x${string}`,
-            BigInt("1216300075444106652"),
+            BigInt(destChainSelector),
             smSEI, 
-            receiver, 
+            // encodedReceiverAddress,
+            receiver,
             amountInUnits,
             0,
           ],
-          value: parseEther("0.02"),
+          value: parseEther("0.01"),
         })
        const result = await writeERC20({
       address: smETH as `0x${string}`,
@@ -312,9 +314,9 @@ export function useBridge() {
       functionName: "lockERC20",
       args: [
         tokenAddress as `0x${string}`,
-        BigInt("1216300075444106652"),
+        BigInt(destChainSelector),
         smSEI, 
-        // encodedReceiverAddress, 
+        // encodedReceiverAddress,
         receiver,
         amountInUnits,
         0,
