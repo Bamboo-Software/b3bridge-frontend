@@ -7,7 +7,7 @@ import {
   useSwitchChain,
 } from "wagmi";
 import { injected } from "wagmi/connectors";
-import { networkConfig } from "@/configs/networkConfig";
+import { networkConfig, seiTestnet } from "@/configs/networkConfig";
 
 interface WalletInfo {
   address: `0x${string}`;
@@ -25,19 +25,7 @@ export function useWallet() {
   const { disconnect } = useDisconnect();
   const { switchChain } = useSwitchChain();
   const [wallets, setWallets] = useState<WalletData>({});
-const [keplrAddress, setKeplrAddress] = useState<string | null>(null);
-  // Khi kết nối thành công qua wagmi thì lưu vào state
-  // useEffect(() => {
-  //   if (isConnected && address && currentChainId) {
-  //     setWallets((prev) => ({
-  //       ...prev,
-  //       [currentChainId]: {
-  //         address: address as `0x${string}`,
-  //         source: "wagmi",
-  //       },
-  //     }));
-  //   }
-  // }, [address, currentChainId, isConnected]);
+
 useEffect(() => {
   setWallets(prev => {
     let newWallets = { ...prev };
@@ -52,20 +40,36 @@ useEffect(() => {
       }
     }
 
-    if (keplrAddress) {
-      const existingKeplr = newWallets[1328];
-      if (!(existingKeplr?.address === keplrAddress && existingKeplr.source === "keplr")) {
-        newWallets[1328] = {
-          address: keplrAddress as `0x${string}`,
-          source: "keplr",
-        };
-      }
-    }
-
     return newWallets;
   });
-}, [address, currentChainId, isConnected, keplrAddress]);
+}, [address, currentChainId, isConnected]);
 
+const connectKeplrEVM = async (chainId: number) => {
+  try {
+    if (!window.keplr) {
+      throw new Error("Keplr extension not found");
+    }
+
+    const chain = networkConfig.chains.find((c) => c.chain.id === chainId);
+    if (!chain) throw new Error("Invalid chain ID");
+
+    await window.keplr.enable(seiTestnet.id);
+
+    const ethAddress = await window.keplr.getKey(seiTestnet.id).then((res: any) => res.ethAddress);
+    if (!ethAddress) throw new Error("Failed to get ethAddress from Keplr");
+
+    setWallets((prev) => ({
+      ...prev,
+      [chainId]: {
+        address: ethAddress as `0x${string}`,
+        source: "keplr",
+      },
+    }));
+  } catch (error) {
+    console.error("Failed to connect Keplr EVM:", error);
+    throw error;
+  }
+};
 
 
   const connectWallet = async (chainId: number) => {
@@ -110,7 +114,7 @@ useEffect(() => {
   };
 
   return {
-    wallets,             
+    wallets,
     status,
     connect,
     connectors,
@@ -121,7 +125,7 @@ useEffect(() => {
     getCurrentChain,
     setWalletManually,
     setWallets,
-    setKeplrAddress,
-    keplrAddress
+    connectKeplrEVM,
+    // keplrAddress
   };
 }

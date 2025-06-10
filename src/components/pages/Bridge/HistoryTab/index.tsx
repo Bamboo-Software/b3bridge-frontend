@@ -7,7 +7,7 @@ type Props = {}
 
 const HistoryTab = (props: Props) => {
   return (
-    <div><TabsContent value="history" className="pt-6 space-y-4">
+    <div><TabsContent value="history" className="pt-6 space-y-4 ">
             <div className="text-lg text-gray-400 text-center mb-4">Recent transaction history</div>
 
             <TransactionItem fromChain="Ethereum" toChain="Polygon" amount="0.5 ETH" status="completed" timestamp="2 hours ago" />

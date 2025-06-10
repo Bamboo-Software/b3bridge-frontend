@@ -86,9 +86,9 @@ const ChainSelector = ({
     <div className="space-y-2 font-manrope">
       <div className="flex justify-between items-center">
         <label className="text-lg font-semibold text-gray-200">{label}</label>
-        {walletInfo?.address && (
+        {label !== "To" && walletInfo?.address && (
           <span className="text-gray-400 font-bold">
-            {`${walletInfo?.address.slice(0, 6)}...${walletInfo?.address.slice(-4)}`}
+            {`${walletInfo.address.slice(0, 6)}...${walletInfo.address.slice(-4)}`}
           </span>
         )}
       </div>
@@ -159,8 +159,28 @@ const BridgeTab = ({
   setReceiverAddress,
 }: PropBridge) => {
   const { wallets } = useWallet();
-  const { openWalletModal } = useModalStore();
+  const { openWalletModal, setFromChainIdStore } = useModalStore();
   const isDisabled = isBridging || isNativeLockPending || isERC20LockPending;
+
+  // Initialize countdown timer (17 minutes = 1020 seconds)
+  const [countdown, setCountdown] = useState(1020);
+
+  // Countdown effect
+  useEffect(() => {
+    if (isDisabled && countdown > 0) {
+      const timer = setInterval(() => {
+        setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [isDisabled, countdown]);
+
+  // Format countdown time
+  const formatCountdown = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes}:${secs.toString().padStart(2, "0")}`;
+  };
 
   // Initialize react-hook-form
   const {
@@ -203,13 +223,12 @@ const BridgeTab = ({
     setAmount(formValues.amount);
     setSelectedToken(formValues.selectedToken);
     setReceiverAddress(formValues.receiverAddress);
-  }, [formValues, setFromChainId, setToChainId, setAmount, setSelectedToken, setReceiverAddress]);
+  }, [formValues, setFromChainId, setFromChainIdStore, setToChainId, setAmount, setSelectedToken, setReceiverAddress]);
 
   // Handle form submission for bridging
   const onSubmit = async (data: FormData) => {
     if (!formValues.fromChainId || !wallets[Number(formValues.fromChainId)]) return;
 
-    // Proceed with bridging if form is valid
     if (isValid && formValues.toChainId && formValues.amount && formValues.receiverAddress) {
       const tokenAddress =
         data.selectedToken !== "ETH" && selectedTokenConfig
@@ -226,13 +245,6 @@ const BridgeTab = ({
           receiverAddress: data.receiverAddress as `0x${string}`,
           toChainSelector,
         });
-        //  reset({
-        // fromChainId: "",
-        // toChainId: "",
-        // amount: "",
-        // selectedToken: "",
-        // receiverAddress: "",
-      // });
       } catch (err) {
         console.error("Bridge failed:", err);
       }
@@ -251,20 +263,23 @@ const BridgeTab = ({
 
   // Determine if the submit button is enabled
   const isButtonEnabled = () => {
-    if (!formValues.fromChainId) return false; // No source chain selected
-    if (!wallets[Number(formValues.fromChainId)]) return true; // Enable for wallet connection
-    return !isDisabled; // Enable for bridging if wallet is connected and no pending transactions
+    if (!formValues.fromChainId) return false;
+    if (!wallets[Number(formValues.fromChainId)]) return true;
+    return !isDisabled;
   };
-
+  
   // Determine button text based on state
   const getButtonText = () => {
+    if (isDisabled) return "Bridging...";
     if (!formValues.fromChainId) return "Select Source Chain";
     if (!wallets[Number(formValues.fromChainId)]) return "Connect Wallet";
     return "Bridge";
   };
+    console.log("🚀 ~ balance:", balance)
+  console.log("🚀 ~ formatLength(formatBalance(balance.value, selectedTokenConfig?.decimals || 18)):", formatLength(formatBalance(balance?.value, selectedTokenConfig?.decimals || 18)))
 
   return (
-    <div className="font-manrope h-[calc(75vh-100px)] overflow-y-auto px-4 custom-scrollbar">
+    <div className="font-manrope">
       <TabsContent value="bridge" className="space-y-6">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* From Chain Selector */}
@@ -418,13 +433,6 @@ const BridgeTab = ({
             )}
           />
 
-          {/* Display the selected chain selector (optional) */}
-          {/* {toChainSelector && (
-            <div className="text-gray-400 font-medium">
-              Selected Chain Selector: {toChainSelector}
-            </div>
-          )} */}
-
           {/* Receiver Address Input */}
           <Controller
             name="receiverAddress"
@@ -458,8 +466,8 @@ const BridgeTab = ({
             whileHover={{ scale: 1.02 }}
           >
             {[
-              { label: "Transaction Fee", value: "0.002 ETH" },
-              { label: "Estimated Time", value: "~15 minutes" },
+              { label: "Transaction Fee", value: isDisabled ? `Bridging... (${formatCountdown(countdown)})` : "0.002 ETH" },
+              { label: "Estimated Time", value: isDisabled ? `Bridging... (${formatCountdown(countdown)})` : "~15 minutes" },
               {
                 label: "Amount Received",
                 value: formValues.amount ? `${formValues.amount} ${selectedToken}` : `0.0 ${selectedToken}`,
@@ -496,5 +504,6 @@ const BridgeTab = ({
     </div>
   );
 };
+
 
 export default BridgeTab;

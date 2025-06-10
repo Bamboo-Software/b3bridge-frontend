@@ -13,6 +13,7 @@ import {
   polygonAmoy,
 } from 'wagmi/chains'
 import { metaMask, walletConnect } from 'wagmi/connectors';
+import { seiTestnet } from './networkConfig';
 export const config = createConfig({
   chains: [
     mainnet,
@@ -24,6 +25,7 @@ export const config = createConfig({
     bscTestnet,
     optimismSepolia,
     polygonAmoy,
+    seiTestnet
   ],
   connectors: [metaMask(),walletConnect({projectId:process.env.NEXT_PUBLIC_PROJECT_ID as string})
   ],
@@ -37,5 +39,6 @@ export const config = createConfig({
     [bscTestnet.id]: http(),
     [optimismSepolia.id]: http(),
     [polygonAmoy.id]: http(),
+    [seiTestnet.id]: http(seiTestnet.rpcUrls.default.http[0])
   }
 })
