@@ -1,17 +1,8 @@
 import { Address } from "viem";
 import { arbitrumSepolia, avalancheFuji, baseSepolia, bscTestnet, Chain, optimismSepolia, polygonAmoy, sepolia } from "viem/chains";
 import NativeBridgeABI from "@/constants/contracts/ccip-eth-sepolia.json";
-import { createWalletClient, http } from 'viem'
-import { privateKeyToAccount } from "viem/accounts";
-// const PRIVATE_KEY = "0x55f1211cfef4d2cdc2651796974fbd5ad87892f629f057a569cf87470cbee368"
-// const account = privateKeyToAccount(PRIVATE_KEY)
-// export const walletClient = createWalletClient({
-//   account,
-//   chain: sepolia,
-//   transport: http('https://sepolia.infura.io/v3/ebf567dc059e4119b072df0074122110'),
-// })
-// Thêm Sei network config
-const seiTestnet = {
+import B3BridgeDest from "@/constants/contracts/ccip-sei-testnet.json";
+export const seiTestnet = {
   id: 1328,
   name: 'Sei Testnet',
   network: 'sei-testnet',
@@ -20,17 +11,11 @@ const seiTestnet = {
     name: 'Sei',
     symbol: 'SEI',
   },
-  // rpcUrls: {
-  //   default: { http: ['https://rpc-testnet.sei.io'] },
-  //   public: { http: ['https://rpc-testnet.sei.io'] },
-  // },
+
   rpcUrls: {
   default: { http: ['https://evm-rpc.atlantic-2.seinetwork.io'] },
   public: { http: ['https://evm-rpc.atlantic-2.seinetwork.io'] },
 },
-  // blockExplorers: {
-  //   default: { name: 'Sei Explorer', url: 'https://testnet.sei.io/explorer' },
-  // },
   blockExplorers: {
   default: { name: 'Sei EVM Explorer', url: 'https://sei.explorers.guru' },
 },
@@ -42,6 +27,7 @@ export declare type Token = {
   symbol: string;
   /** The token's address, represented as a mapping by chainId */
   address: AddressMap;
+  wrappedFrom?: string;
   /** URL of the token's logo that will be shown in the UI */
   logoURL: string;
   /** A list of meta information tags for organizing and sorting */
@@ -93,51 +79,6 @@ const tokensList: Token[] = [
     logoURL: "/images/eth.avif",
     tags: ["native", "default"],
   },
-  // {
-  //   symbol: "CCIP-BnM",
-  //   address: {
-  //     [arbitrumSepolia.id]: "0xA8C0c11bf64AF62CDCA6f93D3769B88BdD7cb93D",
-  //     [avalancheFuji.id]: "0xD21341536c5cF5EB1bcb58f6723cE26e8D8E90e4",
-  //     [baseSepolia.id]: "0x88A2d74F47a237a62e7A51cdDa67270CE381555e",
-  //     [bscTestnet.id]: "0xbFA2ACd33ED6EEc0ed3Cc06bF1ac38d22b36B9e9",
-  //     [optimismSepolia.id]: "0x8aF4204e30565DF93352fE8E1De78925F6664dA7",
-  //     [polygonAmoy.id]: "0xcab0EF91Bee323d1A617c0a027eE753aFd6997E4",
-  //     [sepolia.id]: "0xFd57b4ddBf88a4e07fF4e34C487b99af2Fe82a05",
-  //   },
-  //   decimals: 18,
-  //   logoURL: "/images/eth.avif",
-  //   tags: ["chainlink", "default"],
-  // },
-  // {
-  //   symbol: "CCIP-LnM",
-  //   address: {
-  //     [arbitrumSepolia.id]: "0x139E99f0ab4084E14e6bb7DacA289a91a2d92927",
-  //     [avalancheFuji.id]: "0x70F5c5C40b873EA597776DA2C21929A8282A3b35",
-  //     [baseSepolia.id]: "0xA98FA8A008371b9408195e52734b1768c0d1Cb5c",
-  //     [bscTestnet.id]: "0x79a4Fc27f69323660f5Bfc12dEe21c3cC14f5901",
-  //     [optimismSepolia.id]: "0x044a6B4b561af69D2319A2f4be5Ec327a6975D0a",
-  //     [polygonAmoy.id]: "0x3d357fb52253e86c8Ee0f80F5FfE438fD9503FF2",
-  //     [sepolia.id]: "0x466D489b6d36E7E3b824ef491C225F5830E81cC1",
-  //   },
-  //   decimals: 18,
-  //   logoURL: "/images/eth.avif",
-  //   tags: ["chainlink", "default"],
-  // },
-  // {
-  //   symbol: "GHO",
-  //   address: {
-  //     [arbitrumSepolia.id]: "0xb13Cfa6f8B2Eed2C37fB00fF0c1A59807C585810",
-  //     [avalancheFuji.id]: "0x9c04928Cc678776eC1C1C0E46ecC03a5F47A7723",
-  //     [baseSepolia.id]: "0x7CFa3f3d1cded0Da930881c609D4Dbf0012c14Bb",
-  //     [bscTestnet.id]: undefined,
-  //     [optimismSepolia.id]: undefined,
-  //     [polygonAmoy.id]: undefined,
-  //     [sepolia.id]: "0xc4bF5CbDaBE595361438F8c6a187bDc330539c60",
-  //   },
-  //   decimals: 18,
-  //   logoURL: "/images/gho.avif",
-  //   tags: ["stablecoin", "default"],
-  // },
   {
     symbol: "USDC",
     address: {
@@ -153,6 +94,22 @@ const tokensList: Token[] = [
     logoURL: "/images/usdc.avif",
     tags: ["stablecoin", "default"],
   },
+  {
+    symbol: "wUSDC",
+    wrappedFrom: "USDC",
+    address: {
+    [arbitrumSepolia.id]: undefined,
+    [avalancheFuji.id]: undefined,
+    [baseSepolia.id]: undefined,
+    [bscTestnet.id]: undefined,
+    [optimismSepolia.id]: undefined,
+    [polygonAmoy.id]: undefined,
+    [seiTestnet.id]: "0x55aAFA704BD5ab1E50b3CeB33f7e9457Cb41A955",
+  },
+  decimals: 6,
+  logoURL: "/images/usdc.avif",
+  tags: ["wrapped", "stablecoin"],
+  }
 ];
 
 const chains = [
@@ -257,3 +214,4 @@ export const networkConfig: NetworkConfig = {
 
 // Import the ABI
 export const SEPOLIA_BRIDGE_ABI = NativeBridgeABI;
+export const SEI_BRIDGE_ABI = B3BridgeDest;

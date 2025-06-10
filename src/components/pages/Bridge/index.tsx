@@ -28,14 +28,13 @@ interface Token {
 export default function BridgePage() {
   const { wallets, connectWallet } = useWallet();
   const { isBridging, isNativeLockPending, isERC20LockPending, error, handleBridge } = useCCIPBridge();
-  const { openWalletModal } = useModalStore();
   const [fromChainId, setFromChainId] = useState<number | undefined>(undefined);
   const [toChainId, setToChainId] = useState<number | undefined>(undefined);
   const [amount, setAmount] = useState("");
-  const [selectedToken, setSelectedToken] = useState<string>(networkConfig.tokensList[0]?.symbol || "ETH");
+  const [selectedToken, setSelectedToken] = useState<string>("");
   const [receiverAddress, setReceiverAddress] = useState<string>("");
   const [selectedTab, setSelectedTab] = useState("bridge");
-
+  const { setFromChainIdStore } = useModalStore();
   const selectedTokenConfig = useMemo(
     () => networkConfig.tokensList.find((t) => t.symbol === selectedToken),
     [selectedToken]
@@ -59,12 +58,16 @@ export default function BridgePage() {
         ? (selectedTokenConfig.address[fromChainId] as `0x${string}`)
         : undefined,
   });
+ 
 
   useEffect(() => {
     if (address && fromChainId && selectedTokenConfig) {
+
+      setFromChainIdStore(fromChainId)
       refetchBalance();
     }
-  }, [address, fromChainId, selectedToken, selectedTokenConfig, refetchBalance]);
+  }, [address, fromChainId, selectedToken,setFromChainIdStore, selectedTokenConfig, refetchBalance]);
+
 
   const handleBridgeClick = async (data: {
     fromChainId: number;
@@ -80,13 +83,7 @@ export default function BridgePage() {
     value: bigint;
 } |undefined
   }) => {
-    console.log("🚀 ~ BridgePage ~  data.fromChainId",
-    data.fromChainId,
-    data.toChainId,
-      data.amount,
-    balance,
-    data.tokenAddress,
-    data.receiverAddress)
+    console.log("🚀 ~ BridgePage ~ fromChainId:", fromChainId)
     try {
        await handleBridge(
         data.fromChainId,
@@ -115,7 +112,7 @@ export default function BridgePage() {
         transition={{ duration: 0.5 }}
         className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl rounded-2xl border border-green-500/40 shadow-2xl p-6"
       >
-        <Tabs defaultValue="bridge" onValueChange={setSelectedTab}>
+        <Tabs defaultValue={selectedTab} onValueChange={setSelectedTab}>
           <TabsList className="grid w-full grid-cols-2 bg-gray-800/60 border border-green-500/40 rounded-full p-1 h-12 mb-8">
             {bridgeTabs.map((tab) => (
               <TabsTrigger
@@ -127,6 +124,7 @@ export default function BridgePage() {
               </TabsTrigger>
             ))}
           </TabsList>
+          <div className="font-manrope h-[calc(75vh-100px)] overflow-y-auto px-4 custom-scrollbar">
           <BridgeTab
             setFromChainId={setFromChainId}
             setToChainId={setToChainId}
@@ -151,6 +149,8 @@ export default function BridgePage() {
             setReceiverAddress={setReceiverAddress}
           />
           <HistoryTab />
+
+          </div>
         </Tabs>
       </motion.div>
     </div>

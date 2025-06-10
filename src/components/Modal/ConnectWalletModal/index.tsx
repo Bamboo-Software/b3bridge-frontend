@@ -34,75 +34,39 @@ const FIXED_WALLETS = [
     name: "Wallet Connect",
     icon: "/images/walletconnect-logo.png",
   },
-//   {
-//   id: "metamask-evm-sei",
-//   name: "Keplr",
-//   icon: "/svg/keplr-logo.svg",
-// },
+  // {
+  //   id: "sei-testnet",
+  //   name: "MetaMask (Sei Testnet)",
+  //   icon: "/svg/metamask-icon.svg",
+  // },
+  // {
+  //   id: "app.phantom",
+  //   name: "Phantom",
+  //   icon: "/svg/phantom-wallet.svg",
+  // },
+  // {
+  //   id: "com.okex.wallet",
+  //   name: "OKX Wallet",
+  //   icon: "/svg/okx-logo.svg",
+  // },
+  // {
+  // {
+  //   id: "keplr-sei",
+  //   name: "Keplr (Sei EVM)",
+  //   icon: "/svg/keplr-icon.svg",
+  // },
 ];
 
 export const WalletConnectModal = () => {
   const { isOpen, closeWalletModal } = useModalStore();
-  const { connectors, connect, status,setWallets,setWalletManually } = useWallet();
+  const { connectors, connect, status,connectKeplrEVM } = useWallet();
   const [connectingId, setConnectingId] = useState<string | null>(null);
- const { wallets } = useWallet();
-  const handleConnect =async  (walletId: string) => {
-  //  if (walletId === "keplr") {
+ const { wallets,connectWallet } = useWallet();
+  const handleConnect = async (walletId: string) => {
+  //    if (walletId === "keplr-sei") {
   //   try {
   //     setConnectingId(walletId);
-  //     if (!window.keplr) {
-  //       alert("Keplr extension not found!");
-  //       return;
-  //     }
-
-  //     // Gợi ý chain Sei Testnet Cosmos (atlantic-2)
-  //     await window.keplr.experimentalSuggestChain({
-  //       chainId: "atlantic-2",
-  //       chainName: "Sei Testnet (Cosmos)",
-  //       rpc: "https://rpc.atlantic-2.seinetwork.io",
-  //       rest: "https://lcd.atlantic-2.seinetwork.io",
-  //       bip44: {
-  //         coinType: 118,
-  //       },
-  //       bech32Config: {
-  //         bech32PrefixAccAddr: "sei",
-  //         bech32PrefixAccPub: "seipub",
-  //         bech32PrefixValAddr: "seivaloper",
-  //         bech32PrefixValPub: "seivaloperpub",
-  //         bech32PrefixConsAddr: "seivalcons",
-  //         bech32PrefixConsPub: "seivalconspub",
-  //       },
-  //       currencies: [
-  //         {
-  //           coinDenom: "SEI",
-  //           coinMinimalDenom: "usei",
-  //           coinDecimals: 6,
-  //           coinGeckoId: "sei-network",
-  //         },
-  //       ],
-  //       feeCurrencies: [
-  //         {
-  //           coinDenom: "SEI",
-  //           coinMinimalDenom: "usei",
-  //           coinDecimals: 6,
-  //           coinGeckoId: "sei-network",
-  //         },
-  //       ],
-  //       stakeCurrency: {
-  //         coinDenom: "SEI",
-  //         coinMinimalDenom: "usei",
-  //         coinDecimals: 6,
-  //         coinGeckoId: "sei-network",
-  //       },
-  //       features: ["stargate", "ibc-transfer"],
-  //     });
-
-  //     // Kích hoạt chain và lấy tài khoản
-  //     await window.keplr.enable("atlantic-2");
-  //     const offlineSigner = window.getOfflineSigner("atlantic-2");
-  //     const accounts = await offlineSigner.getAccounts();
-
-  //     // TODO: Lưu account vào global store nếu cần
+  //     await connectKeplrEVM(1328);
   //     closeWalletModal();
   //   } catch (err) {
   //     console.error("Keplr connection failed:", err);
@@ -110,40 +74,11 @@ export const WalletConnectModal = () => {
   //     setConnectingId(null);
   //   }
   //   return;
-  // }else if (walletId === "metamask-evm-sei") {
+  // }
+  // if (walletId === "sei-testnet") {
   //   try {
   //     setConnectingId(walletId);
-  //     if (!window.ethereum) {
-  //       alert("MetaMask not found!");
-  //       return;
-  //     }
-
-  //     await window.ethereum.request({
-  //       method: "wallet_addEthereumChain",
-  //       params: [
-  //         {
-  //           chainId: "0x128C8",
-  //           chainName: "Sei Testnet (EVM)",
-  //           rpcUrls: ["https://evm-rpc.atlantic-2.seinetwork.io"],
-  //           nativeCurrency: {
-  //             name: "SEI",
-  //             symbol: "SEI",
-  //             decimals: 18,
-  //           },
-  //           blockExplorerUrls: ["https://sei.explorers.guru/"],
-  //         },
-  //       ],
-  //     });
-
-  //     const [account] = await window.ethereum.request({ method: "eth_requestAccounts" });
-  //     setWallets((prev:any) => ({
-  //       ...prev,
-  //       [1328]: {
-  //         address: account,
-  //         provider: window.ethereum,
-  //       },
-  //     }));
-  //     setWalletManually(1328, account, "keplr");
+  //     await connectWallet(1328);
   //     closeWalletModal();
   //   } catch (err) {
   //     console.error("MetaMask connection failed:", err);
@@ -152,15 +87,18 @@ export const WalletConnectModal = () => {
   //   }
   //   return;
   // }
-    const connector = connectors.find((c) => c.id === walletId || c.name.toLowerCase().includes(walletId.toLowerCase()));
-    if (!connector) {
-      console.warn(`Connector not found for wallet id: ${walletId}`);
-      return;
-    }
 
-    setConnectingId(connector.id);
-    connect({ connector });
-  };
+  const connector = connectors.find(
+    (c) => c.id === walletId || c.name.toLowerCase().includes(walletId.toLowerCase())
+  );
+  if (!connector) {
+    console.warn(`No connector found for wallet id: ${walletId}`);
+    return;
+  }
+
+  setConnectingId(connector.id);
+  connect({ connector });
+};
       useEffect(() => {
       if (wallets) closeWalletModal()
     },[wallets,closeWalletModal])
