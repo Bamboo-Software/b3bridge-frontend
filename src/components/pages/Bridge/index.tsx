@@ -83,7 +83,6 @@ export default function BridgePage() {
     value: bigint;
 } |undefined
   }) => {
-    console.log("🚀 ~ BridgePage ~ fromChainId:", fromChainId)
     try {
        await handleBridge(
         data.fromChainId,
