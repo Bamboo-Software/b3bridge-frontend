@@ -6,12 +6,19 @@ import {
   useDisconnect,
   useSwitchChain,
 } from "wagmi";
-import { injected } from "wagmi/connectors";
-import { networkConfig, seiTestnet } from "@/configs/networkConfig";
-
+import { networkConfig } from "@/configs/networkConfig";
+import { useModalStore } from "@/store/useModalStore";
+declare global {
+  interface Window {
+    keplr?: any;
+    phantom?: any;
+    okxwallet?: any;
+    getOfflineSigner?: any;
+  }
+}
 interface WalletInfo {
   address: `0x${string}`;
-  source: "wagmi" | "manual" | "keplr";
+  source: "wagmi" | "manual" | "keplr" | "phantom" | "okx";
 }
 
 interface WalletData {
@@ -22,72 +29,50 @@ export function useWallet() {
   const { address, isConnected } = useAccount();
   const currentChainId = useChainId();
   const { connect, status, connectors } = useConnect();
+  const {fromChainIdStore}=useModalStore()
   const { disconnect } = useDisconnect();
   const { switchChain } = useSwitchChain();
   const [wallets, setWallets] = useState<WalletData>({});
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
 
-useEffect(() => {
-  setWallets(prev => {
-    let newWallets = { ...prev };
 
-    if (isConnected && address && typeof currentChainId === "number") {
-      const existing = newWallets[currentChainId];
-      if (!(existing?.address === address && existing.source === "wagmi")) {
-        newWallets[currentChainId] = {
-          address: address as `0x${string}`,
-          source: "wagmi",
-        };
+  useEffect(() => {
+    setWallets((prev) => {
+      let newWallets = { ...prev };
+      if (isDisconnecting) {
+        return newWallets;
       }
-    }
-
-    return newWallets;
-  });
-}, [address, currentChainId, isConnected]);
-
-const connectKeplrEVM = async (chainId: number) => {
-  try {
-    if (!window.keplr) {
-      throw new Error("Keplr extension not found");
-    }
-
-    const chain = networkConfig.chains.find((c) => c.chain.id === chainId);
-    if (!chain) throw new Error("Invalid chain ID");
-
-    await window.keplr.enable(seiTestnet.id);
-
-    const ethAddress = await window.keplr.getKey(seiTestnet.id).then((res: any) => res.ethAddress);
-    if (!ethAddress) throw new Error("Failed to get ethAddress from Keplr");
-
-    setWallets((prev) => ({
-      ...prev,
-      [chainId]: {
-        address: ethAddress as `0x${string}`,
-        source: "keplr",
-      },
-    }));
-  } catch (error) {
-    console.error("Failed to connect Keplr EVM:", error);
-    throw error;
-  }
-};
-
-
-  const connectWallet = async (chainId: number) => {
-    try {
-      if (currentChainId !== chainId) {
-        await switchChain({ chainId });
+      if (isConnected && address && typeof currentChainId === "number") {
+        const existing = newWallets[currentChainId];
+        if (!(existing?.address === address && existing.source === "wagmi")) {
+          newWallets[currentChainId] = {
+            address: address as `0x${string}`,
+            source: "wagmi",
+          };
+        }
+      } else {
+        if (typeof currentChainId === "number") {
+          delete newWallets[currentChainId];
+        }
       }
-      await connect({ connector: injected() });
-    } catch (error) {
-      console.error(`Failed to connect wallet on chain ${chainId}:`, error);
-      throw error;
-    }
-  };
 
-  const disconnectWallet = async (chainId: number) => {
+      return newWallets;
+    });
+  }, [address, currentChainId, isConnected, isDisconnecting]);
+
+  const disconnectWallet = async (chainId: number, walletProvider?: WalletInfo["source"]) => {
     try {
-      if (currentChainId === chainId) {
-        await disconnect();
+      setIsDisconnecting(true);
+      if (walletProvider === "phantom" && window.phantom?.solana) {
+        await window.phantom.solana.disconnect();
+      } else if (walletProvider === "okx" && window.okxwallet) {
+        await window.okxwallet.disconnect();
+      } else if (walletProvider === "wagmi" || !walletProvider) {
+        if (currentChainId === chainId) {
+          await disconnect();
+        }
+      } else {
+        throw new Error(`Ví không được hỗ trợ: ${walletProvider}`);
       }
       setWallets((prev) => {
         const newWallets = { ...prev };
@@ -95,22 +80,31 @@ const connectKeplrEVM = async (chainId: number) => {
         return newWallets;
       });
     } catch (error) {
-      console.error(`Failed to disconnect wallet on chain ${chainId}:`, error);
+      console.error(`Lỗi khi ngắt kết nối ví trên chuỗi ${chainId}:`, error);
+
+      throw error;
+    } finally {
+      setIsDisconnecting(false);
     }
   };
 
+  // Hàm chuyển mạng
+ const switchNetWorkWallet = async (chainId: number, isFromChain: boolean) => {
+  try {
+    setIsDisconnecting(false);
+
+    if (currentChainId !== chainId && isFromChain) {
+      await switchChain({ chainId });
+    }
+  } catch (error) {
+    console.error(`Lỗi khi chuyển mạng sang chuỗi ${chainId}:`, error);
+    throw error;
+  }
+};
+
+  // Lấy thông tin chuỗi hiện tại
   const getCurrentChain = (chainId: number) => {
     return networkConfig.chains.find((c) => c.chain.id === chainId)?.chain || null;
-  };
-
-  const setWalletManually = (chainId: number, address: `0x${string}`, source: "manual" | "keplr" = "manual") => {
-    setWallets((prev) => ({
-      ...prev,
-      [chainId]: {
-        address,
-        source,
-      },
-    }));
   };
 
   return {
@@ -120,12 +114,9 @@ const connectKeplrEVM = async (chainId: number) => {
     connectors,
     currentChainId,
     isConnected,
-    connectWallet,
+    switchNetWorkWallet,
     disconnect: disconnectWallet,
     getCurrentChain,
-    setWalletManually,
     setWallets,
-    connectKeplrEVM,
-    // keplrAddress
   };
 }

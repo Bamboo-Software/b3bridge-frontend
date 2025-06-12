@@ -239,13 +239,10 @@ export function useCCIPBridge() {
           tokenConfig,
           tokenAddress,
           toChainSelector,
-          encodedDestAddress,
-          encodedReceiverAddress,
           receiver
         );
       }
     } catch (err) {
-      console.error("Bridge error:", err);
       setState((prev) => ({ ...prev, error: err instanceof Error ? err.message : "Bridge failed" }));
     } finally {
       setState((prev) => ({ ...prev, isBridging: false }));
@@ -293,8 +290,6 @@ export function useCCIPBridge() {
     tokenConfig: Token | undefined,
     tokenAddress: string | undefined,
     toChainSelector: string,
-    encodedDestAddress: string,
-    encodedReceiverAddress: string,
     receiver: string
   ): Promise<void> => {
     if (!writeContractAsync) throw new Error("Contract write not available");
@@ -304,11 +299,24 @@ export function useCCIPBridge() {
       if (!balance || balance.value < amountInWei) {
         throw new Error(`Insufficient ETH balance. Required: ${formatUnits(amountInWei, 18)} ETH`);
       }
+      console.log(`🚀 ~ useCCIPBridge ~ {
+        address: smETH as,
+        abi: SEPOLIA_BRIDGE_ABI.abi,
+        functionName: "lockTokenVL",
+        args: [BigInt(toChainSelector), encodedDestAddress, encodedReceiverAddress, amountInWei],
+        value: amountInWei,
+      }:`, {
+        address: smETH as `0x${string}`,
+        abi: SEPOLIA_BRIDGE_ABI.abi,
+        functionName: "lockTokenVL",
+        args: [smSEI, receiver],
+        value: amountInWei,
+      })
       const result = await writeContractAsync({
         address: smETH as `0x${string}`,
         abi: SEPOLIA_BRIDGE_ABI.abi,
-        functionName: "lockNative",
-        args: [BigInt(toChainSelector), encodedDestAddress, encodedReceiverAddress, amountInWei],
+        functionName: "lockTokenVL",
+        args: [smSEI, receiver],
         value: amountInWei,
       });
       setState((prev) => ({ ...prev, nativeLockHash: result }));
@@ -333,6 +341,7 @@ export function useCCIPBridge() {
     isBridging: state.isBridging,
     isNativeLockPending,
     isERC20LockPending,
+    state,
     error: state.error,
     handleBridge,
     routerAddress,
