@@ -47,7 +47,6 @@
     "zustand": "4.5.2"
   },
   "devDependencies": {
-    "@next/bundle-analyzer": "^15.3.3",
     "@types/js-cookie": "^3.0.6",
     "@types/node": "^20",
     "@types/react": "^18",
