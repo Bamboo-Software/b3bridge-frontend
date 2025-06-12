@@ -66,12 +66,6 @@ const tokensList: Token[] = [
   {
     symbol: "ETH",
     address: {
-      [arbitrumSepolia.id]: undefined,
-      [avalancheFuji.id]: undefined,
-      [baseSepolia.id]: undefined,
-      [bscTestnet.id]: undefined,
-      [optimismSepolia.id]: undefined,
-      [polygonAmoy.id]: undefined,
       [sepolia.id]: undefined,
       [seiTestnet.id]: undefined,
     },
@@ -82,12 +76,6 @@ const tokensList: Token[] = [
   {
     symbol: "USDC",
     address: {
-      [arbitrumSepolia.id]: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
-      [avalancheFuji.id]: "0x5425890298aed601595a70AB815c96711a31Bc65",
-      [baseSepolia.id]: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-      [bscTestnet.id]: undefined,
-      [optimismSepolia.id]: "0x5fd84259d66Cd46123540766Be93DFE6D43130D7",
-      [polygonAmoy.id]: "0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582",
       [sepolia.id]: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
     },
     decimals: 6,
@@ -98,17 +86,21 @@ const tokensList: Token[] = [
     symbol: "wUSDC",
     wrappedFrom: "USDC",
     address: {
-    [arbitrumSepolia.id]: undefined,
-    [avalancheFuji.id]: undefined,
-    [baseSepolia.id]: undefined,
-    [bscTestnet.id]: undefined,
-    [optimismSepolia.id]: undefined,
-    [polygonAmoy.id]: undefined,
     [seiTestnet.id]: "0x55aAFA704BD5ab1E50b3CeB33f7e9457Cb41A955",
   },
   decimals: 6,
   logoURL: "/images/usdc.avif",
   tags: ["wrapped", "stablecoin"],
+  },
+  {
+    symbol: "wETH",
+    wrappedFrom: "ETH",
+    address: {
+    [seiTestnet.id]: "0x42B4fdB1888001BB4C06f8BaFfB8a96B56693614",
+  },
+  decimals: 18,
+  logoURL: "/images/eth.avif",
+  tags: ["wrapped", "default"],
   }
 ];
 

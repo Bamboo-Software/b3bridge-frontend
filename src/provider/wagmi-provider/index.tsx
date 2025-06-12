@@ -1,16 +1,10 @@
-export const listWallets = [
-  {
-    metaData: {
-      name: "MetaMask",
-      icon: "/svg/metamask-icon.svg",
-      chain: "Ethereum",
-    },
-  },
-  {
-    metaData: {
-      name: "Phantom",
-      icon: "/svg/phantom-wallet.svg",
-      chain: "Solana",
-    },
-  },
-];
+'use client';
+
+import { WagmiProvider } from 'wagmi';
+import { config } from '@/configs/wagmi';
+
+function WagmiWrapperProvider({ children }: { children: React.ReactNode }) {
+  return <WagmiProvider config={config}>{children}</WagmiProvider>;
+}
+
+export default WagmiWrapperProvider;

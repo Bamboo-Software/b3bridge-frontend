@@ -9,7 +9,6 @@ import { useWallet } from "@/hooks/useWallet";
 import { useModalStore } from "@/store/useModalStore";
 import { formatBalance, formatLength, getBridgeAddress } from "@/utils";
 import { motion } from "framer-motion";
-import { ArrowDown } from "lucide-react";
 import { useForm, Controller } from "react-hook-form";
 import React, { useEffect, useMemo, useState } from "react";
 import { formatEther, isAddress, parseUnits } from "ethers";
@@ -18,6 +17,12 @@ import { getWrappedOriginAddress } from "@/hooks/useCCIPBridge";
 import { config } from "@/configs/wagmi";
 import { readContract } from "@wagmi/core";
 import { sepolia } from "wagmi/chains";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 interface ChainConfig {
   chain: { id: number; name: string };
@@ -41,6 +46,13 @@ interface PropBridge {
   isNativeLockPending: boolean;
   isERC20LockPending: boolean;
   amount: string;
+  state:{
+  isBridging: boolean;
+  error: string | null;
+  nativeLockHash?: `0x${string}`;
+  erc20LockHash?: `0x${string}`;
+  burnHash?: `0x${string}`;
+}
   balance: { decimals: number; formatted: string; symbol: string; value: bigint } | undefined;
   handleBridgeClick: (data: {
     fromChainId: number;
@@ -85,20 +97,45 @@ const ChainSelector = ({
   disabledChains: number[];
   selectedChain: ChainConfig | undefined;
 }) => {
-  const { wallets } = useWallet();
+  const { wallets,disconnect,switchNetWorkWallet } = useWallet();
   const walletInfo = chainId ? wallets[chainId] : undefined;
-
+  const { setFromChainIdStore } = useModalStore()
   return (
     <div className="space-y-2 font-manrope">
       <div className="flex justify-between items-center">
         <label className="text-lg font-semibold text-gray-200">{label}</label>
         {label !== "To" && walletInfo?.address && (
-          <span className="text-gray-400 font-bold">
-            {`${walletInfo.address.slice(0, 6)}...${walletInfo.address.slice(-4)}`}
-          </span>
-        )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="text-gray-400 font-bold focus:outline-none">
+                {`${walletInfo.address.slice(0, 6)}...${walletInfo.address.slice(-4)}`}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuItem
+                onClick={() => disconnect(chainId!)}
+                className="text-red-500 cursor-pointer"
+              >
+                Disconnect
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          )}
       </div>
-      <Select value={chainId?.toString() || ""} onValueChange={onChange}>
+      <Select
+          value={chainId?.toString() || ""}
+          onValueChange={(val) => {
+            const selectedChainId = Number(val);
+            const isFromChain = label !== "To";
+
+            onChange(val);
+            if (isFromChain) {
+              setFromChainIdStore(selectedChainId);
+            }
+
+            switchNetWorkWallet(selectedChainId, isFromChain);
+          }}
+        >
         <SelectTrigger className="w-full border font-manrope font-bold border-green-500/40 bg-gray-800/70 rounded-xl text-lg text-gray-400 focus:ring-2 focus:ring-green-500/60 hover:bg-gray-700/70 transition-all duration-200 flex items-center justify-between px-4 py-2">
           <SelectValue placeholder="Select a chain" className="bg-gray-800/70">
             {selectedChain && (
@@ -162,6 +199,7 @@ const BridgeTab = ({
   error,
   selectedTokenConfig,
   receiverAddress,
+  state,
   setReceiverAddress,
 }: PropBridge) => {
   const { wallets } = useWallet();
@@ -169,7 +207,6 @@ const BridgeTab = ({
   const isDisabled = isBridging || isNativeLockPending || isERC20LockPending;
   const smETH = getBridgeAddress("ethereum");
   const smSEI = getBridgeAddress("sei");
-  const [countdown, setCountdown] = useState(1020);
   const [estimatedTimeCountdown, setEstimatedTimeCountdown] = useState(0);
   const [seiTokenId, setSeiTokenId] = useState<bigint | null>(null);
   const [isFetchingTokenId, setIsFetchingTokenId] = useState(false);
@@ -238,16 +275,16 @@ const BridgeTab = ({
     setSelectedToken(formValues.selectedToken);
     setReceiverAddress(formValues.receiverAddress);
   }, [formValues, setFromChainId, setFromChainIdStore, setToChainId, setAmount, setSelectedToken, setReceiverAddress]);
-
+  
   // Fetch tokenId for SEI chain
   useEffect(() => {
-  if (!isSeiChain || !selectedTokenConfig || !selectedToken || !formValues.fromChainId) {
-    setSeiTokenId(null);
-    setTokenIdError(null);
-    return;
-  }
-
-  const fetchTokenId = async () => {
+    if (!isSeiChain || !selectedTokenConfig || !selectedToken || !formValues.fromChainId) {
+      setSeiTokenId(null);
+      setTokenIdError(null);
+      return;
+    }
+    
+    const fetchTokenId = async () => {
     setIsFetchingTokenId(true);
     setTokenIdError(null);
 
@@ -275,18 +312,18 @@ const BridgeTab = ({
 }, [isSeiChain, selectedToken,smETH, selectedTokenConfig, formValues.fromChainId, smSEI]);
 
 
-  // Calculate parsed amount
+// Calculate parsed amount
   const parsedAmount = useMemo(() => {
     return parseUnits(formValues.amount || "0", selectedTokenConfig?.decimals || 18);
   }, [formValues.amount, selectedTokenConfig]);
   // Construct bridgeConfig based on chain direction
   const bridgeConfig = useMemo(() => {
-  if (isSeiChain) {
+    if (isSeiChain) {
 
     if (!seiTokenId || !formValues.amount?.trim()) {
       return null;
     }
-
+    
     return {
       address: smSEI as `0x${string}`,
       abi: SEI_BRIDGE_ABI.abi,
@@ -294,11 +331,11 @@ const BridgeTab = ({
       args: [parsedAmount, seiTokenId],
     };
   }
-
+  
   if (isSepoliaChain) {
     const receiver = formValues.receiverAddress?.trim();
     const tokenAddress = selectedTokenConfig?.address[Number(formValues.fromChainId)];
-
+    
     if (
       !formValues.toChainId ||
       !formValues.amount?.trim() ||
@@ -307,7 +344,7 @@ const BridgeTab = ({
     ) {
       return null;
     }
-
+    
     return {
       address: smETH as `0x${string}`,
       abi: SEPOLIA_BRIDGE_ABI.abi,
@@ -315,7 +352,7 @@ const BridgeTab = ({
       args: [toChainSelector, receiver, "0x", 0, tokenAddress, parsedAmount],
     };
   }
-
+  
   return null;
 }, [
   isSeiChain,
@@ -333,14 +370,14 @@ const BridgeTab = ({
 ]);
 
 
-  const shouldRead = !!bridgeConfig?.address &&
-                     !!bridgeConfig?.args &&
-                     (isSeiChain || isAddress(formValues.receiverAddress || "0x")) &&
-                     !isFetchingTokenId &&
-                     !tokenIdError;
+const shouldRead = !!bridgeConfig?.address &&
+!!bridgeConfig?.args &&
+(isSeiChain || isAddress(formValues.receiverAddress || "0x")) &&
+!isFetchingTokenId &&
+!tokenIdError;
 
-  const contractOptions = useMemo(() => {
-    if (!shouldRead || !bridgeConfig) return null;
+const contractOptions = useMemo(() => {
+  if (!shouldRead || !bridgeConfig) return null;
     return {
       address: bridgeConfig.address,
       abi: bridgeConfig.abi,
@@ -349,9 +386,9 @@ const BridgeTab = ({
     };
   }, [bridgeConfig, shouldRead]);
 
-
+  
   const { data: ccipFee, isLoading: isFeeLoading } = useReadContract(contractOptions ?? {});
-
+  
   const onSubmit = async (data: FormData) => {
     if (!formValues.fromChainId || !wallets[Number(formValues.fromChainId)]) return;
 
@@ -377,7 +414,7 @@ const BridgeTab = ({
       }
     }
   };
-
+  
   const handleButtonClick = async (event: React.MouseEvent<HTMLButtonElement>) => {
     if (!formValues.fromChainId) return;
 
@@ -386,14 +423,14 @@ const BridgeTab = ({
       openWalletModal();
     }
   };
-
+  
   const isButtonEnabled = () => {
     if(estimatedTimeCountdown > 0) return false
     if (!formValues.fromChainId || tokenIdError) return false;
     if (!wallets[Number(formValues.fromChainId)]) return true;
     return !isDisabled;
   };
-
+  
   const getButtonText = () => {
     if (isDisabled || estimatedTimeCountdown > 0) return 'Bridging...';
     if (!formValues.fromChainId) return "Select Source Chain";
@@ -401,14 +438,11 @@ const BridgeTab = ({
     if (tokenIdError) return "Error Fetching Token ID";
     return "Bridge";
   };
-
   return (
     <div className="font-manrope">
       <TabsContent value="bridge" className="space-y-6">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <Controller
-
-            
             name="fromChainId"
             control={control}
             rules={{ required: "Please select source chain" }}
@@ -434,7 +468,7 @@ const BridgeTab = ({
             <div className="flex justify-between items-center mb-2">
               <span className="text-lg text-gray-400 font-medium">Token</span>
               <span className="text-lg text-gray-400 font-medium">
-                Balance: {balance ? formatLength(formatBalance(balance.value, selectedTokenConfig?.decimals || 18)) : "0"} {selectedToken}
+                Balance: {balance ? formatLength(formatBalance(balance.value, selectedTokenConfig?.decimals || 18)) : "0"} {balance?.symbol || selectedToken}
               </span>
             </div>
             <div className="flex gap-3 items-center">
@@ -524,19 +558,6 @@ const BridgeTab = ({
             </div>
             {errors.amount && <p className="font-manrope text-red-500 text-sm mt-1">{errors.amount.message}</p>}
           </div>
-
-          {/* Arrow Down */}
-          <div className="flex justify-center my-2">
-            <motion.div
-              className="bg-gray-800 rounded-full p-3 border border-green-500/40 shadow-lg"
-              whileHover={{ scale: 1.1, rotate: 360 }}
-              transition={{ duration: 0.3 }}
-            >
-              <ArrowDown className="h-5 w-5 text-green-400" />
-            </motion.div>
-          </div>
-
-          {/* To Chain Selector */}
           <Controller
             name="toChainId"
             control={control}
@@ -600,7 +621,7 @@ const BridgeTab = ({
                   : isFetchingTokenId || isFeeLoading
                   ? 'Calculating...'
                   : ccipFee != null
-                  ? `${formatLength(formatEther(ccipFee as bigint))} ETH`
+                  ? `${formatLength(formatEther(ccipFee as bigint),true)} ETH`
                   : '',
               },
               {
@@ -622,7 +643,17 @@ const BridgeTab = ({
               </div>
             ))}
           </motion.div>
-
+          {state.erc20LockHash && (
+            <Button
+              type="button"
+              className="w-full px-5 py-2.5 text-lg font-semibold bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-full shadow-lg hover:shadow-green-500/50 transition-all duration-300 border-none"
+              onClick={() =>
+                window.open(`https://sepolia.etherscan.io/tx/${state.erc20LockHash}`, "_blank")
+              }
+            >
+              View transactions
+            </Button>
+          )}
           {/* Submit Button */}
           <Button
             type="submit"

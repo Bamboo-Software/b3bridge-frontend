@@ -1,12 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
-
-declare global {
-  interface Window {
-    keplr?: any;
-    getOfflineSigner?: any;
-  }
-}
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useWallet } from "@/hooks/useWallet";
 import { Button } from "@/components/ui/button";
@@ -29,64 +22,18 @@ const FIXED_WALLETS = [
     name: "OKX Wallet",
     icon: "/svg/okx-logo.svg",
   },
-  {
-    id: "walletConnect",
-    name: "Wallet Connect",
-    icon: "/images/walletconnect-logo.png",
-  },
   // {
-  //   id: "sei-testnet",
-  //   name: "MetaMask (Sei Testnet)",
-  //   icon: "/svg/metamask-icon.svg",
-  // },
-  // {
-  //   id: "app.phantom",
-  //   name: "Phantom",
-  //   icon: "/svg/phantom-wallet.svg",
-  // },
-  // {
-  //   id: "com.okex.wallet",
-  //   name: "OKX Wallet",
-  //   icon: "/svg/okx-logo.svg",
-  // },
-  // {
-  // {
-  //   id: "keplr-sei",
-  //   name: "Keplr (Sei EVM)",
-  //   icon: "/svg/keplr-icon.svg",
+  //   id: "walletConnect",
+  //   name: "Wallet Connect",
+  //   icon: "/images/walletconnect-logo.png",
   // },
 ];
 
 export const WalletConnectModal = () => {
-  const { isOpen, closeWalletModal } = useModalStore();
-  const { connectors, connect, status,connectKeplrEVM } = useWallet();
+  const { isOpen, closeWalletModal,fromChainIdStore } = useModalStore();
+  const { connectors, connect, status,wallets } = useWallet();
   const [connectingId, setConnectingId] = useState<string | null>(null);
- const { wallets,connectWallet } = useWallet();
   const handleConnect = async (walletId: string) => {
-  //    if (walletId === "keplr-sei") {
-  //   try {
-  //     setConnectingId(walletId);
-  //     await connectKeplrEVM(1328);
-  //     closeWalletModal();
-  //   } catch (err) {
-  //     console.error("Keplr connection failed:", err);
-  //   } finally {
-  //     setConnectingId(null);
-  //   }
-  //   return;
-  // }
-  // if (walletId === "sei-testnet") {
-  //   try {
-  //     setConnectingId(walletId);
-  //     await connectWallet(1328);
-  //     closeWalletModal();
-  //   } catch (err) {
-  //     console.error("MetaMask connection failed:", err);
-  //   } finally {
-  //     setConnectingId(null);
-  //   }
-  //   return;
-  // }
 
   const connector = connectors.find(
     (c) => c.id === walletId || c.name.toLowerCase().includes(walletId.toLowerCase())

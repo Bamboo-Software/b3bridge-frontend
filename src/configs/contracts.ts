@@ -1,9 +1,9 @@
 export const CONTRACT_ADDRESSES = {
   ethereum: {
-    bridge: "0xCC5CC512b245a2FAe83B570605c3A9145C679829",
+    bridge: "0x3A4EC19d3B815680255797E1749a72aB32f12ed2",
   },
   sei: {
-    bridge: "0x17bce35395D53A4607d915C19e6Df5902bB8d96A"
+    bridge: "0xd66f4810c598e77b3954C013516aDa6ECd188b94"
   },
 
 } as const;

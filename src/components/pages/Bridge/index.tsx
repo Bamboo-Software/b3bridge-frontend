@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWallet } from "@/hooks/useWallet";
@@ -26,15 +26,15 @@ interface Token {
 }
 
 export default function BridgePage() {
-  const { wallets, connectWallet } = useWallet();
-  const { isBridging, isNativeLockPending, isERC20LockPending, error, handleBridge } = useCCIPBridge();
+  const { wallets } = useWallet();
+  const { isBridging, isNativeLockPending, isERC20LockPending, error, handleBridge,state } = useCCIPBridge();
   const [fromChainId, setFromChainId] = useState<number | undefined>(undefined);
   const [toChainId, setToChainId] = useState<number | undefined>(undefined);
   const [amount, setAmount] = useState("");
   const [selectedToken, setSelectedToken] = useState<string>("");
   const [receiverAddress, setReceiverAddress] = useState<string>("");
   const [selectedTab, setSelectedTab] = useState("bridge");
-  const { setFromChainIdStore } = useModalStore();
+  const setFromChainIdStore = useModalStore.getState().setFromChainIdStore;
   const selectedTokenConfig = useMemo(
     () => networkConfig.tokensList.find((t) => t.symbol === selectedToken),
     [selectedToken]
@@ -60,14 +60,13 @@ export default function BridgePage() {
   });
  
 
-  useEffect(() => {
-    if (address && fromChainId && selectedTokenConfig) {
-
-      setFromChainIdStore(fromChainId)
-      refetchBalance();
-    }
-  }, [address, fromChainId, selectedToken,setFromChainIdStore, selectedTokenConfig, refetchBalance]);
-
+useEffect(() => {
+  if (address && fromChainId && selectedTokenConfig) {
+    setFromChainIdStore(fromChainId);
+    refetchBalance();
+  }
+// eslint-disable-next-line react-hooks/exhaustive-deps
+}, [address, fromChainId, selectedToken, selectedTokenConfig, refetchBalance]);
 
   const handleBridgeClick = async (data: {
     fromChainId: number;
@@ -123,7 +122,7 @@ export default function BridgePage() {
               </TabsTrigger>
             ))}
           </TabsList>
-          <div className="font-manrope h-[calc(75vh-100px)] overflow-y-auto px-4 custom-scrollbar">
+          <div className="font-manrope h-[calc(70vh-100px)] overflow-y-auto px-4 custom-scrollbar">
           <BridgeTab
             setFromChainId={setFromChainId}
             setToChainId={setToChainId}
@@ -140,6 +139,7 @@ export default function BridgePage() {
             isNativeLockPending={isNativeLockPending}
             isERC20LockPending={isERC20LockPending}
             amount={amount}
+            state={state}
             balance={balance}
             handleBridgeClick={handleBridgeClick}
             error={error}
