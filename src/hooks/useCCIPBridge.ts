@@ -65,6 +65,8 @@ interface BridgeState {
   erc20LockHash?: `0x${string}`;
   burnHash?: `0x${string}`;
 }
+type BridgeOperation = "lock-mint" | "burn-unlock" | "wrapped-burn-unlock" | "unknown";
+type TokenType = "native" | "erc20" | "wrapped" | "unknown";
 export const getWrappedOriginAddress = (symbol: string, chainId: number): string | undefined => {
     const wrappedToken = networkConfig.tokensList.find((t) => t.symbol === symbol);
     if (!wrappedToken || !("wrappedFrom" in wrappedToken)) return undefined;
@@ -83,7 +85,7 @@ export function useCCIPBridge() {
   const [selectedTokenConfig, setSelectedTokenConfig] = useState<Token | undefined>();
   const [fromChainId, setFromChainId] = useState<number | undefined>();
   const requiredFee = BigInt("189044686617089");
-  const { wallets, getCurrentChain } = useWallet();
+  const { wallet, getCurrentChain } = useWallet();
   const { switchChainAsync } = useSwitchChain();
   const { data: walletClient } = useWalletClient();
   const { writeContractAsync } = useWriteContract();
@@ -92,7 +94,7 @@ export function useCCIPBridge() {
 
   const smETH = getBridgeAddress("ethereum");
   const smSEI = getBridgeAddress("sei");
-  const address = fromChainId ? wallets[fromChainId]?.address : undefined;
+  const address = fromChainId ? wallet?.address : undefined;
 
   const { data: balance, refetch: refetchBalance } = useBalance({
     address: address as `0x${string}` | undefined,
@@ -100,24 +102,13 @@ export function useCCIPBridge() {
     token: selectedTokenConfig?.address[fromChainId!] as `0x${string}` | undefined,
   });
 
-  const { data: allowance } = useReadContract(
-    tokenAddress && contractAddress
-      ? {
-          address: tokenAddress,
-          abi: erc20Abi,
-          functionName: "allowance",
-          args: [smETH as `0x${string}`, smSEI as `0x${string}`],
-        }
-        : undefined
-  );
-  console.log("🚀 ~ useCCIPBridge ~ allowance:", allowance)
 
   const { data: routerAddress } = useReadContract({
     address: contractAddress,
     abi: SEPOLIA_BRIDGE_ABI.abi,
     functionName: "getRouter",
   });
-  
+
   const { data: isPaused } = useReadContract({
     address: contractAddress,
     abi: SEPOLIA_BRIDGE_ABI.abi,
@@ -129,7 +120,7 @@ export function useCCIPBridge() {
     fromChainId: number,
     toChainId: number
   ): void => {
-    if (!wallets[fromChainId]) throw new Error("Please connect wallet");
+    if (!wallet) throw new Error("Please connect wallet");
     if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
       throw new Error("Invalid amount");
     }
@@ -141,7 +132,30 @@ export function useCCIPBridge() {
       throw new Error(`Invalid receiver contract address for chain ${toChainId}`);
     }
   };
-  
+const getBridgeOperationType = (
+  fromChainId: number,
+  toChainId: number,
+  toChainSelector: string,
+  tokenAddress: string | undefined
+): BridgeOperation => {
+  const token = getTokenConfig(tokenAddress);
+  const type = getTokenType(token);
+
+  const isSepolia = toChainId === sepolia.id &&
+    toChainSelector === networkConfig.chainSelectors[sepolia.id];
+
+  if (type === "erc20" && isSepolia) return "burn-unlock";
+  if (type === "wrapped" && isSepolia) return "wrapped-burn-unlock";
+  if (type === "native") return "lock-mint";
+
+  return "unknown";
+};
+const getTokenType = (token?: Token): TokenType => {
+  if (!token) return "unknown";
+  if (token.tags?.includes("wrapped")) return "wrapped";
+  if (token.tags?.includes("native")) return "native";
+  return "erc20";
+};
   const ensureCorrectChain = async (fromChainId: number): Promise<void> => {
     const currentChain = getCurrentChain(fromChainId);
     if (currentChain?.id !== fromChainId) {
@@ -151,63 +165,54 @@ export function useCCIPBridge() {
     }
   };
   
-  const getTokenConfig = (tokenAddress: string | undefined): Token | undefined => {
-    return tokenAddress
-    ? networkConfig.tokensList.find((t) => Object.values(t.address).includes(tokenAddress as `0x${string}`))
+ const getTokenConfig = (tokenAddress: string | undefined): Token | undefined => {
+  return tokenAddress
+    ? networkConfig.tokensList.find((t) =>
+        Object.values(t.address).some((addr) => addr?.toLowerCase() === tokenAddress.toLowerCase())
+      )
     : networkConfig.tokensList.find((t) => t.symbol === "ETH");
-  };
-  
-  const encodeAddresses = (toChainId: number, smSEI: string, receiver: string) => {
-    if (toChainId === seiTestnet.id) {
-      const seiAddressBytes = Buffer.from(smSEI.replace(/^0x/, ""), "hex");
-      const receiverBytes = Buffer.from(receiver.replace(/^0x/, ""), "hex");
-      return {
-        encodedDestAddress: encodeAbiParameters([{ type: "bytes" }], [`0x${seiAddressBytes.toString("hex")}`]),
-        encodedReceiverAddress: encodeAbiParameters([{ type: "bytes" }], [`0x${receiverBytes.toString("hex")}`]),
-      };
-    }
-    return {
-      encodedDestAddress: encodeAbiParameters([{ type: "address" }], [smSEI as `0x${string}`]),
-      encodedReceiverAddress: encodeAbiParameters([{ type: "address" }], [receiver as `0x${string}`]),
-    };
-  };
-  
-  const isBurnUnlockOperation = (
-    fromChainId: number,
-    toChainId: number,
-    toChainSelector: string,
-    tokenAddress: string | undefined
-  ): boolean => {
-    const tokenConfig = getTokenConfig(tokenAddress);
-    return toChainId === sepolia.id && toChainSelector === networkConfig.chainSelectors[sepolia.id];
-  };
+};
+
 
   const approveToken = async (
   tokenAddress: `0x${string}`,
   spender: `0x${string}`,
-  amountInUnits: bigint,
+  amountRaw: string,
+  decimals: number,
+  owner: `0x${string}`,
+  walletClient?: any,
+  force: boolean = true
 ): Promise<void> => {
   try {
-    console.log("🚀 ~ Approve ~ tokenAddress:", tokenAddress);
+    const amountInUnits = parseUnits(amountRaw, decimals);
+    const currentAllowance: bigint = await readContract(config, {
+      address: tokenAddress,
+      abi: ERC20_ABI,
+      functionName: 'allowance',
+      args: [owner, spender],
+    }) as bigint;
 
-    if (!allowance || allowance < amountInUnits) {
+    if (force || currentAllowance < amountInUnits) {
       const approveTx = await writeContractAsync({
         address: tokenAddress,
         abi: ERC20_ABI,
         functionName: "approve",
         args: [spender, amountInUnits],
       });
-      console.log("🚀 ~ Approve ~ approveTxHash:", approveTx);
-      const result = await waitForTransactionReceipt(walletClient!, { hash: approveTx });
-      console.log("🚀 ~ Approve ~ receipt:", result);
+
+
+      const receipt = await waitForTransactionReceipt(walletClient, { hash: approveTx });
+    } else {
     }
-  }catch (err: any) {
+  } catch (err: any) {
     if (err.code === 4001 || err.message?.toLowerCase().includes("user rejected")) {
       throw new Error("Transaction rejected by user");
     }
     throw err;
   }
 };
+
+
 
 
  const handleBridge = async (
@@ -234,12 +239,11 @@ export function useCCIPBridge() {
     if (!tokenConfig && tokenAddress) throw new Error("Invalid token configuration");
     setSelectedTokenConfig(tokenConfig);
 
-    console.log("🚀 ~ useCCIPBridge ~ tokenAddress:", tokenAddress)
-    const isBurnUnlock = isBurnUnlockOperation(fromChainId, toChainId, toChainSelector, tokenAddress);
-    const tokenAddressSource = tokenAddress && balance ? getWrappedOriginAddress(balance.symbol, fromChainId) : undefined;
-    console.log("🚀 ~ useCCIPBridge ~ tokenAddressSource === tokenAddress:", tokenAddressSource !== tokenAddress)
-    const isWrappedToken = tokenAddress && tokenAddressSource !== tokenAddress;
-    console.log("🚀 ~ useCCIPBridge ~ isWrappedToken:", isWrappedToken)
+    const opType = getBridgeOperationType(fromChainId, toChainId, toChainSelector, tokenAddress);
+
+    const isBurnUnlock = opType === "burn-unlock";
+    const isWrappedToken = opType === "wrapped-burn-unlock";
+    const isLockMint = opType === "lock-mint";
 
     if (isBurnUnlock) {
       await handleBurnUnlock(amount, balance, tokenConfig, tokenAddress, ccipFee);
@@ -284,17 +288,16 @@ const handleBurnUnlock = async (
       chainId: sepolia.id,
     });
 
-    await approveToken(tokenAddress as `0x${string}`, smSEI as `0x${string}`, amountInUnits);
+    await approveToken(tokenAddress as `0x${string}`, smSEI as `0x${string}`, amount,tokenConfig?.decimals ?? 18,wallet?.address as `0x${string}`,walletClient);
 
     const result = await writeContractAsync({
       address: smSEI as `0x${string}`,
       abi: SEI_BRIDGE_ABI.abi,
       functionName: "burnTokenCCIP",
       args: [tokenId, amountInUnits],
-      value: ccipFee,
+      value: parseUnits("600000000", 9),
     });
 
-    console.log("🚀 ~ BurnUnlock ~ result:", result);
     setState((prev) => ({ ...prev, burnHash: result }));
   } catch (err) {
     console.error("❌ ~ handleBurnUnlock error:", err);
@@ -335,7 +338,7 @@ const handleLockMint = async (
         value: amountInWei,
       });
 
-      console.log("🚀 ~ LockMint (native) ~ result:", result);
+
       setState((prev) => ({ ...prev, nativeLockHash: result }));
     } else {
       const amountInUnits = parseUnits(amount, tokenConfig?.decimals || 18);
@@ -344,7 +347,7 @@ const handleLockMint = async (
       }
 
       try {
-        await approveToken(tokenAddress as `0x${string}`, smETH as `0x${string}`, amountInUnits);
+        await approveToken(tokenAddress as `0x${string}`, smETH as `0x${string}`, amount,tokenConfig?.decimals ?? 18,wallet?.address as `0x${string}`,walletClient);
       } catch (err: any) {
         const errorMessage = err.message === "Transaction rejected by user" ? "Giao dịch đã bị hủy bởi người dùng" : "Phê duyệt token thất bại";
         throw new Error(errorMessage);
@@ -358,7 +361,7 @@ const handleLockMint = async (
         value: ccipFee + requiredFee,
       });
 
-      console.log("🚀 ~ LockMint (ERC20) ~ result:", result);
+
       setState((prev) => ({ ...prev, erc20LockHash: result }));
     }
   } catch (err) {
@@ -381,6 +384,7 @@ const handleBurnWrappedToken = async (
   wrappedTokenAddress: string | undefined,
   ccipFee: bigint
 ): Promise<void> => {
+
   try {
     if (!writeContractAsync) throw new Error("Contract write not available");
 
@@ -394,21 +398,21 @@ const handleBurnWrappedToken = async (
     }
 
     // Approve the bridge contract to spend the wrapped tokens
-    await approveToken(wrappedTokenAddress as `0x${string}`, smETH as `0x${string}`, amountInUnits);
+    await approveToken(wrappedTokenAddress as `0x${string}`, smSEI as `0x${string}`, amount,tokenConfig?.decimals ?? 18,wallet?.address as `0x${string}`,walletClient);
 
+   
     // Call the burnTokenVL function for wrapped tokens
     const result = await writeContractAsync({
-      address: smETH as `0x${string}`,
-      abi: SEPOLIA_BRIDGE_ABI.abi,
+      address: smSEI as `0x${string}`,
+      abi: SEI_BRIDGE_ABI.abi,
       functionName: "burnTokenVL",
       args: [amountInUnits, wrappedTokenAddress as `0x${string}`],
-      value: ccipFee,
+      value: parseUnits("600000000", 9),
     });
 
-    console.log("🚀 ~ BurnWrappedToken ~ result:", result);
+
     setState((prev) => ({ ...prev, burnWrappedHash: result }));
   } catch (err) {
-    console.error("❌ ~ handleBurnWrappedToken error:", err);
     setState((prev) => ({
       ...prev,
       error: err instanceof Error ? err.message : "Burn wrapped token failed",

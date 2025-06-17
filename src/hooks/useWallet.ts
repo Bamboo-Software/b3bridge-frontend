@@ -8,6 +8,7 @@ import {
 } from "wagmi";
 import { networkConfig } from "@/configs/networkConfig";
 import { useModalStore } from "@/store/useModalStore";
+
 declare global {
   interface Window {
     keplr?: any;
@@ -16,13 +17,10 @@ declare global {
     getOfflineSigner?: any;
   }
 }
+
 interface WalletInfo {
   address: `0x${string}`;
   source: "wagmi" | "manual" | "keplr" | "phantom" | "okx";
-}
-
-interface WalletData {
-  [chainId: number]: WalletInfo | undefined;
 }
 
 export function useWallet() {
@@ -31,84 +29,114 @@ export function useWallet() {
   const { connect, status, connectors } = useConnect();
   const { disconnect } = useDisconnect();
   const { switchChain } = useSwitchChain();
-  const [wallets, setWallets] = useState<WalletData>({});
-  console.log("🚀 ~ useWallet ~ wallets:", wallets)
+  const { fromChainIdStore } = useModalStore();
+
+  const [wallet, setWallet] = useState<WalletInfo | undefined>();
   const [isDisconnecting, setIsDisconnecting] = useState(false);
 
-
+  // 🧠 Auto switch mạng nếu không khớp
   useEffect(() => {
-    setWallets((prev) => {
-      let newWallets = { ...prev };
-      if (isDisconnecting) {
-        return newWallets;
-      }
-      if (isConnected && address && typeof currentChainId === "number") {
-        const existing = newWallets[currentChainId];
-        if (!(existing?.address === address && existing.source === "wagmi")) {
-          newWallets[currentChainId] = {
-            address: address as `0x${string}`,
-            source: "wagmi",
-          };
+    const autoSwitchNetwork = async () => {
+      if (
+        isConnected &&
+        address &&
+        typeof currentChainId === "number" &&
+        fromChainIdStore &&
+        currentChainId !== fromChainIdStore
+      ) {
+        try {
+          await switchChain({ chainId: fromChainIdStore });
+        } catch (error: any) {
+          if (error?.name === "UserRejectedRequestError") {
+            console.warn("⚠️ User từ chối chuyển mạng.");
+          } else {
+            console.error(`❌ Không thể chuyển mạng:`, error);
+          }
         }
-      } else {
-        if (typeof currentChainId === "number") {
-          delete newWallets[currentChainId];
-        }
       }
+    };
 
-      return newWallets;
-    });
+    autoSwitchNetwork();
+  }, [isConnected, currentChainId, fromChainIdStore, address, switchChain]);
+
+  // 📝 Cập nhật ví đang dùng
+  useEffect(() => {
+    if (isDisconnecting) return;
+
+    if (isConnected && address && typeof currentChainId === "number") {
+      setWallet({
+        address: address as `0x${string}`,
+        source: "wagmi",
+      });
+      localStorage.setItem(
+        "wallet",
+        JSON.stringify({
+          address,
+          source: "wagmi",
+        })
+      );
+    } else {
+      setWallet(undefined);
+      localStorage.removeItem("wallet");
+    }
   }, [address, currentChainId, isConnected, isDisconnecting]);
 
-  const disconnectWallet = async (chainId: number, walletProvider?: WalletInfo["source"]) => {
+  useEffect(() => {
+    const saved = localStorage.getItem("wallet");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setWallet(parsed);
+      } catch (e) {
+        console.error("❌ Lỗi parse wallet từ localStorage:", e);
+      }
+    }
+  }, []);
+
+
+  const disconnectWallet = async (walletProvider?: WalletInfo["source"]) => {
     try {
       setIsDisconnecting(true);
+
       if (walletProvider === "phantom" && window.phantom?.solana) {
         await window.phantom.solana.disconnect();
       } else if (walletProvider === "okx" && window.okxwallet) {
         await window.okxwallet.disconnect();
       } else if (walletProvider === "wagmi" || !walletProvider) {
-        if (currentChainId === chainId) {
-          await disconnect();
-        }
+        await disconnect();
       } else {
         throw new Error(`Ví không được hỗ trợ: ${walletProvider}`);
       }
-      setWallets((prev) => {
-        const newWallets = { ...prev };
-        delete newWallets[chainId];
-        return newWallets;
-      });
-    } catch (error) {
-      console.error(`Lỗi khi ngắt kết nối ví trên chuỗi ${chainId}:`, error);
 
+      setWallet(undefined);
+      localStorage.removeItem("wallet");
+    } catch (error) {
+      console.error(`Lỗi khi ngắt kết nối ví:`, error);
       throw error;
     } finally {
       setIsDisconnecting(false);
     }
   };
 
-  // Hàm chuyển mạng
- const switchNetWorkWallet = async (chainId: number, isFromChain: boolean) => {
-  try {
-    setIsDisconnecting(false);
 
-    if (currentChainId !== chainId && isFromChain) {
-      await switchChain({ chainId });
+  const switchNetWorkWallet = async (chainId: number, isFromChain: boolean) => {
+    try {
+      if (currentChainId !== chainId && isFromChain) {
+        await switchChain({ chainId });
+      }
+    } catch (error) {
+      console.error(`Lỗi khi chuyển mạng sang chuỗi ${chainId}:`, error);
+      throw error;
     }
-  } catch (error) {
-    console.error(`Lỗi khi chuyển mạng sang chuỗi ${chainId}:`, error);
-    throw error;
-  }
-};
+  };
 
-  // Lấy thông tin chuỗi hiện tại
+
   const getCurrentChain = (chainId: number) => {
     return networkConfig.chains.find((c) => c.chain.id === chainId)?.chain || null;
   };
 
   return {
-    wallets,
+    wallet,
     status,
     connect,
     connectors,
@@ -117,6 +145,6 @@ export function useWallet() {
     switchNetWorkWallet,
     disconnect: disconnectWallet,
     getCurrentChain,
-    setWallets,
+    setWallet,
   };
 }

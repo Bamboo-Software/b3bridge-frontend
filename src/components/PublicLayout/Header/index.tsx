@@ -13,7 +13,7 @@ const Header = () => {
   const pathname = usePathname();
   const isActive = (path: string) => pathname === path;
   const { openWalletModal } = useModalStore();
-  const {  wallets ,currentChainId } = useWallet()
+  const {  wallet ,currentChainId } = useWallet()
   return (
     <div className="w-full">
       <motion.header

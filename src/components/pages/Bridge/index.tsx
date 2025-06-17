@@ -25,7 +25,7 @@ interface Token {
 }
 
 export default function BridgePage() {
-  const { wallets } = useWallet();
+  const { wallet } = useWallet();
   const { isBridging, isNativeLockPending, isERC20LockPending, error,state } = useCCIPBridge();
   const [fromChainId, setFromChainId] = useState<number | undefined>(undefined);
   const [toChainId, setToChainId] = useState<number | undefined>(undefined);
@@ -38,7 +38,7 @@ export default function BridgePage() {
     () => networkConfig.tokensList.find((t) => t.symbol === selectedToken),
     [selectedToken]
   );
-  const address = fromChainId ? wallets[fromChainId]?.address : undefined;
+  const address = wallet ? wallet?.address : undefined;
 
   const availableTokens = useMemo(() => {
     if (!fromChainId) return [];
