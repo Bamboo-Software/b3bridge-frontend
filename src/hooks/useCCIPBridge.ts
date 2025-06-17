@@ -70,7 +70,9 @@ export const getWrappedOriginAddress = (symbol: string, chainId: number): string
     if (!wrappedToken || !("wrappedFrom" in wrappedToken)) return undefined;
     const originToken = networkConfig.tokensList.find((t) => t.symbol === (wrappedToken as any).wrappedFrom);
     return originToken?.address?.[chainId];
-  };
+};
+  
+
 export function useCCIPBridge() {
   const [state, setState] = useState<BridgeState>({
     isBridging: false,
@@ -80,7 +82,7 @@ export function useCCIPBridge() {
   const [contractAddress, setContractAddress] = useState<`0x${string}` | undefined>();
   const [selectedTokenConfig, setSelectedTokenConfig] = useState<Token | undefined>();
   const [fromChainId, setFromChainId] = useState<number | undefined>();
-
+  const requiredFee = BigInt("189044686617089");
   const { wallets, getCurrentChain } = useWallet();
   const { switchChainAsync } = useSwitchChain();
   const { data: walletClient } = useWalletClient();
@@ -106,21 +108,21 @@ export function useCCIPBridge() {
           functionName: "allowance",
           args: [smETH as `0x${string}`, smSEI as `0x${string}`],
         }
-      : undefined
+        : undefined
   );
+  console.log("🚀 ~ useCCIPBridge ~ allowance:", allowance)
 
   const { data: routerAddress } = useReadContract({
     address: contractAddress,
     abi: SEPOLIA_BRIDGE_ABI.abi,
     functionName: "getRouter",
   });
-
+  
   const { data: isPaused } = useReadContract({
     address: contractAddress,
     abi: SEPOLIA_BRIDGE_ABI.abi,
     functionName: "paused",
   });
-
   const validateInputs = (
     amount: string,
     receiver: string,
@@ -139,7 +141,7 @@ export function useCCIPBridge() {
       throw new Error(`Invalid receiver contract address for chain ${toChainId}`);
     }
   };
-
+  
   const ensureCorrectChain = async (fromChainId: number): Promise<void> => {
     const currentChain = getCurrentChain(fromChainId);
     if (currentChain?.id !== fromChainId) {
@@ -148,13 +150,13 @@ export function useCCIPBridge() {
       await refetchBalance();
     }
   };
-
+  
   const getTokenConfig = (tokenAddress: string | undefined): Token | undefined => {
     return tokenAddress
-      ? networkConfig.tokensList.find((t) => Object.values(t.address).includes(tokenAddress as `0x${string}`))
-      : networkConfig.tokensList.find((t) => t.symbol === "ETH");
+    ? networkConfig.tokensList.find((t) => Object.values(t.address).includes(tokenAddress as `0x${string}`))
+    : networkConfig.tokensList.find((t) => t.symbol === "ETH");
   };
-
+  
   const encodeAddresses = (toChainId: number, smSEI: string, receiver: string) => {
     if (toChainId === seiTestnet.id) {
       const seiAddressBytes = Buffer.from(smSEI.replace(/^0x/, ""), "hex");
@@ -169,7 +171,7 @@ export function useCCIPBridge() {
       encodedReceiverAddress: encodeAbiParameters([{ type: "address" }], [receiver as `0x${string}`]),
     };
   };
-
+  
   const isBurnUnlockOperation = (
     fromChainId: number,
     toChainId: number,
@@ -180,19 +182,14 @@ export function useCCIPBridge() {
     return toChainId === sepolia.id && toChainSelector === networkConfig.chainSelectors[sepolia.id];
   };
 
-  // const getWrappedOriginAddress = (symbol: string, chainId: number): string | undefined => {
-  //   const wrappedToken = networkConfig.tokensList.find((t) => t.symbol === symbol);
-  //   if (!wrappedToken || !("wrappedFrom" in wrappedToken)) return undefined;
-  //   const originToken = networkConfig.tokensList.find((t) => t.symbol === (wrappedToken as any).wrappedFrom);
-  //   return originToken?.address?.[chainId];
-  // };
-
   const approveToken = async (
-    tokenAddress: `0x${string}`,
-    spender: `0x${string}`,
-    amountInUnits: bigint,
-    decimals: number
-  ): Promise<void> => {
+  tokenAddress: `0x${string}`,
+  spender: `0x${string}`,
+  amountInUnits: bigint,
+): Promise<void> => {
+  try {
+    console.log("🚀 ~ Approve ~ tokenAddress:", tokenAddress);
+
     if (!allowance || allowance < amountInUnits) {
       const approveTx = await writeContractAsync({
         address: tokenAddress,
@@ -200,69 +197,85 @@ export function useCCIPBridge() {
         functionName: "approve",
         args: [spender, amountInUnits],
       });
-      await waitForTransactionReceipt(walletClient!, { hash: approveTx });
+      console.log("🚀 ~ Approve ~ approveTxHash:", approveTx);
+      const result = await waitForTransactionReceipt(walletClient!, { hash: approveTx });
+      console.log("🚀 ~ Approve ~ receipt:", result);
     }
-  };
-
-  const handleBridge = async (
-    fromChainId: number,
-    toChainId: number,
-    amount: string,
-    balance: { decimals: number; formatted: string; symbol: string; value: bigint } | undefined,
-    tokenAddress: string | undefined,
-    receiver: string,
-    toChainSelector: string,
-    options: BridgeOptions = {}
-  ): Promise<void> => {
-    try {
-      setState((prev) => ({ ...prev, isBridging: true, error: null }));
-      setFromChainId(fromChainId);
-      setContractAddress(smETH as `0x${string}`);
-      setTokenAddress(tokenAddress as `0x${string}`);
-
-      validateInputs(amount, receiver, fromChainId, toChainId);
-      await ensureCorrectChain(fromChainId);
-
-      const tokenConfig = getTokenConfig(tokenAddress);
-      if (!tokenConfig && tokenAddress) throw new Error("Invalid token configuration");
-      setSelectedTokenConfig(tokenConfig);
-
-      const { encodedDestAddress, encodedReceiverAddress } = encodeAddresses(toChainId, smSEI!, receiver);
-      const isBurnUnlock = isBurnUnlockOperation(fromChainId, toChainId, toChainSelector, tokenAddress);
-
-      if (isBurnUnlock) {
-        await handleBurnUnlock(amount, balance, tokenConfig, toChainSelector, encodedReceiverAddress);
-      } else {
-        await handleLockMint(
-          amount,
-          balance,
-          tokenConfig,
-          tokenAddress,
-          toChainSelector,
-          receiver
-        );
-      }
-    } catch (err) {
-      setState((prev) => ({ ...prev, error: err instanceof Error ? err.message : "Bridge failed" }));
-    } finally {
-      setState((prev) => ({ ...prev, isBridging: false }));
+  }catch (err: any) {
+    if (err.code === 4001 || err.message?.toLowerCase().includes("user rejected")) {
+      throw new Error("Transaction rejected by user");
     }
-  };
+    throw err;
+  }
+};
 
-  const handleBurnUnlock = async (
-    amount: string,
-    balance: { decimals: number; formatted: string; symbol: string; value: bigint } | undefined,
-    tokenConfig: Token | undefined,
-    toChainSelector: string,
-    encodedReceiverAddress: string
-  ): Promise<void> => {
+
+ const handleBridge = async (
+  fromChainId: number,
+  toChainId: number,
+  amount: string,
+  balance: { decimals: number; formatted: string; symbol: string; value: bigint } | undefined,
+  tokenAddress: string | undefined,
+  receiver: string,
+  toChainSelector: string,
+  ccipFee: bigint,
+  options: { isOFT: boolean }
+): Promise<void> => {
+  try {
+    setState((prev) => ({ ...prev, isBridging: true, error: null }));
+    setFromChainId(fromChainId);
+    setContractAddress(smETH as `0x${string}`);
+    setTokenAddress(tokenAddress as `0x${string}`);
+
+    validateInputs(amount, receiver, fromChainId, toChainId);
+    await ensureCorrectChain(fromChainId);
+
+    const tokenConfig = getTokenConfig(tokenAddress);
+    if (!tokenConfig && tokenAddress) throw new Error("Invalid token configuration");
+    setSelectedTokenConfig(tokenConfig);
+
+    console.log("🚀 ~ useCCIPBridge ~ tokenAddress:", tokenAddress)
+    const isBurnUnlock = isBurnUnlockOperation(fromChainId, toChainId, toChainSelector, tokenAddress);
+    const tokenAddressSource = tokenAddress && balance ? getWrappedOriginAddress(balance.symbol, fromChainId) : undefined;
+    console.log("🚀 ~ useCCIPBridge ~ tokenAddressSource === tokenAddress:", tokenAddressSource !== tokenAddress)
+    const isWrappedToken = tokenAddress && tokenAddressSource !== tokenAddress;
+    console.log("🚀 ~ useCCIPBridge ~ isWrappedToken:", isWrappedToken)
+
+    if (isBurnUnlock) {
+      await handleBurnUnlock(amount, balance, tokenConfig, tokenAddress, ccipFee);
+    } else if (isWrappedToken) {
+      await handleBurnWrappedToken(amount, balance, tokenConfig, tokenAddress, ccipFee);
+    } else {
+      await handleLockMint(amount, balance, tokenConfig, tokenAddress, toChainSelector, receiver, ccipFee);
+    }
+  } catch (err) {
+    console.error("❌ ~ handleBridge error:", err);
+    setState((prev) => ({
+      ...prev,
+      error: err instanceof Error ? err.message : "Bridge failed",
+      isBridging: false,
+      isNativeLockPending: false,
+      isERC20LockPending: false,
+    }));
+    throw err;
+  }
+};
+
+const handleBurnUnlock = async (
+  amount: string,
+  balance: { decimals: number; formatted: string; symbol: string; value: bigint } | undefined,
+  tokenConfig: Token | undefined,
+  tokenAddress: string | undefined,
+  ccipFee: bigint,
+): Promise<void> => {
+  try {
     const amountInUnits = parseUnits(amount, tokenConfig?.decimals || 18);
     if (!balance || balance.value < amountInUnits) {
-      throw new Error(`Insufficient ${tokenConfig?.symbol} balance. Required: ${amount} ${tokenConfig?.symbol}`);
+      throw new Error(`Insufficient ${tokenConfig?.symbol} balance. Required: ${amount}`);
     }
-    if (!writeContractAsync) throw new Error("Contract write not available");
 
     const tokenAddressSource = getWrappedOriginAddress(balance.symbol, sepolia.id);
+
     const tokenId = await readContract(config, {
       address: smETH as `0x${string}`,
       abi: SEPOLIA_BRIDGE_ABI.abi,
@@ -271,27 +284,41 @@ export function useCCIPBridge() {
       chainId: sepolia.id,
     });
 
-    await approveToken(tokenAddress!, smSEI as `0x${string}`, amountInUnits, tokenConfig?.decimals || 18);
+    await approveToken(tokenAddress as `0x${string}`, smSEI as `0x${string}`, amountInUnits);
 
-    
     const result = await writeContractAsync({
       address: smSEI as `0x${string}`,
       abi: SEI_BRIDGE_ABI.abi,
       functionName: "burnTokenCCIP",
       args: [tokenId, amountInUnits],
-      value: parseUnits("600000000", 9),
+      value: ccipFee,
     });
-    setState((prev) => ({ ...prev, burnHash: result }));
-  };
 
-  const handleLockMint = async (
-    amount: string,
-    balance: { decimals: number; formatted: string; symbol: string; value: bigint } | undefined,
-    tokenConfig: Token | undefined,
-    tokenAddress: string | undefined,
-    toChainSelector: string,
-    receiver: string
-  ): Promise<void> => {
+    console.log("🚀 ~ BurnUnlock ~ result:", result);
+    setState((prev) => ({ ...prev, burnHash: result }));
+  } catch (err) {
+    console.error("❌ ~ handleBurnUnlock error:", err);
+    setState((prev) => ({
+      ...prev,
+      error: err instanceof Error ? err.message : "Bridge failed",
+      isBridging: false,
+      isNativeLockPending: false,
+      isERC20LockPending: false,
+    }));
+    throw err;
+  }
+};
+
+const handleLockMint = async (
+  amount: string,
+  balance: { decimals: number; formatted: string; symbol: string; value: bigint } | undefined,
+  tokenConfig: Token | undefined,
+  tokenAddress: string | undefined,
+  toChainSelector: string,
+  receiver: string,
+  ccipFee: bigint
+): Promise<void> => {
+  try {
     if (!writeContractAsync) throw new Error("Contract write not available");
 
     if (!tokenAddress) {
@@ -299,19 +326,7 @@ export function useCCIPBridge() {
       if (!balance || balance.value < amountInWei) {
         throw new Error(`Insufficient ETH balance. Required: ${formatUnits(amountInWei, 18)} ETH`);
       }
-      console.log(`🚀 ~ useCCIPBridge ~ {
-        address: smETH as,
-        abi: SEPOLIA_BRIDGE_ABI.abi,
-        functionName: "lockTokenVL",
-        args: [BigInt(toChainSelector), encodedDestAddress, encodedReceiverAddress, amountInWei],
-        value: amountInWei,
-      }:`, {
-        address: smETH as `0x${string}`,
-        abi: SEPOLIA_BRIDGE_ABI.abi,
-        functionName: "lockTokenVL",
-        args: [smSEI, receiver],
-        value: amountInWei,
-      })
+
       const result = await writeContractAsync({
         address: smETH as `0x${string}`,
         abi: SEPOLIA_BRIDGE_ABI.abi,
@@ -319,29 +334,98 @@ export function useCCIPBridge() {
         args: [smSEI, receiver],
         value: amountInWei,
       });
+
+      console.log("🚀 ~ LockMint (native) ~ result:", result);
       setState((prev) => ({ ...prev, nativeLockHash: result }));
     } else {
       const amountInUnits = parseUnits(amount, tokenConfig?.decimals || 18);
       if (!balance || balance.value < amountInUnits) {
-        throw new Error(`Insufficient ${tokenConfig?.symbol} balance. Required: ${amount} ${tokenConfig?.symbol}`);
+        throw new Error(`Insufficient ${tokenConfig?.symbol} balance. Required: ${amount}`);
       }
-      await approveToken(tokenAddress as `0x${string}`, smETH as `0x${string}`, amountInUnits, tokenConfig?.decimals || 18);
+
+      try {
+        await approveToken(tokenAddress as `0x${string}`, smETH as `0x${string}`, amountInUnits);
+      } catch (err: any) {
+        const errorMessage = err.message === "Transaction rejected by user" ? "Giao dịch đã bị hủy bởi người dùng" : "Phê duyệt token thất bại";
+        throw new Error(errorMessage);
+      }
+
       const result = await writeContractAsync({
         address: smETH as `0x${string}`,
         abi: SEPOLIA_BRIDGE_ABI.abi,
         functionName: "lockTokenCCIP",
         args: [tokenAddress as `0x${string}`, BigInt(toChainSelector), smSEI, receiver, amountInUnits, 0],
-        value: parseEther("0.01"),
+        value: ccipFee + requiredFee,
       });
+
+      console.log("🚀 ~ LockMint (ERC20) ~ result:", result);
       setState((prev) => ({ ...prev, erc20LockHash: result }));
     }
-  };
+  } catch (err) {
+    console.error("❌ ~ handleLockMint error:", err);
+    setState((prev) => ({
+      ...prev,
+      error: err instanceof Error ? err.message : "Bridge failed",
+      isBridging: false,
+      isNativeLockPending: false,
+      isERC20LockPending: false,
+    }));
+    throw err;
+  }
+};
+
+const handleBurnWrappedToken = async (
+  amount: string,
+  balance: { decimals: number; formatted: string; symbol: string; value: bigint } | undefined,
+  tokenConfig: Token | undefined,
+  wrappedTokenAddress: string | undefined,
+  ccipFee: bigint
+): Promise<void> => {
+  try {
+    if (!writeContractAsync) throw new Error("Contract write not available");
+
+    const amountInUnits = parseUnits(amount, tokenConfig?.decimals || 18);
+    if (!balance || balance.value < amountInUnits) {
+      throw new Error(`Insufficient ${tokenConfig?.symbol} balance. Required: ${amount}`);
+    }
+
+    if (!wrappedTokenAddress) {
+      throw new Error("Wrapped token address not provided");
+    }
+
+    // Approve the bridge contract to spend the wrapped tokens
+    await approveToken(wrappedTokenAddress as `0x${string}`, smETH as `0x${string}`, amountInUnits);
+
+    // Call the burnTokenVL function for wrapped tokens
+    const result = await writeContractAsync({
+      address: smETH as `0x${string}`,
+      abi: SEPOLIA_BRIDGE_ABI.abi,
+      functionName: "burnTokenVL",
+      args: [amountInUnits, wrappedTokenAddress as `0x${string}`],
+      value: ccipFee,
+    });
+
+    console.log("🚀 ~ BurnWrappedToken ~ result:", result);
+    setState((prev) => ({ ...prev, burnWrappedHash: result }));
+  } catch (err) {
+    console.error("❌ ~ handleBurnWrappedToken error:", err);
+    setState((prev) => ({
+      ...prev,
+      error: err instanceof Error ? err.message : "Burn wrapped token failed",
+      isBridging: false,
+      isNativeLockPending: false,
+      isERC20LockPending: false,
+    }));
+    throw err;
+  }
+};
 
   return {
     isBridging: state.isBridging,
     isNativeLockPending,
     isERC20LockPending,
     state,
+    erc20LockHash:state.erc20LockHash,
     error: state.error,
     handleBridge,
     routerAddress,

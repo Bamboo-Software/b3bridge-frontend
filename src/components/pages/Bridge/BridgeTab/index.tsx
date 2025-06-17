@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TabsContent } from "@/components/ui/tabs";
-import {  chainSelectors, SEI_BRIDGE_ABI, SEPOLIA_BRIDGE_ABI, Token } from "@/configs/networkConfig";
+import {  chainSelectors, networkConfig, SEI_BRIDGE_ABI, seiTestnet, SEPOLIA_BRIDGE_ABI, Token } from "@/configs/networkConfig";
 import { useWallet } from "@/hooks/useWallet";
 import { useModalStore } from "@/store/useModalStore";
 import { formatBalance, formatLength, getBridgeAddress } from "@/utils";
@@ -13,7 +13,7 @@ import { useForm, Controller } from "react-hook-form";
 import React, { useEffect, useMemo, useState } from "react";
 import { formatEther, isAddress, parseUnits } from "ethers";
 import { useReadContract } from "wagmi";
-import { getWrappedOriginAddress } from "@/hooks/useCCIPBridge";
+import { getWrappedOriginAddress, useCCIPBridge } from "@/hooks/useCCIPBridge";
 import { config } from "@/configs/wagmi";
 import { readContract } from "@wagmi/core";
 import { sepolia } from "wagmi/chains";
@@ -54,20 +54,6 @@ interface PropBridge {
   burnHash?: `0x${string}`;
 }
   balance: { decimals: number; formatted: string; symbol: string; value: bigint } | undefined;
-  handleBridgeClick: (data: {
-    fromChainId: number;
-    toChainId: number;
-    toChainSelector: string;
-    balance: {
-      decimals: number;
-      formatted: string;
-      symbol: string;
-      value: bigint;
-    } | undefined;
-    amount: string;
-    tokenAddress: string;
-    receiverAddress: `0x${string}`;
-  }) => Promise<void>;
   error: string | null;
   receiverAddress: string;
   setReceiverAddress: (address: string) => void;
@@ -195,42 +181,51 @@ const BridgeTab = ({
   isERC20LockPending,
   amount,
   balance,
-  handleBridgeClick,
   error,
   selectedTokenConfig,
   receiverAddress,
   state,
   setReceiverAddress,
 }: PropBridge) => {
+  console.log("🚀 ~ selectedToken:", selectedToken)
   const { wallets } = useWallet();
+  const { handleBridge,erc20LockHash } = useCCIPBridge();
   const { openWalletModal, setFromChainIdStore } = useModalStore();
   const isDisabled = isBridging || isNativeLockPending || isERC20LockPending;
   const smETH = getBridgeAddress("ethereum");
   const smSEI = getBridgeAddress("sei");
   const [estimatedTimeCountdown, setEstimatedTimeCountdown] = useState(0);
+  const [startTime, setStartTime] = useState<number | null>(null);
   const [seiTokenId, setSeiTokenId] = useState<bigint | null>(null);
   const [isFetchingTokenId, setIsFetchingTokenId] = useState(false);
   const [tokenIdError, setTokenIdError] = useState<string | null>(null);
 
-  // Countdown effect
+
   useEffect(() => {
-    let timer: number | null = null;
-    if (estimatedTimeCountdown > 0) {
-      timer = setInterval(() => {
-        setEstimatedTimeCountdown(prev => (prev > 0 ? prev - 1 : 0));
-      }, 1000);
+  if (!startTime) return;
+
+  const interval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const remaining = 900 - elapsed;
+
+    if (remaining <= 0) {
+      setEstimatedTimeCountdown(0);
+      setStartTime(null);
+      clearInterval(interval);
+    } else {
+      setEstimatedTimeCountdown(remaining);
     }
-    return () => {
-      if (timer) clearInterval(timer);
-    };
-  }, [estimatedTimeCountdown]);
+  }, 1000);
+
+  return () => clearInterval(interval);
+}, [startTime]);
+
 
   const formatCountdown = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${minutes}:${secs.toString().padStart(2, '0')}`;
   };
-
 
   // Initialize react-hook-form
   const {
@@ -275,33 +270,61 @@ const BridgeTab = ({
     setSelectedToken(formValues.selectedToken);
     setReceiverAddress(formValues.receiverAddress);
   }, [formValues, setFromChainId, setFromChainIdStore, setToChainId, setAmount, setSelectedToken, setReceiverAddress]);
-  
+
   // Fetch tokenId for SEI chain
   useEffect(() => {
-    if (!isSeiChain || !selectedTokenConfig || !selectedToken || !formValues.fromChainId) {
-      setSeiTokenId(null);
-      setTokenIdError(null);
-      return;
-    }
-    
-    const fetchTokenId = async () => {
+  // Log để kiểm tra các điều kiện
+
+  if (!isSeiChain || !selectedTokenConfig || !selectedToken || !formValues.fromChainId) {
+    console.warn('⚠️ fetchTokenId not called due to missing conditions:', {
+      isSeiChain,
+      selectedTokenConfig,
+      selectedToken,
+      fromChainId: formValues.fromChainId
+    });
+    setSeiTokenId(null);
+    setTokenIdError(null);
+    return;
+  }
+
+  const fetchTokenId = async () => {
     setIsFetchingTokenId(true);
     setTokenIdError(null);
 
     try {
-      const tokenAddressSource = getWrappedOriginAddress(selectedToken, sepolia.id);
+      const token = networkConfig.tokensList.find(t => t.symbol.toLowerCase() === selectedToken.toLowerCase());
+      if (!token) {
+        throw new Error(`Token ${selectedToken} not found in tokenConfig`);
+      }
+
+      const tokenAddressSource = token.address[seiTestnet.id];
+
+      if (!tokenAddressSource || !/^0x[a-fA-F0-9]{40}$/.test(tokenAddressSource)) {
+        throw new Error(`Invalid token address for ${selectedToken}: ${tokenAddressSource}`);
+      }
+
       const id = await readContract(config, {
         address: smETH as `0x${string}`,
         abi: SEPOLIA_BRIDGE_ABI.abi,
-        functionName: "tokenAddressToId",
+        functionName: 'tokenAddressToId',
         args: [tokenAddressSource as `0x${string}`],
         chainId: sepolia.id,
       });
 
       setSeiTokenId(id as bigint);
     } catch (err: any) {
-      console.error("❌ Failed to fetch tokenId:", err);
-      setTokenIdError("Failed to fetch token ID. Please check the contract ABI or token configuration.");
+      console.error(`❌ Failed to fetch tokenId for ${selectedToken}:`, {
+        error: err.message,
+        stack: err.stack,
+        token: selectedToken,
+        smETH,
+        chainId: sepolia.id,
+      });
+      setTokenIdError(
+        err.message.includes('revert')
+          ? `Token ${selectedToken} not supported by the bridge contract.`
+          : `Failed to fetch token ID for ${selectedToken}. Please check token configuration or contract.`
+      );
       setSeiTokenId(null);
     } finally {
       setIsFetchingTokenId(false);
@@ -309,75 +332,69 @@ const BridgeTab = ({
   };
 
   fetchTokenId();
-}, [isSeiChain, selectedToken,smETH, selectedTokenConfig, formValues.fromChainId, smSEI]);
-
-
-// Calculate parsed amount
+}, [isSeiChain, selectedToken, smETH, selectedTokenConfig, formValues.fromChainId, smSEI]);
+  // Calculate parsed amount
   const parsedAmount = useMemo(() => {
     return parseUnits(formValues.amount || "0", selectedTokenConfig?.decimals || 18);
   }, [formValues.amount, selectedTokenConfig]);
+
   // Construct bridgeConfig based on chain direction
   const bridgeConfig = useMemo(() => {
     if (isSeiChain) {
+      if (!seiTokenId || !formValues.amount?.trim()) {
+        return null;
+      }
 
-    if (!seiTokenId || !formValues.amount?.trim()) {
-      return null;
+      return {
+        address: smSEI as `0x${string}`,
+        abi: SEI_BRIDGE_ABI.abi,
+        functionName: "getFeeCCIP",
+        args: [parsedAmount, seiTokenId],
+      };
     }
-    
-    return {
-      address: smSEI as `0x${string}`,
-      abi: SEI_BRIDGE_ABI.abi,
-      functionName: "getFeeCCIP",
-      args: [parsedAmount, seiTokenId],
-    };
-  }
-  
-  if (isSepoliaChain) {
-    const receiver = formValues.receiverAddress?.trim();
-    const tokenAddress = selectedTokenConfig?.address[Number(formValues.fromChainId)];
-    
-    if (
-      !formValues.toChainId ||
-      !formValues.amount?.trim() ||
-      !receiver ||
-      !tokenAddress
-    ) {
-      return null;
+
+    if (isSepoliaChain) {
+      const receiver = formValues.receiverAddress?.trim();
+      const tokenAddress = selectedTokenConfig?.address[Number(formValues.fromChainId)];
+
+      if (!formValues.toChainId || !formValues.amount?.trim() || !receiver || !tokenAddress) {
+        return null;
+      }
+
+      return {
+        address: smETH as `0x${string}`,
+        abi: SEPOLIA_BRIDGE_ABI.abi,
+        functionName: "getFeeCCIP",
+        args: [toChainSelector, receiver, "0x", 0, tokenAddress, parsedAmount],
+      };
     }
-    
-    return {
-      address: smETH as `0x${string}`,
-      abi: SEPOLIA_BRIDGE_ABI.abi,
-      functionName: "getFeeCCIP",
-      args: [toChainSelector, receiver, "0x", 0, tokenAddress, parsedAmount],
-    };
-  }
+
+    return null;
+  }, [
+    isSeiChain,
+    isSepoliaChain,
+    seiTokenId,
+    parsedAmount,
+    smETH,
+    smSEI,
+    toChainSelector,
+    formValues.receiverAddress,
+    selectedTokenConfig,
+    formValues.fromChainId,
+    formValues.toChainId,
+    formValues.amount,
+  ]);
   
-  return null;
-}, [
-  isSeiChain,
-  isSepoliaChain,
-  seiTokenId,
-  parsedAmount,
-  smETH,
-  smSEI,
-  toChainSelector,
-  formValues.receiverAddress,
-  selectedTokenConfig,
-  formValues.fromChainId,
-  formValues.toChainId,
-  formValues.amount,
-]);
+  const isError = !!error;
+  const shouldRead =
+    !!bridgeConfig?.address &&
+    !!bridgeConfig?.args &&
+    (isSeiChain || isAddress(formValues.receiverAddress || "0x")) &&
+    !isFetchingTokenId &&
+    !tokenIdError;
 
-
-const shouldRead = !!bridgeConfig?.address &&
-!!bridgeConfig?.args &&
-(isSeiChain || isAddress(formValues.receiverAddress || "0x")) &&
-!isFetchingTokenId &&
-!tokenIdError;
-
-const contractOptions = useMemo(() => {
-  if (!shouldRead || !bridgeConfig) return null;
+  const contractOptions = useMemo(() => {
+    if (!shouldRead || !bridgeConfig) return null;
     return {
       address: bridgeConfig.address,
       abi: bridgeConfig.abi,
@@ -386,35 +403,34 @@ const contractOptions = useMemo(() => {
     };
   }, [bridgeConfig, shouldRead]);
 
-  
   const { data: ccipFee, isLoading: isFeeLoading } = useReadContract(contractOptions ?? {});
-  
   const onSubmit = async (data: FormData) => {
-    if (!formValues.fromChainId || !wallets[Number(formValues.fromChainId)]) return;
-
-    if (isValid && formValues.toChainId && formValues.amount && formValues.receiverAddress) {
-      const tokenAddress =
-        data.selectedToken !== "ETH" && selectedTokenConfig
-          ? selectedTokenConfig.address[Number(data.fromChainId)] || ""
-          : "";
-
-      try {
-        await handleBridgeClick({
-          fromChainId: Number(data.fromChainId),
-          toChainId: Number(data.toChainId),
-          amount: data.amount,
-          balance,
-          tokenAddress,
-          receiverAddress: data.receiverAddress as `0x${string}`,
-          toChainSelector,
-        });
-         setEstimatedTimeCountdown(900);
-      } catch (err) {
-        console.error("Bridge failed:", err);
-      }
+  if (!formValues.fromChainId || !wallets[Number(formValues.fromChainId)]) return;
+  if (isValid && formValues.toChainId && formValues.amount && formValues.receiverAddress) {
+    const tokenAddress =
+      data.selectedToken !== "ETH" && selectedTokenConfig
+        ? selectedTokenConfig.address[Number(data.fromChainId)] || ""
+        : "";
+    try {
+      await handleBridge(
+        Number(data.fromChainId),
+        Number(data.toChainId),
+        data.amount,
+        balance,
+        tokenAddress,
+        data.receiverAddress,
+        toChainSelector,
+        ccipFee as bigint,
+        { isOFT: false }
+      );
+      const start = Date.now();
+      setStartTime(start);
+      setEstimatedTimeCountdown(900);
+    } catch (err) {
+      console.error("Bridge failed:", err);
     }
-  };
-  
+  }
+};
   const handleButtonClick = async (event: React.MouseEvent<HTMLButtonElement>) => {
     if (!formValues.fromChainId) return;
 
@@ -423,21 +439,25 @@ const contractOptions = useMemo(() => {
       openWalletModal();
     }
   };
-  
+
+
   const isButtonEnabled = () => {
-    if(estimatedTimeCountdown > 0) return false
+    if (estimatedTimeCountdown > 0) return false;
     if (!formValues.fromChainId || tokenIdError) return false;
     if (!wallets[Number(formValues.fromChainId)]) return true;
-    return !isDisabled;
+    return !isDisabled || isError;
   };
-  
+
   const getButtonText = () => {
-    if (isDisabled || estimatedTimeCountdown > 0) return 'Bridging...';
+    if (error === "Giao dịch đã bị hủy bởi người dùng") return "Giao dịch đã bị hủy";
+    if (isError) return "Retry Bridge";
+    if (isDisabled || estimatedTimeCountdown > 0) return "Bridging...";
     if (!formValues.fromChainId) return "Select Source Chain";
     if (!wallets[Number(formValues.fromChainId)]) return "Connect Wallet";
     if (tokenIdError) return "Error Fetching Token ID";
     return "Bridge";
   };
+
   return (
     <div className="font-manrope">
       <TabsContent value="bridge" className="space-y-6">
@@ -621,7 +641,7 @@ const contractOptions = useMemo(() => {
                   : isFetchingTokenId || isFeeLoading
                   ? 'Calculating...'
                   : ccipFee != null
-                  ? `${formatLength(formatEther(ccipFee as bigint),true)} ETH`
+                  ? `${formatLength(formatEther(ccipFee as bigint), true)} ETH`
                   : '',
               },
               {
@@ -643,12 +663,12 @@ const contractOptions = useMemo(() => {
               </div>
             ))}
           </motion.div>
-          {state.erc20LockHash && (
+          {erc20LockHash && (
             <Button
               type="button"
               className="w-full px-5 py-2.5 text-lg font-semibold bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-full shadow-lg hover:shadow-green-500/50 transition-all duration-300 border-none"
               onClick={() =>
-                window.open(`https://sepolia.etherscan.io/tx/${state.erc20LockHash}`, "_blank")
+                window.open(`https://sepolia.etherscan.io/tx/${erc20LockHash}`, "_blank")
               }
             >
               View transactions
@@ -674,5 +694,6 @@ const contractOptions = useMemo(() => {
     </div>
   );
 };
+
 
 export default BridgeTab;

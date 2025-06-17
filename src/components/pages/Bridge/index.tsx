@@ -6,7 +6,6 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWallet } from "@/hooks/useWallet";
 import { useCCIPBridge } from "@/hooks/useCCIPBridge";
 import { networkConfig } from "@/configs/networkConfig";
-import { parseUnits, formatUnits } from "viem";
 import { useBalance } from "wagmi";
 import BridgeTab from "./BridgeTab";
 import { bridgeTabs } from "@/constants";
@@ -27,7 +26,7 @@ interface Token {
 
 export default function BridgePage() {
   const { wallets } = useWallet();
-  const { isBridging, isNativeLockPending, isERC20LockPending, error, handleBridge,state } = useCCIPBridge();
+  const { isBridging, isNativeLockPending, isERC20LockPending, error,state } = useCCIPBridge();
   const [fromChainId, setFromChainId] = useState<number | undefined>(undefined);
   const [toChainId, setToChainId] = useState<number | undefined>(undefined);
   const [amount, setAmount] = useState("");
@@ -39,7 +38,6 @@ export default function BridgePage() {
     () => networkConfig.tokensList.find((t) => t.symbol === selectedToken),
     [selectedToken]
   );
-
   const address = fromChainId ? wallets[fromChainId]?.address : undefined;
 
   const availableTokens = useMemo(() => {
@@ -68,35 +66,6 @@ useEffect(() => {
 // eslint-disable-next-line react-hooks/exhaustive-deps
 }, [address, fromChainId, selectedToken, selectedTokenConfig, refetchBalance]);
 
-  const handleBridgeClick = async (data: {
-    fromChainId: number;
-    toChainId: number;
-    amount: string;
-    tokenAddress: string;
-    receiverAddress: `0x${string}`;
-    toChainSelector: string;
-    balance: {
-    decimals: number;
-    formatted: string;
-    symbol: string;
-    value: bigint;
-} |undefined
-  }) => {
-    try {
-       await handleBridge(
-        data.fromChainId,
-        data.toChainId,
-        data.amount,
-        balance,
-        data.tokenAddress,
-        data.receiverAddress,
-        data.toChainSelector,
-        { isOFT: false }
-      )
-    } catch (err) {
-      console.error("Bridge failed:", err);
-    }
-  };
 
   const fromChain = fromChainId ? networkConfig.chains.find((c) => c.chain.id === fromChainId) : undefined;
   const toChain = toChainId ? networkConfig.chains.find((c) => c.chain.id === toChainId) : undefined;
@@ -141,7 +110,6 @@ useEffect(() => {
             amount={amount}
             state={state}
             balance={balance}
-            handleBridgeClick={handleBridgeClick}
             error={error}
             selectedTokenConfig={selectedTokenConfig}
             receiverAddress={receiverAddress}

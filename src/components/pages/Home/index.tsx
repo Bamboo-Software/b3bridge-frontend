@@ -30,7 +30,7 @@ const router = useRouter();
   return (
     <div className="w-full flex flex-col items-center justify-center gap-8 mt-4">
       {/* Hero Section */}
-      <motion.div 
+      <motion.div
         className="text-center space-y-4"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
