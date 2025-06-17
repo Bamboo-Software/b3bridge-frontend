@@ -11,6 +11,7 @@ import BridgeTab from "./BridgeTab";
 import { bridgeTabs } from "@/constants";
 import HistoryTab from "./HistoryTab";
 import { useModalStore } from "@/store/useModalStore";
+import { sepolia } from "wagmi/chains";
 
 interface ChainConfig {
   chain: { id: number; name: string };
@@ -43,7 +44,9 @@ export default function BridgePage() {
   const availableTokens = useMemo(() => {
     if (!fromChainId) return [];
     return networkConfig.tokensList.filter((token) => {
-      if (token.symbol === "ETH") return true;
+      if (token.symbol === "ETH") {
+        return fromChainId === sepolia.id;
+      }
       return token.address[fromChainId] !== undefined;
     });
   }, [fromChainId]);
