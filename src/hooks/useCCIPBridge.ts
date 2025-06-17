@@ -144,18 +144,22 @@ const getBridgeOperationType = (
   const isSepolia = toChainId === sepolia.id &&
     toChainSelector === networkConfig.chainSelectors[sepolia.id];
 
-  if (type === "erc20" && isSepolia) return "burn-unlock";
-  if (type === "wrapped" && isSepolia) return "wrapped-burn-unlock";
+  if (type === "wrapped-erc20" && isSepolia) return "burn-unlock";
+  if (type === "wrapped-native" && isSepolia) return "wrapped-burn-unlock";
   if (type === "native") return "lock-mint";
 
-  return "unknown";
+  return "lock-mint";
 };
-const getTokenType = (token?: Token): TokenType => {
-  if (!token) return "unknown";
-  if (token.tags?.includes("wrapped")) return "wrapped";
+function getTokenType(token?: Token): "native" | "erc20" | "wrapped-native" | "wrapped-erc20" | undefined {
+  if (!token) return undefined;
   if (token.tags?.includes("native")) return "native";
+  if (token.wrappedFrom) {
+    const original = networkConfig.tokensList.find((t) => t.symbol === token.wrappedFrom);
+    if (original?.tags?.includes("native")) return "wrapped-native";
+    else return "wrapped-erc20";
+  }
   return "erc20";
-};
+}
   const ensureCorrectChain = async (fromChainId: number): Promise<void> => {
     const currentChain = getCurrentChain(fromChainId);
     if (currentChain?.id !== fromChainId) {
@@ -243,7 +247,7 @@ const getTokenType = (token?: Token): TokenType => {
 
     const isBurnUnlock = opType === "burn-unlock";
     const isWrappedToken = opType === "wrapped-burn-unlock";
-    const isLockMint = opType === "lock-mint";
+
 
     if (isBurnUnlock) {
       await handleBurnUnlock(amount, balance, tokenConfig, tokenAddress, ccipFee);
@@ -289,7 +293,6 @@ const handleBurnUnlock = async (
     });
 
     await approveToken(tokenAddress as `0x${string}`, smSEI as `0x${string}`, amount,tokenConfig?.decimals ?? 18,wallet?.address as `0x${string}`,walletClient);
-
     const result = await writeContractAsync({
       address: smSEI as `0x${string}`,
       abi: SEI_BRIDGE_ABI.abi,
@@ -329,12 +332,11 @@ const handleLockMint = async (
       if (!balance || balance.value < amountInWei) {
         throw new Error(`Insufficient ETH balance. Required: ${formatUnits(amountInWei, 18)} ETH`);
       }
-
       const result = await writeContractAsync({
         address: smETH as `0x${string}`,
         abi: SEPOLIA_BRIDGE_ABI.abi,
         functionName: "lockTokenVL",
-        args: [smSEI, receiver],
+        args: ["0x0000000000000000000000000000000000000000",amountInWei,smSEI, receiver],
         value: amountInWei,
       });
 
