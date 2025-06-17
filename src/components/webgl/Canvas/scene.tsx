@@ -6,7 +6,7 @@ import {
   PerspectiveCamera,
 } from '@react-three/drei';
 import dynamic from 'next/dynamic';
-const SceneContent = dynamic(() => import('./scene-content'), { ssr: false });
+import SceneContent from './scene-content';
 export default function CanvasScene() {
   const [fov, setFov] = useState(80);
   useEffect(() => {

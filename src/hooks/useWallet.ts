@@ -29,10 +29,10 @@ export function useWallet() {
   const { address, isConnected } = useAccount();
   const currentChainId = useChainId();
   const { connect, status, connectors } = useConnect();
-  const {fromChainIdStore}=useModalStore()
   const { disconnect } = useDisconnect();
   const { switchChain } = useSwitchChain();
   const [wallets, setWallets] = useState<WalletData>({});
+  console.log("🚀 ~ useWallet ~ wallets:", wallets)
   const [isDisconnecting, setIsDisconnecting] = useState(false);
 
 
