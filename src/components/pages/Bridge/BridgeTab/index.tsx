@@ -83,8 +83,9 @@ const ChainSelector = ({
   disabledChains: number[];
   selectedChain: ChainConfig | undefined;
 }) => {
-  const { wallets,disconnect,switchNetWorkWallet } = useWallet();
-  const walletInfo = chainId ? wallets[chainId] : undefined;
+   const { fromChainIdStore } = useModalStore();
+  const { wallet,disconnect,switchNetWorkWallet } = useWallet();
+  const walletInfo = wallet ? wallet : undefined;
   const { setFromChainIdStore } = useModalStore()
   return (
     <div className="space-y-2 font-manrope">
@@ -99,7 +100,7 @@ const ChainSelector = ({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40">
               <DropdownMenuItem
-                onClick={() => disconnect(chainId!)}
+                onClick={() => disconnect()}
                 className="text-red-500 cursor-pointer"
               >
                 Disconnect
@@ -187,8 +188,7 @@ const BridgeTab = ({
   state,
   setReceiverAddress,
 }: PropBridge) => {
-  console.log("🚀 ~ selectedToken:", selectedToken)
-  const { wallets } = useWallet();
+  const { wallet } = useWallet();
   const { handleBridge,erc20LockHash } = useCCIPBridge();
   const { openWalletModal, setFromChainIdStore } = useModalStore();
   const isDisabled = isBridging || isNativeLockPending || isERC20LockPending;
@@ -405,7 +405,7 @@ const BridgeTab = ({
 
   const { data: ccipFee, isLoading: isFeeLoading } = useReadContract(contractOptions ?? {});
   const onSubmit = async (data: FormData) => {
-  if (!formValues.fromChainId || !wallets[Number(formValues.fromChainId)]) return;
+  if (!formValues.fromChainId || !wallet) return;
   if (isValid && formValues.toChainId && formValues.amount && formValues.receiverAddress) {
     const tokenAddress =
       data.selectedToken !== "ETH" && selectedTokenConfig
@@ -434,7 +434,7 @@ const BridgeTab = ({
   const handleButtonClick = async (event: React.MouseEvent<HTMLButtonElement>) => {
     if (!formValues.fromChainId) return;
 
-    if (!wallets[Number(formValues.fromChainId)]) {
+    if (!wallet) {
       event.preventDefault();
       openWalletModal();
     }
@@ -444,7 +444,7 @@ const BridgeTab = ({
   const isButtonEnabled = () => {
     if (estimatedTimeCountdown > 0) return false;
     if (!formValues.fromChainId || tokenIdError) return false;
-    if (!wallets[Number(formValues.fromChainId)]) return true;
+    if (!wallet) return true;
     return !isDisabled || isError;
   };
 
@@ -453,7 +453,7 @@ const BridgeTab = ({
     if (isError) return "Retry Bridge";
     if (isDisabled || estimatedTimeCountdown > 0) return "Bridging...";
     if (!formValues.fromChainId) return "Select Source Chain";
-    if (!wallets[Number(formValues.fromChainId)]) return "Connect Wallet";
+    if (!wallet) return "Connect Wallet";
     if (tokenIdError) return "Error Fetching Token ID";
     return "Bridge";
   };

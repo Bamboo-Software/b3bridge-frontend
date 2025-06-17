@@ -31,7 +31,7 @@ const FIXED_WALLETS = [
 
 export const WalletConnectModal = () => {
   const { isOpen, closeWalletModal,fromChainIdStore } = useModalStore();
-  const { connectors, connect, status,wallets } = useWallet();
+  const { connectors, connect, status,wallet } = useWallet();
   const [connectingId, setConnectingId] = useState<string | null>(null);
   const handleConnect = async (walletId: string) => {
 
@@ -47,8 +47,8 @@ export const WalletConnectModal = () => {
   connect({ connector });
 };
       useEffect(() => {
-      if (wallets) closeWalletModal()
-    },[wallets,closeWalletModal])
+      if (wallet) closeWalletModal()
+    },[wallet,closeWalletModal])
   return (
     <Dialog open={isOpen} onOpenChange={closeWalletModal}>
       <DialogContent className="bg-black border-none">
