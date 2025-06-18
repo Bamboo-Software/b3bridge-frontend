@@ -189,7 +189,7 @@ const BridgeTab = ({
   setReceiverAddress,
 }: PropBridge) => {
   const { wallet } = useWallet();
-  const { handleBridge,erc20LockHash } = useCCIPBridge();
+  const { handleBridge,erc20LockHash,setState } = useCCIPBridge();
   const { openWalletModal, setFromChainIdStore } = useModalStore();
   const isDisabled = isBridging || isNativeLockPending || isERC20LockPending;
   const smETH = getBridgeAddress("ethereum");
@@ -200,58 +200,58 @@ const BridgeTab = ({
   const [isFetchingTokenId, setIsFetchingTokenId] = useState(false);
   const [tokenIdError, setTokenIdError] = useState<string | null>(null);
 
-
+  
   useEffect(() => {
-  if (!startTime) return;
-
-  const interval = setInterval(() => {
-    const elapsed = Math.floor((Date.now() - startTime) / 1000);
-    const remaining = 900 - elapsed;
-
-    if (remaining <= 0) {
-      setEstimatedTimeCountdown(0);
+    if (!startTime) return;
+    
+    const interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const remaining = 900 - elapsed;
+      
+      if (remaining <= 0) {
+        setEstimatedTimeCountdown(0);
       setStartTime(null);
       clearInterval(interval);
     } else {
       setEstimatedTimeCountdown(remaining);
     }
   }, 1000);
-
+  
   return () => clearInterval(interval);
 }, [startTime]);
 
 
-  const formatCountdown = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${minutes}:${secs.toString().padStart(2, '0')}`;
-  };
+const formatCountdown = (seconds: number) => {
+  const minutes = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${minutes}:${secs.toString().padStart(2, '0')}`;
+};
 
-  // Initialize react-hook-form
-  const {
-    control,
-    handleSubmit,
-    formState: { errors, isValid },
-    setValue,
-    watch,
-  } = useForm<FormData>({
-    defaultValues: {
-      fromChainId: fromChainId?.toString() || "",
-      toChainId: toChainId?.toString() || "",
-      amount: formatLength(amount) || "",
-      selectedToken: selectedToken || "",
-      receiverAddress: receiverAddress || "",
+// Initialize react-hook-form
+const {
+  control,
+  handleSubmit,
+  formState: { errors, isValid },
+  setValue,
+  watch,
+} = useForm<FormData>({
+  defaultValues: {
+    fromChainId: fromChainId?.toString() || "",
+    toChainId: toChainId?.toString() || "",
+    amount: formatLength(amount) || "",
+    selectedToken: selectedToken || "",
+    receiverAddress: receiverAddress || "",
     },
     mode: "onChange",
   });
-
+  
   const formValues = watch();
   const isSeiChain = Number(formValues.fromChainId) === 1328;
   const isSepoliaChain = Number(formValues.fromChainId) === 11155111;
-
+  
   // State to store the selected chain selector
   const [toChainSelector, setToChainSelector] = useState<string>("");
-
+  
   // Update toChainSelector when toChainId changes
   useEffect(() => {
     if (formValues.toChainId) {
@@ -270,47 +270,47 @@ const BridgeTab = ({
     setSelectedToken(formValues.selectedToken);
     setReceiverAddress(formValues.receiverAddress);
   }, [formValues, setFromChainId, setFromChainIdStore, setToChainId, setAmount, setSelectedToken, setReceiverAddress]);
-
+  
   // Fetch tokenId for SEI chain
   useEffect(() => {
-  // Log để kiểm tra các điều kiện
-
-  if (!isSeiChain || !selectedTokenConfig || !selectedToken || !formValues.fromChainId) {
-    console.warn('⚠️ fetchTokenId not called due to missing conditions:', {
-      isSeiChain,
-      selectedTokenConfig,
-      selectedToken,
-      fromChainId: formValues.fromChainId
-    });
-    setSeiTokenId(null);
-    setTokenIdError(null);
-    return;
-  }
-
-  const fetchTokenId = async () => {
-    setIsFetchingTokenId(true);
-    setTokenIdError(null);
-
-    try {
-      const token = networkConfig.tokensList.find(t => t.symbol.toLowerCase() === selectedToken.toLowerCase());
-      if (!token) {
-        throw new Error(`Token ${selectedToken} not found in tokenConfig`);
-      }
-
-      const tokenAddressSource = token.address[seiTestnet.id];
-
-      if (!tokenAddressSource || !/^0x[a-fA-F0-9]{40}$/.test(tokenAddressSource)) {
-        throw new Error(`Invalid token address for ${selectedToken}: ${tokenAddressSource}`);
-      }
-
-      const id = await readContract(config, {
-        address: smETH as `0x${string}`,
-        abi: SEPOLIA_BRIDGE_ABI.abi,
-        functionName: 'tokenAddressToId',
-        args: [tokenAddressSource as `0x${string}`],
-        chainId: sepolia.id,
+    // Log để kiểm tra các điều kiện
+    
+    if (!isSeiChain || !selectedTokenConfig || !selectedToken || !formValues.fromChainId) {
+      console.warn('⚠️ fetchTokenId not called due to missing conditions:', {
+        isSeiChain,
+        selectedTokenConfig,
+        selectedToken,
+        fromChainId: formValues.fromChainId
       });
-
+      setSeiTokenId(null);
+      setTokenIdError(null);
+      return;
+    }
+    
+    const fetchTokenId = async () => {
+      setIsFetchingTokenId(true);
+      setTokenIdError(null);
+      
+      try {
+        const token = networkConfig.tokensList.find(t => t.symbol.toLowerCase() === selectedToken.toLowerCase());
+        if (!token) {
+          throw new Error(`Token ${selectedToken} not found in tokenConfig`);
+        }
+        
+        const tokenAddressSource = token.address[seiTestnet.id];
+        
+        if (!tokenAddressSource || !/^0x[a-fA-F0-9]{40}$/.test(tokenAddressSource)) {
+          throw new Error(`Invalid token address for ${selectedToken}: ${tokenAddressSource}`);
+        }
+        
+        const id = await readContract(config, {
+          address: smETH as `0x${string}`,
+          abi: SEPOLIA_BRIDGE_ABI.abi,
+          functionName: 'tokenAddressToId',
+          args: [tokenAddressSource as `0x${string}`],
+          chainId: sepolia.id,
+      });
+      
       setSeiTokenId(id as bigint);
     } catch (err: any) {
       console.error(`❌ Failed to fetch tokenId for ${selectedToken}:`, {
@@ -322,18 +322,18 @@ const BridgeTab = ({
       });
       setTokenIdError(
         err.message.includes('revert')
-          ? `Token ${selectedToken} not supported by the bridge contract.`
-          : `Failed to fetch token ID for ${selectedToken}. Please check token configuration or contract.`
+        ? `Token ${selectedToken} not supported by the bridge contract.`
+        : `Failed to fetch token ID for ${selectedToken}. Please check token configuration or contract.`
       );
       setSeiTokenId(null);
     } finally {
       setIsFetchingTokenId(false);
     }
   };
-
+  
   fetchTokenId();
 }, [isSeiChain, selectedToken, smETH, selectedTokenConfig, formValues.fromChainId, smSEI]);
-  // Calculate parsed amount
+// Calculate parsed amount
   const parsedAmount = useMemo(() => {
     return parseUnits(formValues.amount || "0", selectedTokenConfig?.decimals || 18);
   }, [formValues.amount, selectedTokenConfig]);
@@ -344,7 +344,6 @@ const BridgeTab = ({
       if (!seiTokenId || !formValues.amount?.trim()) {
         return null;
       }
-
       return {
         address: smSEI as `0x${string}`,
         abi: SEI_BRIDGE_ABI.abi,
@@ -352,56 +351,53 @@ const BridgeTab = ({
         args: [parsedAmount, seiTokenId],
       };
     }
-
     if (isSepoliaChain) {
       const receiver = formValues.receiverAddress?.trim();
       const tokenAddress = selectedTokenConfig?.address[Number(formValues.fromChainId)];
-
       if (!formValues.toChainId || !formValues.amount?.trim() || !receiver || !tokenAddress) {
         return null;
       }
-
       return {
         address: smETH as `0x${string}`,
         abi: SEPOLIA_BRIDGE_ABI.abi,
-        functionName: "getFeeCCIP",
-        args: [toChainSelector, receiver, "0x", 0, tokenAddress, parsedAmount],
-      };
-    }
-
-    return null;
-  }, [
-    isSeiChain,
-    isSepoliaChain,
-    seiTokenId,
-    parsedAmount,
-    smETH,
-    smSEI,
-    toChainSelector,
-    formValues.receiverAddress,
-    selectedTokenConfig,
-    formValues.fromChainId,
-    formValues.toChainId,
-    formValues.amount,
-  ]);
+      functionName: "getFeeCCIP",
+      args: [toChainSelector, receiver, "0x", 0, tokenAddress, parsedAmount],
+    };
+  }
   
+  return null;
+}, [
+  isSeiChain,
+  isSepoliaChain,
+  seiTokenId,
+  parsedAmount,
+  smETH,
+  smSEI,
+  toChainSelector,
+  formValues.receiverAddress,
+  selectedTokenConfig,
+  formValues.fromChainId,
+  formValues.toChainId,
+  formValues.amount,
+]);
+
   const isError = !!error;
   const shouldRead =
-    !!bridgeConfig?.address &&
-    !!bridgeConfig?.args &&
-    (isSeiChain || isAddress(formValues.receiverAddress || "0x")) &&
-    !isFetchingTokenId &&
+  !!bridgeConfig?.address &&
+  !!bridgeConfig?.args &&
+  (isSeiChain || isAddress(formValues.receiverAddress || "0x")) &&
+  !isFetchingTokenId &&
     !tokenIdError;
 
-  const contractOptions = useMemo(() => {
+ const contractOptions = useMemo(() => {
     if (!shouldRead || !bridgeConfig) return null;
-    return {
-      address: bridgeConfig.address,
-      abi: bridgeConfig.abi,
-      functionName: bridgeConfig.functionName,
-      args: bridgeConfig.args,
-    };
-  }, [bridgeConfig, shouldRead]);
+  return {
+    address: bridgeConfig.address,
+    abi: bridgeConfig.abi,
+    functionName: bridgeConfig.functionName,
+    args: bridgeConfig.args,
+  };
+}, [bridgeConfig, shouldRead]);
 
   const { data: ccipFee, isLoading: isFeeLoading } = useReadContract(contractOptions ?? {});
   const onSubmit = async (data: FormData) => {
@@ -411,6 +407,7 @@ const BridgeTab = ({
       data.selectedToken !== "ETH" && selectedTokenConfig
         ? selectedTokenConfig.address[Number(data.fromChainId)] || ""
         : "";
+     setState({ isBridging: true, error: null });
     try {
       await handleBridge(
         Number(data.fromChainId),
@@ -426,7 +423,9 @@ const BridgeTab = ({
       const start = Date.now();
       setStartTime(start);
       setEstimatedTimeCountdown(900);
+       setState({ isBridging: false, error: null });
     } catch (err) {
+       setState({ isBridging: false, error: "Unknown error" });
       console.error("Bridge failed:", err);
     }
   }
