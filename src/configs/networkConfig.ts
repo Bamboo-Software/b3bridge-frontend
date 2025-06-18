@@ -95,7 +95,7 @@ const tokensList: Token[] = [
     symbol: "wETH",
     wrappedFrom: "ETH",
     address: {
-    [seiTestnet.id]: "0xe7Fd15568E498c7e62E8397597c23fA6e008189C",
+    [seiTestnet.id]: "0x087cFed0f5993e6C849172c5Ad59A3FD67FA3b99",
   },
   decimals: 6,
   logoURL: "/images/eth.avif",

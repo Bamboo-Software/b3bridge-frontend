@@ -187,7 +187,8 @@ function getTokenType(token?: Token): "native" | "erc20" | "wrapped-native" | "w
   walletClient?: any,
   force: boolean = true
 ): Promise<void> => {
-  try {
+    try {
+     setState({ isBridging: true, error: null });
     const amountInUnits = parseUnits(amountRaw, decimals);
     const currentAllowance: bigint = await readContract(config, {
       address: tokenAddress,
@@ -203,12 +204,13 @@ function getTokenType(token?: Token): "native" | "erc20" | "wrapped-native" | "w
         functionName: "approve",
         args: [spender, amountInUnits],
       });
-
-
-      const receipt = await waitForTransactionReceipt(walletClient, { hash: approveTx });
+      console.log("🚀 ~ useCCIPBridge ~ approveTx:", approveTx)
+      await waitForTransactionReceipt(walletClient, { hash: approveTx });
+       setState({ isBridging: false, error: null });
     } else {
     }
-  } catch (err: any) {
+    } catch (err: any) {
+      setState({ isBridging: false, error: err.message || "Unknown error" });
     if (err.code === 4001 || err.message?.toLowerCase().includes("user rejected")) {
       throw new Error("Transaction rejected by user");
     }
@@ -231,6 +233,7 @@ function getTokenType(token?: Token): "native" | "erc20" | "wrapped-native" | "w
   options: { isOFT: boolean }
 ): Promise<void> => {
   try {
+    console.log("🚀 ~ useCCIPBridge ~ receiver:", receiver)
     setState((prev) => ({ ...prev, isBridging: true, error: null }));
     setFromChainId(fromChainId);
     setContractAddress(smETH as `0x${string}`);
@@ -246,13 +249,15 @@ function getTokenType(token?: Token): "native" | "erc20" | "wrapped-native" | "w
     const opType = getBridgeOperationType(fromChainId, toChainId, toChainSelector, tokenAddress);
 
     const isBurnUnlock = opType === "burn-unlock";
+    console.log("🚀 ~ useCCIPBridge ~ isBurnUnlock:", isBurnUnlock)
     const isWrappedToken = opType === "wrapped-burn-unlock";
+    console.log("🚀 ~ useCCIPBridge ~ isWrappedToken:", isWrappedToken)
 
 
     if (isBurnUnlock) {
       await handleBurnUnlock(amount, balance, tokenConfig, tokenAddress, ccipFee);
     } else if (isWrappedToken) {
-      await handleBurnWrappedToken(amount, balance, tokenConfig, tokenAddress, ccipFee);
+      await handleBurnWrappedToken(amount, receiver, balance, tokenConfig, tokenAddress);
     } else {
       await handleLockMint(amount, balance, tokenConfig, tokenAddress, toChainSelector, receiver, ccipFee);
     }
@@ -292,13 +297,19 @@ const handleBurnUnlock = async (
       chainId: sepolia.id,
     });
 
+    const adjustedCcipFee = (ccipFee * BigInt(120)) / BigInt(100); // Tăng 20%
+    const feeAs9Decimals = adjustedCcipFee / BigInt(Math.pow(10, 9));
+    console.log("🚀 ~ useCCIPBridge ~ feeAs9Decimals:", feeAs9Decimals);
+    const formattedFee = parseUnits(feeAs9Decimals.toString(), 9);
+    console.log("🚀 ~ useCCIPBridge ~ formattedFee:", formattedFee);
+    console.log("🚀 ~ useCCIPBridge ~ parseUnits(, 9):", parseUnits("600000000", 9));
     await approveToken(tokenAddress as `0x${string}`, smSEI as `0x${string}`, amount,tokenConfig?.decimals ?? 18,wallet?.address as `0x${string}`,walletClient);
     const result = await writeContractAsync({
       address: smSEI as `0x${string}`,
       abi: SEI_BRIDGE_ABI.abi,
       functionName: "burnTokenCCIP",
       args: [tokenId, amountInUnits],
-      value: parseUnits("600000000", 9),
+      value:formattedFee,
     });
 
     setState((prev) => ({ ...prev, burnHash: result }));
@@ -354,13 +365,13 @@ const handleLockMint = async (
         const errorMessage = err.message === "Transaction rejected by user" ? "Giao dịch đã bị hủy bởi người dùng" : "Phê duyệt token thất bại";
         throw new Error(errorMessage);
       }
-
+      const formatted = formatUnits(ccipFee, 16);
       const result = await writeContractAsync({
         address: smETH as `0x${string}`,
         abi: SEPOLIA_BRIDGE_ABI.abi,
         functionName: "lockTokenCCIP",
         args: [tokenAddress as `0x${string}`, BigInt(toChainSelector), smSEI, receiver, amountInUnits, 0],
-        value: ccipFee + requiredFee,
+        value: parseUnits(formatted, 18),
       });
 
 
@@ -381,10 +392,10 @@ const handleLockMint = async (
 
 const handleBurnWrappedToken = async (
   amount: string,
+  receiver: string,
   balance: { decimals: number; formatted: string; symbol: string; value: bigint } | undefined,
   tokenConfig: Token | undefined,
   wrappedTokenAddress: string | undefined,
-  ccipFee: bigint
 ): Promise<void> => {
 
   try {
@@ -403,12 +414,25 @@ const handleBurnWrappedToken = async (
     await approveToken(wrappedTokenAddress as `0x${string}`, smSEI as `0x${string}`, amount,tokenConfig?.decimals ?? 18,wallet?.address as `0x${string}`,walletClient);
 
    
+    console.log(`🚀 ~ useCCIPBridge ~ {
+      address: smSEI as ,
+      abi: SEI_BRIDGE_ABI.abi,
+      functionName: "burnTokenVL",
+      args: [amountInUnits, wrappedTokenAddress as ,receiver],
+      value: parseUnits("600000000", 9),
+    }:`, {
+      address: smSEI as `0x${string}`,
+      abi: SEI_BRIDGE_ABI.abi,
+      functionName: "burnTokenVL",
+      args: [amountInUnits, wrappedTokenAddress as `0x${string}`,receiver],
+      value: parseUnits("600000000", 9),
+    })
     // Call the burnTokenVL function for wrapped tokens
     const result = await writeContractAsync({
       address: smSEI as `0x${string}`,
       abi: SEI_BRIDGE_ABI.abi,
       functionName: "burnTokenVL",
-      args: [amountInUnits, wrappedTokenAddress as `0x${string}`],
+      args: [amountInUnits, wrappedTokenAddress as `0x${string}`,receiver],
       value: parseUnits("600000000", 9),
     });
 
@@ -438,5 +462,6 @@ const handleBurnWrappedToken = async (
     isPaused,
     balance,
     refetchBalance,
+    setState
   };
 }
