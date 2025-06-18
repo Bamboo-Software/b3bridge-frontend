@@ -297,19 +297,13 @@ const handleBurnUnlock = async (
       chainId: sepolia.id,
     });
 
-    const adjustedCcipFee = (ccipFee * BigInt(120)) / BigInt(100); // Tăng 20%
-    const feeAs9Decimals = adjustedCcipFee / BigInt(Math.pow(10, 9));
-    console.log("🚀 ~ useCCIPBridge ~ feeAs9Decimals:", feeAs9Decimals);
-    const formattedFee = parseUnits(feeAs9Decimals.toString(), 9);
-    console.log("🚀 ~ useCCIPBridge ~ formattedFee:", formattedFee);
-    console.log("🚀 ~ useCCIPBridge ~ parseUnits(, 9):", parseUnits("600000000", 9));
     await approveToken(tokenAddress as `0x${string}`, smSEI as `0x${string}`, amount,tokenConfig?.decimals ?? 18,wallet?.address as `0x${string}`,walletClient);
     const result = await writeContractAsync({
       address: smSEI as `0x${string}`,
       abi: SEI_BRIDGE_ABI.abi,
       functionName: "burnTokenCCIP",
       args: [tokenId, amountInUnits],
-      value:formattedFee,
+      value:ccipFee,
     });
 
     setState((prev) => ({ ...prev, burnHash: result }));
@@ -339,16 +333,16 @@ const handleLockMint = async (
     if (!writeContractAsync) throw new Error("Contract write not available");
 
     if (!tokenAddress) {
-      const amountInWei = parseEther(amount);
-      if (!balance || balance.value < amountInWei) {
-        throw new Error(`Insufficient ETH balance. Required: ${formatUnits(amountInWei, 18)} ETH`);
+      const amountInUnits = parseUnits(amount, 6);
+      if (!balance || balance.value < amountInUnits) {
+        throw new Error(`Insufficient ETH balance. Required: ${formatUnits(amountInUnits, 18)} ETH`);
       }
       const result = await writeContractAsync({
         address: smETH as `0x${string}`,
         abi: SEPOLIA_BRIDGE_ABI.abi,
         functionName: "lockTokenVL",
-        args: ["0x0000000000000000000000000000000000000000",amountInWei,smSEI, receiver],
-        value: amountInWei,
+        args: ["0x0000000000000000000000000000000000000000",amountInUnits,smSEI, receiver],
+        value: amountInUnits,
       });
 
 
