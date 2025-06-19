@@ -21,33 +21,33 @@ interface IWalletOptionProps {
 
 export default function AppLayout({ children }: LayoutProps) {
    const pathname = usePathname();
-  const [cursorPosition, setCursorPosition] = useState({ x: -100, y: -100 });
-  const [isPointerDown, setIsPointerDown] = useState(false);
+  // const [cursorPosition, setCursorPosition] = useState({ x: -100, y: -100 });
+  // const [isPointerDown, setIsPointerDown] = useState(false);
 
 
-  useEffect(() => {
-    const handlePointerMove = (e: PointerEvent) => {
-      setCursorPosition({ x: e.clientX, y: e.clientY });
-    };
-    const handlePointerDown = () => setIsPointerDown(true);
-    const handlePointerUp = () => setIsPointerDown(false);
+  // useEffect(() => {
+  //   const handlePointerMove = (e: PointerEvent) => {
+  //     setCursorPosition({ x: e.clientX, y: e.clientY });
+  //   };
+  //   const handlePointerDown = () => setIsPointerDown(true);
+  //   const handlePointerUp = () => setIsPointerDown(false);
 
-    window.addEventListener("pointermove", handlePointerMove);
-    window.addEventListener("pointerdown", handlePointerDown);
-    window.addEventListener("pointerup", handlePointerUp);
+  //   window.addEventListener("pointermove", handlePointerMove);
+  //   window.addEventListener("pointerdown", handlePointerDown);
+  //   window.addEventListener("pointerup", handlePointerUp);
 
-    return () => {
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerdown", handlePointerDown);
-      window.removeEventListener("pointerup", handlePointerUp);
-    };
-  }, []);
+  //   return () => {
+  //     window.removeEventListener("pointermove", handlePointerMove);
+  //     window.removeEventListener("pointerdown", handlePointerDown);
+  //     window.removeEventListener("pointerup", handlePointerUp);
+  //   };
+  // }, []);
 
 
   return (
     <div className={`relative w-full h-screen overflow-hidden flex flex-col items-center justify-center font-manrope`}  >
       {/* Custom cursor effect */}
-      <motion.div
+      {/* <motion.div
         className={`magic-cursor ${isPointerDown ? "active" : ""}`}
         initial={{ opacity: 0 }}
         animate={{
@@ -56,15 +56,15 @@ export default function AppLayout({ children }: LayoutProps) {
           y: cursorPosition.y,
         }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-      />
+      /> */}
 
       {/* Header with floating effect */}
 
       {/* Main content */}
-      <main className="w-full h-full flex flex-col items-center justify-center relative z-10">
-        <Suspense fallback={<LoadingScreen />}>
+      <main className="w-full h-full bg-black flex flex-col items-center justify-center relative z-10">
+        {/* <Suspense fallback={<LoadingScreen />}>
           <CanvasScene />
-        </Suspense>
+        </Suspense> */}
 
         <motion.div
           initial={{ opacity: 0, x: -20 }}

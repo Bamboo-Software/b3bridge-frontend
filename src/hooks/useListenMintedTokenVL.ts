@@ -56,9 +56,12 @@ import { config } from "@/configs/wagmi";
 export const usePollMintedTokenVL = ({
   recipient,
   onMinted,
+  onAfterMinted,
 }: {
   recipient: string;
+  enabled?: boolean;
   onMinted: (event: { recipientAddr: string; token: string; amount: bigint }) => void;
+  onAfterMinted?: () => void;
 }) => {
   const lastCheckedBlockRef = useRef<bigint | null>(null);
 
@@ -66,16 +69,15 @@ export const usePollMintedTokenVL = ({
     if (!recipient) return;
 
     const smSEI = getBridgeAddress("sei");
-    const publicClient = getPublicClient(config,{ chainId: 1328 });
+    const publicClient = getPublicClient(config, { chainId: 1328 });
     const abiEvent = parseAbiItem(
       "event MintedTokenVL(address recipientAddr, address token, uint256 amount)"
     );
-    console.log("🚀 ~ useEffect ~ publicClient:", publicClient)
 
     const pollLogs = async () => {
       try {
         const currentBlock = await publicClient!.getBlockNumber();
-        const fromBlock = lastCheckedBlockRef.current ?? (currentBlock - BigInt("50"));
+        const fromBlock = lastCheckedBlockRef.current ?? currentBlock - BigInt(50);
         lastCheckedBlockRef.current = currentBlock;
 
         const logs = await publicClient!.getLogs({
@@ -91,9 +93,13 @@ export const usePollMintedTokenVL = ({
             token: string;
             amount: bigint;
           };
+
           if (recipientAddr.toLowerCase() === recipient.toLowerCase()) {
             console.log("✅ MintedTokenVL matched:", { token, amount });
             onMinted({ recipientAddr, token, amount });
+
+            // ✅ Gọi callback sau khi xử lý xong
+            onAfterMinted?.();
           }
         }
       } catch (err) {
@@ -101,7 +107,7 @@ export const usePollMintedTokenVL = ({
       }
     };
 
-    const interval = setInterval(pollLogs, 4000);
+    const interval = setInterval(pollLogs, 10000);
     return () => clearInterval(interval);
-  }, [recipient, onMinted]);
+  }, [recipient, onMinted, onAfterMinted]);
 };

@@ -1,4 +1,3 @@
-// hooks/usePollUnlockedTokenVL.ts
 import { useEffect, useRef } from "react";
 import { getPublicClient } from "wagmi/actions";
 import { parseAbiItem } from "viem";
@@ -10,6 +9,7 @@ export const usePollUnlockedTokenVL = ({
   onUnlocked,
 }: {
   recipient: string;
+  // enabled?: boolean;
   onUnlocked: (event: {
     recipientAddr: string;
     amount: bigint;
@@ -20,16 +20,20 @@ export const usePollUnlockedTokenVL = ({
   useEffect(() => {
     if (!recipient) return;
 
+    let isMounted = true;
+    const chainId = 11155111;
     const smETH = getBridgeAddress("ethereum");
-    const publicClient = getPublicClient(config, { chainId: 11155111 });
+    const publicClient = getPublicClient(config, { chainId });
+
     const abiEvent = parseAbiItem(
       "event UnlockedTokenVL(address indexed recipientAddr, uint256 amount)"
     );
 
     const pollLogs = async () => {
+      if (!isMounted || !recipient) return;
       try {
         const currentBlock = await publicClient!.getBlockNumber();
-        const fromBlock = lastCheckedBlockRef.current ?? (currentBlock - BigInt("50"));
+        const fromBlock = lastCheckedBlockRef.current ?? (currentBlock - BigInt(50));
         lastCheckedBlockRef.current = currentBlock;
 
         const logs = await publicClient!.getLogs({
@@ -54,7 +58,10 @@ export const usePollUnlockedTokenVL = ({
       }
     };
 
-    const interval = setInterval(pollLogs, 4000);
-    return () => clearInterval(interval);
+    const interval = setInterval(pollLogs, 10000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, [recipient, onUnlocked]);
 };

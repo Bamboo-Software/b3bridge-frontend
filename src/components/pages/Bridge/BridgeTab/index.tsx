@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TabsContent } from "@/components/ui/tabs";
-import {  chainSelectors, networkConfig, SEI_BRIDGE_ABI, seiTestnet, SEPOLIA_BRIDGE_ABI, Token } from "@/configs/networkConfig";
+import {  chainSelectors, networkConfig, SEI_BRIDGE_ABI, seiTestnet, SEPOLIA_BRIDGE_ABI, sepoliaTestnet, Token } from "@/configs/networkConfig";
 import { useWallet } from "@/hooks/useWallet";
 import { useModalStore } from "@/store/useModalStore";
 import { formatBalance, formatLength, getBridgeAddress } from "@/utils";
@@ -13,27 +13,18 @@ import { useForm, Controller, UseFormReset, UseFormSetValue } from "react-hook-f
 import React, { useEffect, useMemo, useState } from "react";
 import { formatEther, isAddress, parseUnits } from "ethers";
 import { useReadContract } from "wagmi";
-import { getWrappedOriginAddress, useCCIPBridge } from "@/hooks/useCCIPBridge";
+import {  useCCIPBridge } from "@/hooks/useCCIPBridge";
 import { config } from "@/configs/wagmi";
 import { readContract } from "@wagmi/core";
-import { sepolia } from "wagmi/chains";
+
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { formatUnits } from "viem";
-import { toast } from "sonner";
-import {
-  // useListenMintedEvent, useListenMintedTokenVL, usePollMintedEvent,
-  
-  usePollMintedTokenVL
-} from "@/hooks/useListenMintedTokenVL";
-import { usePollUnlockedTokenERC20VL } from "@/hooks/usePollUnlockedTokenERC20VL";
-import { usePollUnlockedTokenVL } from "@/hooks/usePollUnlockedTokenVL";
-import { usePollMintTokenCCIP } from "@/hooks/usePollMintTokenCCIP";
-import { usePollUnlockTokenCCIP } from "@/hooks/usePollUnlockTokenCCIP";
+
+import { useBridgeStatusStore } from "@/store/useBridgeStatusStore";
 
 export interface ChainConfig {
   chain: Chain
@@ -284,111 +275,6 @@ const BridgeTab = ({
   console.log("👀 Hook recipient:", recipient);
 
 
-//  usePollMintedTokenVL({
-//   recipient,
-//   onMinted: ({ recipientAddr, token, amount }) => {
-//     console.log("🎉 Minted on SEI!", { recipientAddr, token, amount });
-//     toast.success(`Token minted: ${amount.toString()} at ${token}`);
-//     setState({ isBridging: false, error: null });
-//   },
-// });
-   usePollMintedTokenVL({
-  recipient: recipient,
-  onMinted: ({ recipientAddr, token, amount }) => {
-    if (!recipientAddr) return;
-    console.log("🎉 Minted on SEI!", { recipientAddr, token, amount });
-
-    toast.success(`Token minted: ${amount.toString()} at ${token}`);
-    // setStartTime(null);
-    // setElapsedTime(0);
-    reset({
-      fromChainId: "",
-      toChainId: "",
-      amount: "",
-      selectedToken: "",
-      receiverAddress: "",
-    });
-    setState({ isBridging: false, error: null });
-  },
-});
-
-  usePollUnlockedTokenERC20VL({
-    recipient: wallet?.address ?? "",
-    onUnlocked: ({ recipientAddr, tokenAddr, amount }) => {
-      console.log("🎉 ERC20 unlocked", tokenAddr, amount);
-       reset({
-        fromChainId: "",
-        toChainId: "",
-        amount: "",
-        selectedToken: "",
-        receiverAddress: ""
-      });
-    },
-  });
-  
-  usePollUnlockedTokenVL({
-    recipient: wallet?.address ?? "",
-    onUnlocked: ({ recipientAddr, amount }) => {
-      console.log("🎉 Native unlocked", amount);
-       reset({
-        fromChainId: "",
-        toChainId: "",
-        amount: "",
-        selectedToken: "",
-        receiverAddress: ""
-      });
-    },
-  });
-    
-    usePollMintTokenCCIP({
-    chainId: 1329,
-    recipient:wallet?.address ?? "",
-    onMint: ({ tokenId, amount }) => {
-      console.log("✅ Minted:", tokenId, amount);
-      reset({
-      fromChainId: "",
-      toChainId: "",
-      amount: "",
-      selectedToken: "",
-      receiverAddress: "",
-    });
-    },
-  });
-  
-  usePollUnlockTokenCCIP({
-    chainId: 11155111,
-    user: wallet?.address ?? "",
-    onUnlock: ({ token, amount }) => {
-      console.log("🔓 Unlocked:", token, amount);
-      reset({
-      fromChainId: "",
-      toChainId: "",
-      amount: "",
-      selectedToken: "",
-      receiverAddress: "",
-    });
-    },
-  });
-  console.log("🚀 ~ nativeLockHash:", nativeLockHash)
-  
-//   useEffect(() => {
-//     if (!startTime) return;
-    
-//     const interval = setInterval(() => {
-//       const elapsed = Math.floor((Date.now() - startTime) / 1000);
-//       const remaining = 900 - elapsed;
-      
-//       if (remaining <= 0) {
-//         setEstimatedTimeCountdown(0);
-//       setStartTime(null);
-//       clearInterval(interval);
-//     } else {
-//       setEstimatedTimeCountdown(remaining);
-//     }
-//   }, 1000);
-  
-//   return () => clearInterval(interval);
-// }, [startTime]);
 useEffect(() => {
   if (!startTime) return;
 
@@ -467,7 +353,7 @@ const {
   
   // Fetch tokenId for SEI chain
   useEffect(() => {
-    
+    console.log((process.env.SEPOLIA_CHAIN_RPC_URL))
     if (!isSeiChain || !selectedTokenConfig || !selectedToken || !formValues.fromChainId) {
       console.warn('⚠️ fetchTokenId not called due to missing conditions:', {
         isSeiChain,
@@ -501,7 +387,7 @@ const {
           abi: SEPOLIA_BRIDGE_ABI.abi,
           functionName: 'tokenAddressToId',
           args: [tokenAddressSource as `0x${string}`],
-          chainId: sepolia.id,
+          chainId: sepoliaTestnet.id,
       });
       
       setSeiTokenId(id as bigint);
@@ -511,7 +397,7 @@ const {
         stack: err.stack,
         token: selectedToken,
         smETH,
-        chainId: sepolia.id,
+        chainId: sepoliaTestnet.id,
       });
       setTokenIdError(
         err.message.includes('revert')
@@ -675,7 +561,39 @@ console.log("🚀 ~ contractOptions ~ contractOptions:", contractOptions)
   //   }
   // }, [state.isBridging]);
   console.log("🚀 ~ balance:", balance)
-console.log("🚀 ~ ccipFee:", ccipFee)
+  console.log("🚀 ~ ccipFee:", ccipFee)
+  
+  const {
+  shouldResetForm,
+  shouldResetTimer,
+  clearResetFlags,
+} = useBridgeStatusStore();
+
+useEffect(() => {
+  if (shouldResetForm) {
+    reset({
+      fromChainId: "",
+      toChainId: "",
+      amount: "",
+      selectedToken: "",
+      receiverAddress: "",
+    });
+    setState((prev) => ({ ...prev, nativeLockHash: undefined  }));
+    setState((prev) => ({ ...prev, erc20LockHash: undefined  }));
+    setState((prev) => ({ ...prev, burnWrappedHash: undefined  }));
+    setState((prev) => ({ ...prev, burnHash: undefined  }));
+  }
+
+  if (shouldResetTimer) {
+    setStartTime(null);
+    setElapsedTime(0);
+  }
+
+  if (shouldResetForm || shouldResetTimer) {
+    clearResetFlags();
+  }
+}, [shouldResetForm,setState,clearResetFlags, shouldResetTimer, reset, setStartTime, setElapsedTime]);
+
   return (
     <div className="font-manrope">
       <TabsContent value="bridge" className="space-y-6">

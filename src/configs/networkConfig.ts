@@ -2,6 +2,33 @@ import { Address } from "viem";
 import { arbitrumSepolia, avalancheFuji, baseSepolia, bscTestnet, Chain, optimismSepolia, polygonAmoy, sepolia } from "viem/chains";
 import NativeBridgeABI from "@/constants/contracts/ccip-eth-sepolia.json";
 import B3BridgeDest from "@/constants/contracts/ccip-sei-testnet.json";
+export const sepoliaTestnet = {
+  id: 11155111,
+  name: 'Sepolia Testnet',
+  network: 'sepolia',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'Sepolia Ether',
+    symbol: 'ETH',
+  },
+  rpcUrls: {
+    default: {
+      http: [`${process.env.NEXT_PUBLIC_SEPOLIA_CHAIN_RPC_URL}/${process.env.NEXT_PUBLIC_SEPOLIA_CHAIN_RPC_KEY}`],
+      wss: [`${process.env.NEXT_PUBLIC_SEPOLIA_CHAIN_WS_URL}/${process.env.NEXT_PUBLIC_SEPOLIA_CHAIN_RPC_KEY}`],
+    },
+    public: {
+      http: [`${process.env.NEXT_PUBLIC_SEPOLIA_CHAIN_RPC_URL}/${process.env.NEXT_PUBLIC_SEPOLIA_CHAIN_RPC_KEY}`],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: 'Etherscan',
+      url: 'https://sepolia.etherscan.io',
+    },
+  },
+  testnet: true,
+};
+
 export const seiTestnet = {
   id: 1328,
   name: 'Sei Testnet',
@@ -13,12 +40,19 @@ export const seiTestnet = {
   },
   rpcUrls: {
     default: {
-      http: ['https://evm-rpc.atlantic-2.seinetwork.io'], wss: ['wss://evm-ws-testnet.sei-apis.com'] },
-  public: { http: ['https://evm-rpc.atlantic-2.seinetwork.io'] },
-},
+      http: [process.env.NEXT_PUBLIC_SEI_CHAIN_RPC_URL!],
+      wss: [process.env.NEXT_PUBLIC_SEI_CHAIN_WS_URL!],
+    },
+    public: {
+      http: [process.env.NEXT_PUBLIC_SEI_CHAIN_RPC_URL!],
+    },
+  },
   blockExplorers: {
-  default: { name: 'Sei EVM Explorer', url: 'https://sei.explorers.guru' },
-},
+    default: {
+      name: 'Sei EVM Explorer',
+      url: 'https://sei.explorers.guru',
+    },
+  },
   testnet: true,
 };
 
@@ -66,7 +100,7 @@ const tokensList: Token[] = [
   {
     symbol: "ETH",
     address: {
-      [sepolia.id]: undefined,
+      [sepoliaTestnet.id]: undefined,
       // [seiTestnet.id]: undefined,
     },
     decimals: 18,
@@ -76,7 +110,7 @@ const tokensList: Token[] = [
   {
     symbol: "USDC",
     address: {
-      [sepolia.id]: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+      [sepoliaTestnet.id]: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
     },
     decimals: 6,
     logoURL: "/images/usdc.avif",
@@ -106,7 +140,7 @@ const tokensList: Token[] = [
 
 const chains = [
   {
-    chain: sepolia,
+    chain: sepoliaTestnet,
     logoURL: "/svg/ethereum.svg"
   },
   {
@@ -116,28 +150,28 @@ const chains = [
 ];
 
 const linkContracts: AddressMap = {
-  [sepolia.id]: "0x779877A7B0D9E8603169DdbD7836e478b4624789",
+  [sepoliaTestnet.id]: "0x779877A7B0D9E8603169DdbD7836e478b4624789",
   [seiTestnet.id]: "0x..." as Address,
 };
 
 const routerAddresses: AddressMap = {
-  [sepolia.id]: "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59",
+  [sepoliaTestnet.id]: "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59",
   [seiTestnet.id]: "0x59F5222c5d77f8D3F56e34Ff7E75A05d2cF3a98A",
 };
 
 export const chainSelectors: Record<number, string> = {
-  [sepolia.id]: "16015286601757825753",
+  [sepoliaTestnet.id]: "16015286601757825753",
   [seiTestnet.id]: "1216300075444106652",
 };
 
 const ccipContracts = {
   sender: {
-    [sepolia.id]: "0x29a9fABe9138f2A228782FA58943f7c5E1936089" as Address,
+    [sepoliaTestnet.id]: "0x29a9fABe9138f2A228782FA58943f7c5E1936089" as Address,
     [seiTestnet.id]: "sei1wxy0plgymm6kka3lgnez67wu8pj47qqqc74l0fdgu74vxan2ykrszawfdx" as Address,
   },
   receiver: {
 
-    [sepolia.id]: "0x29a9fABe9138f2A228782FA58943f7c5E1936089" as Address,
+    [sepoliaTestnet.id]: "0x29a9fABe9138f2A228782FA58943f7c5E1936089" as Address,
 
     [seiTestnet.id]: "sei1wxy0plgymm6kka3lgnez67wu8pj47qqqc74l0fdgu74vxan2ykrszawfdx" as Address,
   },

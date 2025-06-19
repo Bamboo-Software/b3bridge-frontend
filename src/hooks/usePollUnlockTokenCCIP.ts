@@ -1,4 +1,3 @@
-// hooks/usePollUnlockTokenCCIP.ts
 import { useEffect, useRef } from "react";
 import { getPublicClient } from "wagmi/actions";
 import { parseAbiItem } from "viem";
@@ -8,6 +7,7 @@ import { config } from "@/configs/wagmi";
 interface UsePollUnlockTokenCCIPParams {
   chainId: number;
   user: string;
+  // enabled?: boolean;
   onUnlock?: (data: {
     user: string;
     token: string;
@@ -21,17 +21,18 @@ export function usePollUnlockTokenCCIP({ chainId, user, onUnlock }: UsePollUnloc
   const lastCheckedBlockRef = useRef<bigint | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if ( !user || chainId !== 11155111) return;
 
+    let isMounted = true;
     const bridgeAddress = getBridgeAddress("ethereum");
-    const publicClient = getPublicClient(config, { chainId:11155111 });
+    const publicClient = getPublicClient(config, { chainId });
 
     const abiEvent = parseAbiItem(
-  "event UnlockTokenCCIP(address user, address token, uint256 amount, uint256 balanceBefore, uint256 balanceAfter)"
-);
-
+      "event UnlockTokenCCIP(address user, address token, uint256 amount, uint256 balanceBefore, uint256 balanceAfter)"
+    );
 
     const poll = async () => {
+      if (!isMounted || !user) return;
       try {
         const currentBlock = await publicClient!.getBlockNumber();
         const fromBlock = lastCheckedBlockRef.current ?? (currentBlock - BigInt(50));
@@ -51,11 +52,15 @@ export function usePollUnlockTokenCCIP({ chainId, user, onUnlock }: UsePollUnloc
           }
         }
       } catch (err) {
-        console.error("Polling UnlockTokenCCIP error:", err);
+        console.error("❌ Polling UnlockTokenCCIP error:", err);
       }
     };
 
-    const interval = setInterval(poll, 4000);
-    return () => clearInterval(interval);
+    const interval = setInterval(poll, 10000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, [user, chainId, onUnlock]);
 }
+
