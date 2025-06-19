@@ -44,6 +44,7 @@
     "tailwindcss-animate": "^1.0.7",
     "three": "0.152.0",
     "wagmi": "2.12.25",
+    "web3": "^4.16.0",
     "zustand": "4.5.2"
   },
   "devDependencies": {
@@ -52,6 +53,7 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@types/three": "^0.176.0",
+    "@types/web3": "^1.2.2",
     "eslint": "^8",
     "eslint-config-next": "14.2.3",
     "postcss": "^8",

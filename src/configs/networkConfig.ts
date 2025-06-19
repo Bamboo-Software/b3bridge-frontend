@@ -12,14 +12,15 @@ export const seiTestnet = {
     symbol: 'SEI',
   },
   rpcUrls: {
-  default: { http: ['https://evm-rpc.atlantic-2.seinetwork.io'] },
+    default: {
+      http: ['https://evm-rpc.atlantic-2.seinetwork.io'], wss: ['wss://evm-ws-testnet.sei-apis.com'] },
   public: { http: ['https://evm-rpc.atlantic-2.seinetwork.io'] },
 },
   blockExplorers: {
   default: { name: 'Sei EVM Explorer', url: 'https://sei.explorers.guru' },
 },
   testnet: true,
-} as const;
+};
 
 export declare type Token = {
   /** The token's symbol that will be shown in the UI  */

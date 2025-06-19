@@ -1,6 +1,6 @@
 'use client'
 
-import { http, createConfig } from 'wagmi'
+import { http, createConfig, webSocket } from 'wagmi'
 import {
   mainnet,
   sepolia,

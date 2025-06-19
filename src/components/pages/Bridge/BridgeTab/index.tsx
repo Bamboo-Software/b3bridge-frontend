@@ -9,7 +9,7 @@ import { useWallet } from "@/hooks/useWallet";
 import { useModalStore } from "@/store/useModalStore";
 import { formatBalance, formatLength, getBridgeAddress } from "@/utils";
 import { motion } from "framer-motion";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, UseFormReset, UseFormSetValue } from "react-hook-form";
 import React, { useEffect, useMemo, useState } from "react";
 import { formatEther, isAddress, parseUnits } from "ethers";
 import { useReadContract } from "wagmi";
@@ -23,22 +23,88 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import { formatUnits } from "viem";
+import { toast } from "sonner";
+import {
+  // useListenMintedEvent, useListenMintedTokenVL, usePollMintedEvent,
+  
+  usePollMintedTokenVL
+} from "@/hooks/useListenMintedTokenVL";
+import { usePollUnlockedTokenERC20VL } from "@/hooks/usePollUnlockedTokenERC20VL";
+import { usePollUnlockedTokenVL } from "@/hooks/usePollUnlockedTokenVL";
+import { usePollMintTokenCCIP } from "@/hooks/usePollMintTokenCCIP";
+import { usePollUnlockTokenCCIP } from "@/hooks/usePollUnlockTokenCCIP";
 
-interface ChainConfig {
-  chain: { id: number; name: string };
-  logoURL?: string;
+export interface ChainConfig {
+  chain: Chain
+  logoURL: string
 }
+
+export interface Chain {
+  id: number
+  name: string
+  nativeCurrency: NativeCurrency
+  rpcUrls: RpcUrls
+  blockExplorers: BlockExplorers
+  contracts: Contracts
+  testnet: boolean
+}
+
+export interface NativeCurrency {
+  name: string
+  symbol: string
+  decimals: number
+}
+
+export interface RpcUrls {
+  default: Default
+}
+
+export interface Default {
+  http: string[]
+}
+
+export interface BlockExplorers {
+  default: Default2
+}
+
+export interface Default2 {
+  name: string
+  url: string
+  apiUrl: string
+}
+
+export interface Contracts {
+  multicall3: Multicall3
+  ensRegistry: EnsRegistry
+  ensUniversalResolver: EnsUniversalResolver
+}
+
+export interface Multicall3 {
+  address: string
+  blockCreated: number
+}
+
+export interface EnsRegistry {
+  address: string
+}
+
+export interface EnsUniversalResolver {
+  address: string
+  blockCreated: number
+}
+
 
 interface PropBridge {
   setFromChainId: (chainId: number | undefined) => void;
   setToChainId: (chainId: number | undefined) => void;
   setAmount: (amount: string) => void;
-  fromChain: ChainConfig | undefined;
-  toChain: ChainConfig | undefined;
+  fromChain: any;
+  toChain: any;
   fromChainId: number | undefined;
   toChainId: number | undefined;
   isBridging: boolean;
-  supportedChains: ChainConfig[];
+  supportedChains: any;
   availableTokens: Token[];
   selectedTokenConfig: Token | undefined;
   selectedToken: string;
@@ -75,18 +141,21 @@ const ChainSelector = ({
   supportedChains,
   disabledChains,
   selectedChain,
+  reset,
+  setValue
 }: {
+  setValue?: UseFormSetValue<FormData>
   label: string;
   chainId: number | undefined;
   onChange: (chainId: string) => void;
   supportedChains: ChainConfig[];
   disabledChains: number[];
-  selectedChain: ChainConfig | undefined;
+    selectedChain: ChainConfig | undefined;
+  reset?: UseFormReset<FormData>
 }) => {
-   const { fromChainIdStore } = useModalStore();
   const { wallet,disconnect,switchNetWorkWallet } = useWallet();
   const walletInfo = wallet ? wallet : undefined;
-  const { setFromChainIdStore } = useModalStore()
+  const { setFromChainIdStore, setToChainIdStore } = useModalStore();
   return (
     <div className="space-y-2 font-manrope">
       <div className="flex justify-between items-center">
@@ -100,7 +169,10 @@ const ChainSelector = ({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40">
               <DropdownMenuItem
-                onClick={() => disconnect()}
+                onClick={() => {
+                  reset?.()
+                  disconnect()
+                }}
                 className="text-red-500 cursor-pointer"
               >
                 Disconnect
@@ -112,16 +184,19 @@ const ChainSelector = ({
       <Select
           value={chainId?.toString() || ""}
           onValueChange={(val) => {
-            const selectedChainId = Number(val);
-            const isFromChain = label !== "To";
+          const selectedChainId = Number(val);
+          const isFromChain = label !== "To";
 
-            onChange(val);
-            if (isFromChain) {
-              setFromChainIdStore(selectedChainId);
-            }
+          onChange(val);
 
-            switchNetWorkWallet(selectedChainId, isFromChain);
-          }}
+          if (isFromChain) {
+            setFromChainIdStore(selectedChainId);
+            setValue?.("selectedToken", "");
+          } else {
+            setToChainIdStore(selectedChainId);
+          }
+          switchNetWorkWallet(selectedChainId, isFromChain);
+        }}
         >
         <SelectTrigger className="w-full border font-manrope font-bold border-green-500/40 bg-gray-800/70 rounded-xl text-lg text-gray-400 focus:ring-2 focus:ring-green-500/60 hover:bg-gray-700/70 transition-all duration-200 flex items-center justify-between px-4 py-2">
           <SelectValue placeholder="Select a chain" className="bg-gray-800/70">
@@ -188,40 +263,144 @@ const BridgeTab = ({
   state,
   setReceiverAddress,
 }: PropBridge) => {
-  const { wallet } = useWallet();
-  const { handleBridge,erc20LockHash,setState } = useCCIPBridge();
+  console.log("🚀 ~ fromChain:", fromChain)
+  console.log("🚀 ~ toChain:", toChain)
+  console.log("🚀 ~ state:", state)
+  const { wallet} = useWallet();
+  const { handleBridge,erc20LockHash,setState,burnWrappedHash, burnHash,nativeLockHash } = useCCIPBridge();
+  console.log("🚀 ~ erc20LockHash:", erc20LockHash)
+  console.log("🚀 ~ burnHash:", burnHash)
+  console.log("🚀 ~ burnWrappedHash:", burnWrappedHash)
   const { openWalletModal, setFromChainIdStore } = useModalStore();
   const isDisabled = isBridging || isNativeLockPending || isERC20LockPending;
   const smETH = getBridgeAddress("ethereum");
   const smSEI = getBridgeAddress("sei");
-  const [estimatedTimeCountdown, setEstimatedTimeCountdown] = useState(0);
+  const [elapsedTime, setElapsedTime] = useState(0);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [seiTokenId, setSeiTokenId] = useState<bigint | null>(null);
   const [isFetchingTokenId, setIsFetchingTokenId] = useState(false);
   const [tokenIdError, setTokenIdError] = useState<string | null>(null);
+  const recipient = useMemo(() => wallet?.address ?? "", [wallet]);
+  console.log("👀 Hook recipient:", recipient);
 
+
+//  usePollMintedTokenVL({
+//   recipient,
+//   onMinted: ({ recipientAddr, token, amount }) => {
+//     console.log("🎉 Minted on SEI!", { recipientAddr, token, amount });
+//     toast.success(`Token minted: ${amount.toString()} at ${token}`);
+//     setState({ isBridging: false, error: null });
+//   },
+// });
+   usePollMintedTokenVL({
+  recipient: recipient,
+  onMinted: ({ recipientAddr, token, amount }) => {
+    if (!recipientAddr) return;
+    console.log("🎉 Minted on SEI!", { recipientAddr, token, amount });
+
+    toast.success(`Token minted: ${amount.toString()} at ${token}`);
+    // setStartTime(null);
+    // setElapsedTime(0);
+    reset({
+      fromChainId: "",
+      toChainId: "",
+      amount: "",
+      selectedToken: "",
+      receiverAddress: "",
+    });
+    setState({ isBridging: false, error: null });
+  },
+});
+
+  usePollUnlockedTokenERC20VL({
+    recipient: wallet?.address ?? "",
+    onUnlocked: ({ recipientAddr, tokenAddr, amount }) => {
+      console.log("🎉 ERC20 unlocked", tokenAddr, amount);
+       reset({
+        fromChainId: "",
+        toChainId: "",
+        amount: "",
+        selectedToken: "",
+        receiverAddress: ""
+      });
+    },
+  });
   
-  useEffect(() => {
-    if (!startTime) return;
+  usePollUnlockedTokenVL({
+    recipient: wallet?.address ?? "",
+    onUnlocked: ({ recipientAddr, amount }) => {
+      console.log("🎉 Native unlocked", amount);
+       reset({
+        fromChainId: "",
+        toChainId: "",
+        amount: "",
+        selectedToken: "",
+        receiverAddress: ""
+      });
+    },
+  });
     
-    const interval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - startTime) / 1000);
-      const remaining = 900 - elapsed;
-      
-      if (remaining <= 0) {
-        setEstimatedTimeCountdown(0);
-      setStartTime(null);
-      clearInterval(interval);
-    } else {
-      setEstimatedTimeCountdown(remaining);
-    }
-  }, 1000);
+    usePollMintTokenCCIP({
+    chainId: 1329,
+    recipient:wallet?.address ?? "",
+    onMint: ({ tokenId, amount }) => {
+      console.log("✅ Minted:", tokenId, amount);
+      reset({
+      fromChainId: "",
+      toChainId: "",
+      amount: "",
+      selectedToken: "",
+      receiverAddress: "",
+    });
+    },
+  });
   
+  usePollUnlockTokenCCIP({
+    chainId: 11155111,
+    user: wallet?.address ?? "",
+    onUnlock: ({ token, amount }) => {
+      console.log("🔓 Unlocked:", token, amount);
+      reset({
+      fromChainId: "",
+      toChainId: "",
+      amount: "",
+      selectedToken: "",
+      receiverAddress: "",
+    });
+    },
+  });
+  console.log("🚀 ~ nativeLockHash:", nativeLockHash)
+  
+//   useEffect(() => {
+//     if (!startTime) return;
+    
+//     const interval = setInterval(() => {
+//       const elapsed = Math.floor((Date.now() - startTime) / 1000);
+//       const remaining = 900 - elapsed;
+      
+//       if (remaining <= 0) {
+//         setEstimatedTimeCountdown(0);
+//       setStartTime(null);
+//       clearInterval(interval);
+//     } else {
+//       setEstimatedTimeCountdown(remaining);
+//     }
+//   }, 1000);
+  
+//   return () => clearInterval(interval);
+// }, [startTime]);
+useEffect(() => {
+  if (!startTime) return;
+
+  const interval = setInterval(() => {
+    const secondsPassed = Math.floor((Date.now() - startTime) / 1000);
+    setElapsedTime(secondsPassed);
+  }, 1000);
+
   return () => clearInterval(interval);
 }, [startTime]);
 
-
-const formatCountdown = (seconds: number) => {
+const formatElapsed = (seconds: number) => {
   const minutes = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${minutes}:${secs.toString().padStart(2, '0')}`;
@@ -234,6 +413,7 @@ const {
   formState: { errors, isValid },
   setValue,
   watch,
+  reset
 } = useForm<FormData>({
   defaultValues: {
     fromChainId: fromChainId?.toString() || "",
@@ -244,6 +424,7 @@ const {
     },
     mode: "onChange",
   });
+    console.log("🚀 ~ selectedToken:", selectedToken)
   
   const formValues = watch();
   const isSeiChain = Number(formValues.fromChainId) === 1328;
@@ -262,6 +443,19 @@ const {
     }
   }, [formValues.toChainId]);
 
+
+  const isNativeRelatedToken = (tokenSymbol: string): boolean | undefined => {
+  const token = networkConfig.tokensList.find(t => t.symbol === tokenSymbol);
+  if (!token) return false;
+
+  const isETH = token.symbol === "ETH" && token.tags?.includes("native");
+  const isWrappedETH = token.wrappedFrom === "ETH" && token.tags?.includes("wrapped");
+
+  return isETH || isWrappedETH;
+};
+
+
+
   // Sync form values with parent state
   useEffect(() => {
     setFromChainId(formValues.fromChainId ? Number(formValues.fromChainId) : undefined);
@@ -273,7 +467,6 @@ const {
   
   // Fetch tokenId for SEI chain
   useEffect(() => {
-    // Log để kiểm tra các điều kiện
     
     if (!isSeiChain || !selectedTokenConfig || !selectedToken || !formValues.fromChainId) {
       console.warn('⚠️ fetchTokenId not called due to missing conditions:', {
@@ -332,7 +525,16 @@ const {
   };
   
   fetchTokenId();
-}, [isSeiChain, selectedToken, smETH, selectedTokenConfig, formValues.fromChainId, smSEI]);
+  }, [isSeiChain, selectedToken, smETH, selectedTokenConfig, formValues.fromChainId, smSEI]);
+  const isNativeToken = isNativeRelatedToken(formValues.selectedToken);
+
+if (isNativeToken) {
+  // Bỏ qua fee CCIP
+  console.log("🟢 Native or wrapped native token. Không cần ccipFee.");
+} else {
+  // Tính fee CCIP
+  console.log("🟡 ERC20 or wrapped ERC20. Cần tính ccipFee.");
+}
 // Calculate parsed amount
   const parsedAmount = useMemo(() => {
     return parseUnits(formValues.amount || "0", selectedTokenConfig?.decimals || 18);
@@ -340,6 +542,7 @@ const {
 
   // Construct bridgeConfig based on chain direction
   const bridgeConfig = useMemo(() => {
+    if (isNativeToken) return null;
     if (isSeiChain) {
       if (!seiTokenId || !formValues.amount?.trim()) {
         return null;
@@ -371,6 +574,7 @@ const {
   isSepoliaChain,
   seiTokenId,
   parsedAmount,
+  isNativeToken,
   smETH,
   smSEI,
   toChainSelector,
@@ -383,12 +587,14 @@ const {
 
   const isError = !!error;
   const shouldRead =
+     !isNativeToken && 
   !!bridgeConfig?.address &&
   !!bridgeConfig?.args &&
   (isSeiChain || isAddress(formValues.receiverAddress || "0x")) &&
   !isFetchingTokenId &&
     !tokenIdError;
 
+    console.log("🚀 ~ contractOptions ~ bridgeConfig:", bridgeConfig)
  const contractOptions = useMemo(() => {
     if (!shouldRead || !bridgeConfig) return null;
   return {
@@ -398,16 +604,21 @@ const {
     args: bridgeConfig.args,
   };
 }, [bridgeConfig, shouldRead]);
+console.log("🚀 ~ contractOptions ~ contractOptions:", contractOptions)
 
   const { data: ccipFee, isLoading: isFeeLoading } = useReadContract(contractOptions ?? {});
-  const onSubmit = async (data: FormData) => {
+ const onSubmit = async (data: FormData) => {
   if (!formValues.fromChainId || !wallet) return;
-  if (isValid && formValues.toChainId && formValues.amount && formValues.receiverAddress) {
+
+  if (isValid && data.toChainId && data.amount && data.receiverAddress) {
     const tokenAddress =
       data.selectedToken !== "ETH" && selectedTokenConfig
         ? selectedTokenConfig.address[Number(data.fromChainId)] || ""
         : "";
-     setState({ isBridging: true, error: null });
+
+        setState({ isBridging: true, error: null });
+        
+
     try {
       await handleBridge(
         Number(data.fromChainId),
@@ -420,16 +631,14 @@ const {
         ccipFee as bigint,
         { isOFT: false }
       );
-      const start = Date.now();
-      setStartTime(start);
-      setEstimatedTimeCountdown(900);
-       setState({ isBridging: false, error: null });
+      setStartTime(Date.now());
     } catch (err) {
-       setState({ isBridging: false, error: "Unknown error" });
-      console.error("Bridge failed:", err);
+      console.error("❌ Bridge thất bại:", err);
+      setState({ isBridging: false, error: "Lỗi không xác định" });
     }
   }
 };
+
   const handleButtonClick = async (event: React.MouseEvent<HTMLButtonElement>) => {
     if (!formValues.fromChainId) return;
 
@@ -441,7 +650,7 @@ const {
 
 
   const isButtonEnabled = () => {
-    if (estimatedTimeCountdown > 0) return false;
+    if (elapsedTime > 0) return false;
     if (!formValues.fromChainId || tokenIdError) return false;
     if (!wallet) return true;
     return !isDisabled || isError;
@@ -450,13 +659,23 @@ const {
   const getButtonText = () => {
     if (error === "Giao dịch đã bị hủy bởi người dùng") return "Giao dịch đã bị hủy";
     if (isError) return "Retry Bridge";
-    if (isDisabled || estimatedTimeCountdown > 0) return "Bridging...";
+    if (isDisabled || elapsedTime > 0) return "Bridging...";
     if (!formValues.fromChainId) return "Select Source Chain";
     if (!wallet) return "Connect Wallet";
     if (tokenIdError) return "Error Fetching Token ID";
     return "Bridge";
   };
-
+  console.log("🚀 ~ useEffect ~ state.isBridging:", state.isBridging)
+// useEffect(() => {
+//   if (state.isBridging) {
+//     setStartTime(Date.now());
+//   } else {
+  //     setStartTime(null); // reset timer khi bridging kết thúc
+  //     setElapsedTime(0);  // optional: reset thời gian hiển thị
+  //   }
+  // }, [state.isBridging]);
+  console.log("🚀 ~ balance:", balance)
+console.log("🚀 ~ ccipFee:", ccipFee)
   return (
     <div className="font-manrope">
       <TabsContent value="bridge" className="space-y-6">
@@ -468,9 +687,11 @@ const {
             render={({ field }) => (
               <div>
                 <ChainSelector
+                  setValue={setValue}
                   label="From"
                   chainId={Number(field.value) || undefined}
                   onChange={field.onChange}
+                  reset={reset}
                   supportedChains={supportedChains}
                   disabledChains={formValues.toChainId ? [Number(formValues.toChainId)] : []}
                   selectedChain={fromChain}
@@ -487,7 +708,7 @@ const {
             <div className="flex justify-between items-center mb-2">
               <span className="text-lg text-gray-400 font-medium">Token</span>
               <span className="text-lg text-gray-400 font-medium">
-                Balance: {balance ? formatLength(formatBalance(balance.value, selectedTokenConfig?.decimals || 18)) : "0"} {balance?.symbol || selectedToken}
+                Balance: {balance && formValues.fromChainId ? formatLength(formatBalance(balance.value, selectedTokenConfig?.decimals || 18)) : "0"} {balance && formValues.fromChainId ? (balance?.symbol || selectedToken):""}
               </span>
             </div>
             <div className="flex gap-3 items-center">
@@ -640,12 +861,12 @@ const {
                   : isFetchingTokenId || isFeeLoading
                   ? 'Calculating...'
                   : ccipFee != null
-                  ? `${formatLength(formatEther(ccipFee as bigint), true)} ETH`
-                  : '',
+                  ? `${formatLength(formatEther(ccipFee as bigint), true)} ${fromChain?.chain?.nativeCurrency?.symbol}`
+                        : ` ${formValues.amount} ${ fromChain ?fromChain?.chain?.nativeCurrency?.symbol : ""}`
               },
               {
                 label: "Estimated Time",
-                value: estimatedTimeCountdown > 0 ? formatCountdown(estimatedTimeCountdown) : "",
+                value: elapsedTime > 0 ? formatElapsed(elapsedTime) : "",
               },
               {
                 label: "Amount Received",
@@ -662,17 +883,26 @@ const {
               </div>
             ))}
           </motion.div>
-          {erc20LockHash && (
-            <Button
-              type="button"
-              className="w-full px-5 py-2.5 text-lg font-semibold bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-full shadow-lg hover:shadow-green-500/50 transition-all duration-300 border-none"
-              onClick={() =>
-                window.open(`https://sepolia.etherscan.io/tx/${erc20LockHash}`, "_blank")
-              }
-            >
-              View transactions
-            </Button>
-          )}
+          {(erc20LockHash || nativeLockHash || burnWrappedHash || burnHash) && (
+  <Button
+    type="button"
+    className="w-full px-5 py-2.5 text-lg font-semibold bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-full shadow-lg hover:shadow-green-500/50 transition-all duration-300 border-none"
+      onClick={() => {
+        const hash =
+          erc20LockHash || nativeLockHash || burnWrappedHash || burnHash;
+
+        const isSeiTx = !!(burnWrappedHash || burnHash);
+        const url = isSeiTx
+          ? `https://seitrace.com/tx/${hash}?chain=atlantic-2`
+          : `https://sepolia.etherscan.io/tx/${hash}`;
+
+        window.open(url, "_blank");
+      }}
+    >
+      View transaction
+    </Button>
+  )}
+
           {/* Submit Button */}
           <Button
             type="submit"
@@ -692,6 +922,7 @@ const {
       </TabsContent>
     </div>
   );
+                  
 };
 
 
