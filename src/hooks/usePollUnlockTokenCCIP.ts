@@ -7,7 +7,7 @@ import { config } from "@/configs/wagmi";
 interface UsePollUnlockTokenCCIPParams {
   chainId: number;
   user: string;
-  // enabled?: boolean;
+  enabled?: boolean;
   onUnlock?: (data: {
     user: string;
     token: string;
@@ -17,11 +17,11 @@ interface UsePollUnlockTokenCCIPParams {
   }) => void;
 }
 
-export function usePollUnlockTokenCCIP({ chainId, user, onUnlock }: UsePollUnlockTokenCCIPParams) {
+export function usePollUnlockTokenCCIP({ chainId, user, onUnlock, enabled = true }: UsePollUnlockTokenCCIPParams) {
   const lastCheckedBlockRef = useRef<bigint | null>(null);
 
   useEffect(() => {
-    if ( !user || chainId !== 11155111) return;
+    if (!enabled || !user || chainId !== 11155111) return;
 
     let isMounted = true;
     const bridgeAddress = getBridgeAddress("ethereum");
@@ -61,6 +61,6 @@ export function usePollUnlockTokenCCIP({ chainId, user, onUnlock }: UsePollUnloc
       isMounted = false;
       clearInterval(interval);
     };
-  }, [user, chainId, onUnlock]);
+  }, [user, chainId, enabled, onUnlock]);
 }
 
