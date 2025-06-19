@@ -1,4 +1,3 @@
-// hooks/usePollMintTokenCCIP.ts
 import { useEffect, useRef } from "react";
 import { getPublicClient } from "wagmi/actions";
 import { parseAbiItem } from "viem";
@@ -8,6 +7,7 @@ import { config } from "@/configs/wagmi";
 interface UsePollMintTokenCCIPParams {
   chainId: number;
   recipient: string;
+  enabled?: boolean;
   onMint?: (data: {
     messageId: string;
     sourceChainSelector: bigint;
@@ -17,19 +17,23 @@ interface UsePollMintTokenCCIPParams {
   }) => void;
 }
 
-export function usePollMintTokenCCIP({ chainId, recipient, onMint }: UsePollMintTokenCCIPParams) {
+export function usePollMintTokenCCIP({
+  chainId,
+  recipient,
+  // enabled = true,
+  onMint,
+}: UsePollMintTokenCCIPParams) {
   const lastCheckedBlockRef = useRef<bigint | null>(null);
 
   useEffect(() => {
     if (!recipient) return;
 
     const bridgeAddress = getBridgeAddress("sei");
-    const publicClient = getPublicClient(config, { chainId :1328 });
+    const publicClient = getPublicClient(config, { chainId: 1328 });
 
     const abiEvent = parseAbiItem(
-  "event MintTokenCCIP(bytes32 messageId, uint64 sourceChainSelector, address receiver, bytes32 tokenId, uint256 amount)"
-);
-
+      "event MintTokenCCIP(bytes32 indexed messageId, uint64 indexed sourceChainSelector, address receiver, bytes32 tokenId, uint256 amount)"
+    );
 
     const poll = async () => {
       try {
@@ -55,7 +59,7 @@ export function usePollMintTokenCCIP({ chainId, recipient, onMint }: UsePollMint
       }
     };
 
-    const interval = setInterval(poll, 4000);
+    const interval = setInterval(poll, 10000);
     return () => clearInterval(interval);
   }, [recipient, chainId, onMint]);
 }

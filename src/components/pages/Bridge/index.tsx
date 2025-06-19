@@ -5,13 +5,21 @@ import { motion } from "framer-motion";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWallet } from "@/hooks/useWallet";
 import { useCCIPBridge } from "@/hooks/useCCIPBridge";
-import { networkConfig } from "@/configs/networkConfig";
-import { useBalance } from "wagmi";
+import { networkConfig, sepoliaTestnet } from "@/configs/networkConfig";
+import { useBalance, useChainId } from "wagmi";
 import BridgeTab from "./BridgeTab";
 import { bridgeTabs } from "@/constants";
 import HistoryTab from "./HistoryTab";
 import { useModalStore } from "@/store/useModalStore";
-import { sepolia } from "wagmi/chains";
+import { usePollMintedTokenVL } from "@/hooks/useListenMintedTokenVL";
+import { toast } from "sonner";
+import { usePollUnlockedTokenERC20VL } from "@/hooks/usePollUnlockedTokenERC20VL";
+import { usePollUnlockedTokenVL } from "@/hooks/usePollUnlockedTokenVL";
+import { usePollMintTokenCCIP } from "@/hooks/usePollMintTokenCCIP";
+import { usePollUnlockTokenCCIP } from "@/hooks/usePollUnlockTokenCCIP";
+import { useForm } from "react-hook-form";
+import { formatLength } from "@/utils";
+import { useBridgeStatusStore } from "@/store/useBridgeStatusStore";
 
 interface ChainConfig {
   chain: { id: number; name: string };
@@ -27,13 +35,16 @@ interface Token {
 
 export default function BridgePage() {
   const { wallet } = useWallet();
-  const { isBridging, isNativeLockPending, isERC20LockPending, error,state } = useCCIPBridge();
+  const { isBridging, isNativeLockPending, isERC20LockPending, error,state,setState } = useCCIPBridge();
   const [fromChainId, setFromChainId] = useState<number | undefined>(undefined);
   const [toChainId, setToChainId] = useState<number | undefined>(undefined);
   const [amount, setAmount] = useState("");
   const [selectedToken, setSelectedToken] = useState<string>("");
   const [receiverAddress, setReceiverAddress] = useState<string>("");
   const [selectedTab, setSelectedTab] = useState("bridge");
+  const recipient = useMemo(() => wallet?.address ?? "", [wallet]);
+  const triggerReset = useBridgeStatusStore((state) => state.triggerReset);
+  console.log("👀 Hook recipient:", recipient);
   const setFromChainIdStore = useModalStore.getState().setFromChainIdStore;
   const selectedTokenConfig = useMemo(
     () => networkConfig.tokensList.find((t) => t.symbol === selectedToken),
@@ -45,7 +56,7 @@ export default function BridgePage() {
     if (!fromChainId) return [];
     return networkConfig.tokensList.filter((token) => {
       if (token.symbol === "ETH") {
-        return fromChainId === sepolia.id;
+        return fromChainId === sepoliaTestnet.id;
       }
       return token.address[fromChainId] !== undefined;
     });
@@ -59,7 +70,61 @@ export default function BridgePage() {
         ? (selectedTokenConfig.address[fromChainId] as `0x${string}`)
         : undefined,
   });
- 
+  const handleMinted = useCallback(({ recipientAddr, token, amount }: any) => {
+    if (!recipientAddr) return;
+    console.log("🎉 Minted on SEI!", { recipientAddr, token, amount });
+    toast.success(`Token minted: ${amount.toString()} at ${token}`);
+    // setState((prev) => ({ ...prev, nativeLockHash: undefined  }));
+    triggerReset();
+  }, [triggerReset]);
+    usePollMintedTokenVL({
+    recipient: recipient,
+    onMinted:handleMinted,
+    });
+
+  const handleUnlocked = useCallback(({ amount }: { amount: bigint }) => {
+  if (!wallet?.address) return;
+
+  console.log("🎉 Native unlocked", amount);
+  toast.success(`Token unlocked: ${amount.toString()}`);
+  triggerReset();
+}, [wallet?.address, triggerReset]);
+
+usePollUnlockedTokenVL({
+  recipient: wallet?.address ?? "",
+  onUnlocked: handleUnlocked,
+});
+
+  const handleMintedCCIP = useCallback(({ tokenId, amount }: { tokenId: string; amount: bigint }) => {
+  if (!wallet?.address) return;
+
+  console.log("✅ Minted:", tokenId, amount);
+  toast.success(`Token minted: ${amount.toString()} (Token ID: ${tokenId})`);
+  triggerReset();
+}, [wallet?.address, triggerReset]);
+
+usePollMintTokenCCIP({
+  chainId: 1329,
+  recipient: wallet?.address ?? "",
+  onMint: handleMintedCCIP,
+});
+
+  const handleUnlockedCCIP = useCallback(({ token, amount }: { token: string; amount: bigint }) => {
+  if (!wallet?.address) return;
+
+  console.log("🔓 Unlocked:", token, amount);
+  toast.success(`Token unlocked: ${amount.toString()} from ${token}`);
+  triggerReset();
+}, [wallet?.address, triggerReset]);
+
+const currentChainId = useChainId();
+
+usePollUnlockTokenCCIP({
+  chainId: currentChainId,
+  user: wallet?.address ?? "",
+  // enabled: isSepolia,
+  onUnlock: handleUnlockedCCIP,
+});
 
 useEffect(() => {
   if (address && fromChainId && selectedTokenConfig) {

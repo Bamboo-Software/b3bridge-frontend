@@ -7,14 +7,13 @@ import {
   useReadContract,
   useWalletClient,
 } from "wagmi";
-import { parseEther, parseUnits, encodeAbiParameters, formatUnits } from "viem";
-import { erc20Abi } from "viem";
+import {  parseUnits, formatUnits } from "viem";
 import { getAddress } from "ethers";
-import { simulateContract, waitForTransactionReceipt, writeContract } from "viem/actions";
-import { seiTestnet, sepolia } from "wagmi/chains";
+import {  waitForTransactionReceipt } from "viem/actions";
+import { seiTestnet } from "wagmi/chains";
 import { readContract } from "@wagmi/core";
 import { config } from "@/configs/wagmi";
-import { networkConfig, SEI_BRIDGE_ABI, SEPOLIA_BRIDGE_ABI, Token } from "@/configs/networkConfig";
+import { networkConfig, SEI_BRIDGE_ABI, SEPOLIA_BRIDGE_ABI, sepoliaTestnet, Token } from "@/configs/networkConfig";
 import { useWallet } from "./useWallet";
 import { getBridgeAddress } from "@/utils";
 const ERC20_ABI = [
@@ -53,19 +52,7 @@ const ERC20_ABI = [
     type: "function",
   },
 ];
-const CCIP_ROUTER_ABI = [
-  {
-    inputs: [{ internalType: "bytes32", name: "messageId", type: "bytes32" }],
-    name: "getMessageStatus",
-    outputs: [{ internalType: "uint8", name: "", type: "uint8" }],
-    stateMutability: "view",
-    type: "function"
-  }
-];
 
-interface BridgeOptions {
-  isOFT?: boolean;
-}
 
 interface BridgeState {
   isBridging: boolean;
@@ -151,8 +138,8 @@ const getBridgeOperationType = (
   const token = getTokenConfig(tokenAddress);
   const type = getTokenType(token);
 
-  const isSepolia = toChainId === sepolia.id &&
-    toChainSelector === networkConfig.chainSelectors[sepolia.id];
+  const isSepolia = toChainId === sepoliaTestnet.id &&
+    toChainSelector === networkConfig.chainSelectors[sepoliaTestnet.id];
 
   if (type === "wrapped-erc20" && isSepolia) return "burn-unlock";
   if (type === "wrapped-native" && isSepolia) return "wrapped-burn-unlock";
@@ -297,14 +284,14 @@ const handleBurnUnlock = async (
       throw new Error(`Insufficient ${tokenConfig?.symbol} balance. Required: ${amount}`);
     }
 
-    const tokenAddressSource = getWrappedOriginAddress(balance.symbol, sepolia.id);
+    const tokenAddressSource = getWrappedOriginAddress(balance.symbol, sepoliaTestnet.id);
 
     const tokenId = await readContract(config, {
       address: smETH as `0x${string}`,
       abi: SEPOLIA_BRIDGE_ABI.abi,
       functionName: "tokenAddressToId",
       args: [tokenAddressSource as `0x${string}`],
-      chainId: sepolia.id,
+      chainId: sepoliaTestnet.id,
     });
 
     await approveToken(tokenAddress as `0x${string}`, smSEI as `0x${string}`, amount,tokenConfig?.decimals ?? 18,wallet?.address as `0x${string}`,walletClient);
@@ -371,27 +358,29 @@ const handleLockMint = async (
         throw new Error(errorMessage);
       }
       const formatted = formatUnits(ccipFee, 16);
-      const { request, result: messageId } = await simulateContract(walletClient!,{
-          address: smETH as `0x${string}`,
-          abi: SEPOLIA_BRIDGE_ABI.abi,
-          functionName: "lockTokenCCIP",
-          args: [tokenAddress as `0x${string}`, BigInt(toChainSelector), smSEI, receiver, amountInUnits, 0],
-          value: parseUnits(formatted, 18),
-          account: wallet?.address as `0x${string}`,
-        });
+      // const { request, result: messageId } = await simulateContract(walletClient!,{
+      //     address: smETH as `0x${string}`,
+      //     abi: SEPOLIA_BRIDGE_ABI.abi,
+      //     functionName: "lockTokenCCIP",
+      //     args: [tokenAddress as `0x${string}`, BigInt(toChainSelector), smSEI, receiver, amountInUnits, 0],
+      //     value: parseUnits(formatted, 18),
+      //     account: wallet?.address as `0x${string}`,
+      //   });
 
-        // 2. Gửi transaction
-        const txHash = await writeContract(walletClient!,request);
+      //   // 2. Gửi transaction
+      //   const txHash = await writeContract(walletClient!,request);
 
-        // 3. Lưu cả txHash và messageId
-        console.log("📤 txHash:", txHash);
-        console.log("📨 messageId:", messageId);
-
-        setState((prev) => ({
-          ...prev,
-          erc20LockHash: txHash,
-          ccipMessageId: messageId,
-        }));
+      //   // 3. Lưu cả txHash và messageId
+      //   console.log("📤 txHash:", txHash);
+      //   console.log("📨 messageId:", messageId);
+        const result = await writeContractAsync({
+        address: smETH as `0x${string}`,
+        abi: SEPOLIA_BRIDGE_ABI.abi,
+        functionName: "lockTokenCCIP",
+        args: [tokenAddress as `0x${string}`, BigInt(toChainSelector), smSEI, receiver, amountInUnits, 0],
+        value: parseUnits(formatted, 18),
+      });
+         setState((prev) => ({ ...prev, erc20LockHash: result }))
     }
   } catch (err) {
     console.error("❌ ~ handleLockMint error:", err);
