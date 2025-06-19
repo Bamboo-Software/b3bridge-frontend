@@ -10,7 +10,7 @@ import {
 import { parseEther, parseUnits, encodeAbiParameters, formatUnits } from "viem";
 import { erc20Abi } from "viem";
 import { getAddress } from "ethers";
-import { waitForTransactionReceipt } from "viem/actions";
+import { simulateContract, waitForTransactionReceipt, writeContract } from "viem/actions";
 import { seiTestnet, sepolia } from "wagmi/chains";
 import { readContract } from "@wagmi/core";
 import { config } from "@/configs/wagmi";
@@ -53,6 +53,15 @@ const ERC20_ABI = [
     type: "function",
   },
 ];
+const CCIP_ROUTER_ABI = [
+  {
+    inputs: [{ internalType: "bytes32", name: "messageId", type: "bytes32" }],
+    name: "getMessageStatus",
+    outputs: [{ internalType: "uint8", name: "", type: "uint8" }],
+    stateMutability: "view",
+    type: "function"
+  }
+];
 
 interface BridgeOptions {
   isOFT?: boolean;
@@ -63,6 +72,7 @@ interface BridgeState {
   error: string | null;
   nativeLockHash?: `0x${string}`;
   erc20LockHash?: `0x${string}`;
+  burnWrappedHash?: `0x${string}`;
   burnHash?: `0x${string}`;
 }
 type BridgeOperation = "lock-mint" | "burn-unlock" | "wrapped-burn-unlock" | "unknown";
@@ -305,7 +315,8 @@ const handleBurnUnlock = async (
       args: [tokenId, amountInUnits],
       value:ccipFee,
     });
-
+      const receipt = await waitForTransactionReceipt(walletClient!,{ hash: result });
+      console.log("Status:", receipt);
     setState((prev) => ({ ...prev, burnHash: result }));
   } catch (err) {
     console.error("❌ ~ handleBurnUnlock error:", err);
@@ -333,7 +344,7 @@ const handleLockMint = async (
     if (!writeContractAsync) throw new Error("Contract write not available");
 
     if (!tokenAddress) {
-      const amountInUnits = parseUnits(amount, 6);
+      const amountInUnits = parseUnits(amount, 18);
       if (!balance || balance.value < amountInUnits) {
         throw new Error(`Insufficient ETH balance. Required: ${formatUnits(amountInUnits, 18)} ETH`);
       }
@@ -360,16 +371,27 @@ const handleLockMint = async (
         throw new Error(errorMessage);
       }
       const formatted = formatUnits(ccipFee, 16);
-      const result = await writeContractAsync({
-        address: smETH as `0x${string}`,
-        abi: SEPOLIA_BRIDGE_ABI.abi,
-        functionName: "lockTokenCCIP",
-        args: [tokenAddress as `0x${string}`, BigInt(toChainSelector), smSEI, receiver, amountInUnits, 0],
-        value: parseUnits(formatted, 18),
-      });
+      const { request, result: messageId } = await simulateContract(walletClient!,{
+          address: smETH as `0x${string}`,
+          abi: SEPOLIA_BRIDGE_ABI.abi,
+          functionName: "lockTokenCCIP",
+          args: [tokenAddress as `0x${string}`, BigInt(toChainSelector), smSEI, receiver, amountInUnits, 0],
+          value: parseUnits(formatted, 18),
+          account: wallet?.address as `0x${string}`,
+        });
 
+        // 2. Gửi transaction
+        const txHash = await writeContract(walletClient!,request);
 
-      setState((prev) => ({ ...prev, erc20LockHash: result }));
+        // 3. Lưu cả txHash và messageId
+        console.log("📤 txHash:", txHash);
+        console.log("📨 messageId:", messageId);
+
+        setState((prev) => ({
+          ...prev,
+          erc20LockHash: txHash,
+          ccipMessageId: messageId,
+        }));
     }
   } catch (err) {
     console.error("❌ ~ handleLockMint error:", err);
@@ -408,26 +430,14 @@ const handleBurnWrappedToken = async (
     await approveToken(wrappedTokenAddress as `0x${string}`, smSEI as `0x${string}`, amount,tokenConfig?.decimals ?? 18,wallet?.address as `0x${string}`,walletClient);
 
    
-    console.log(`🚀 ~ useCCIPBridge ~ {
-      address: smSEI as ,
-      abi: SEI_BRIDGE_ABI.abi,
-      functionName: "burnTokenVL",
-      args: [amountInUnits, wrappedTokenAddress as ,receiver],
-      value: parseUnits("600000000", 9),
-    }:`, {
-      address: smSEI as `0x${string}`,
-      abi: SEI_BRIDGE_ABI.abi,
-      functionName: "burnTokenVL",
-      args: [amountInUnits, wrappedTokenAddress as `0x${string}`,receiver],
-      value: parseUnits("600000000", 9),
-    })
+    
     // Call the burnTokenVL function for wrapped tokens
     const result = await writeContractAsync({
       address: smSEI as `0x${string}`,
       abi: SEI_BRIDGE_ABI.abi,
       functionName: "burnTokenVL",
       args: [amountInUnits, wrappedTokenAddress as `0x${string}`,receiver],
-      value: parseUnits("600000000", 9),
+      value: parseUnits("" + amountInUnits, 9) // 0n
     });
 
 
@@ -450,6 +460,9 @@ const handleBurnWrappedToken = async (
     isERC20LockPending,
     state,
     erc20LockHash:state.erc20LockHash,
+    burnWrappedHash:state.burnWrappedHash,
+    burnHash:state.burnHash,
+    nativeLockHash:state.nativeLockHash,
     error: state.error,
     handleBridge,
     routerAddress,
