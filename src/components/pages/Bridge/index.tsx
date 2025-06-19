@@ -117,12 +117,12 @@ usePollMintTokenCCIP({
   triggerReset();
 }, [wallet?.address, triggerReset]);
 
-const currentChainId = useChainId();
+// const currentChainId = useChainId();
 
 usePollUnlockTokenCCIP({
-  chainId: currentChainId,
+  chainId: 11155111,
   user: wallet?.address ?? "",
-  // enabled: isSepolia,
+  // enabled: true,
   onUnlock: handleUnlockedCCIP,
 });
 
