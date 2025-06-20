@@ -97,7 +97,7 @@ usePollUnlockedTokenVL({
 }, [wallet?.address, triggerReset]);
 
 usePollMintTokenCCIP({
-  chainId: 1329,
+  chainId: Number(process.env.NEXT_PUBLIC_SEI_CHAIN_ID),
   recipient: wallet?.address ?? "",
   onMint: handleMintedCCIP,
 });
@@ -112,7 +112,7 @@ usePollMintTokenCCIP({
 
 
 usePollUnlockTokenCCIP({
-  chainId: 11155111,
+  chainId: Number(process.env.NEXT_PUBLIC_ETH_CHAIN_ID),
   user: wallet?.address ?? "",
   // enabled: true,
   onUnlock: handleUnlockedCCIP,

@@ -29,7 +29,7 @@ export function usePollMintTokenCCIP({
     if (!recipient) return;
 
     const bridgeAddress = getBridgeAddress("sei");
-    const publicClient = getPublicClient(config, { chainId: 1328 });
+    const publicClient = getPublicClient(config, { chainId: Number(process.env.NEXT_PUBLIC_SEI_CHAIN_ID) });
 
     const abiEvent = parseAbiItem(
       "event MintTokenCCIP(bytes32 indexed messageId, uint64 indexed sourceChainSelector, address receiver, bytes32 tokenId, uint256 amount)"

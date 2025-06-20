@@ -21,7 +21,7 @@ export const usePollMintedTokenVL = ({
     if (!recipient) return;
 
     const smSEI = getBridgeAddress("sei");
-    const publicClient = getPublicClient(config, { chainId: 1328 });
+    const publicClient = getPublicClient(config, { chainId: Number(process.env.NEXT_PUBLIC_SEI_CHAIN_ID) });
     const abiEvent = parseAbiItem(
       "event MintedTokenVL(address recipientAddr, address token, uint256 amount)"
     );

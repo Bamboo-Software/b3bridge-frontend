@@ -21,7 +21,7 @@ export function usePollUnlockTokenCCIP({ chainId, user, onUnlock, enabled = true
   const lastCheckedBlockRef = useRef<bigint | null>(null);
 
   useEffect(() => {
-    if (!enabled || !user || chainId !== 11155111) return;
+    if (!enabled || !user || chainId !== Number(process.env.NEXT_PUBLIC_ETH_CHAIN_ID)) return;
 
     let isMounted = true;
     const bridgeAddress = getBridgeAddress("ethereum");
