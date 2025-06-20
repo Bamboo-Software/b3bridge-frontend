@@ -1,52 +1,4 @@
-// // hooks/useListenMintedTokenVL.ts
-// import { useEffect } from "react";
-// import { watchContractEvent } from "@wagmi/core";
-// import { config } from "@/configs/wagmi";
-// import { SEI_BRIDGE_ABI } from "@/configs/networkConfig";
-// import { getBridgeAddress } from "@/utils";
 
-// export const useListenMintedTokenVL = ({
-//   recipient,
-//   onMinted,
-// }: {
-//   recipient: string;
-//   onMinted: (event: { recipientAddr: string; token: string; amount: bigint }) => void;
-// }) => {
-//   const smSEI = getBridgeAddress("sei");
-//   console.log("🚀 ~ smSEI:", smSEI)
-
-//   useEffect(() => {
-//     if (!recipient) return;
-//     console.log("aaaa")
-//     const unwatch = watchContractEvent(config, {
-//       address: smSEI as `0x${string}`,
-//       abi: SEI_BRIDGE_ABI.abi,
-//       eventName: "MintedTokenVL",
-//       chainId: 1328,
-//       onLogs(logs) {
-//         console.log("🚀 ~ onLogs ~ logs:", logs)
-//     //     logs.forEach((log) => {
-//     //       const { recipientAddr, token, amount } = log.args as {
-//     //         recipientAddr: string;
-//     //         token: string;
-//     //         amount: bigint;
-//     //       };
-
-//     //       if (recipientAddr.toLowerCase() === recipient.toLowerCase()) {
-//     //         console.log("✅ Minted event matched:", { token, amount });
-//     //         onMinted({ recipientAddr, token, amount });
-//     //       }
-//     //     });
-//       },
-//     });
-
-//     return () => unwatch(); // cleanup listener khi unmount
-//   }, [recipient, onMinted, smSEI]);
-// };
-
-
-
-// hooks/usePollMintedTokenVL.ts
 import { useEffect, useRef } from "react";
 import { getPublicClient } from "wagmi/actions";
 import { parseAbiItem } from "viem";
@@ -98,7 +50,6 @@ export const usePollMintedTokenVL = ({
             console.log("✅ MintedTokenVL matched:", { token, amount });
             onMinted({ recipientAddr, token, amount });
 
-            // ✅ Gọi callback sau khi xử lý xong
             onAfterMinted?.();
           }
         }

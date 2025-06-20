@@ -54,7 +54,6 @@ export const usePollUnlockedTokenERC20VL = ({
           };
 
           if (recipientAddr.toLowerCase() === recipient.toLowerCase()) {
-            console.log("✅ UnlockedTokenERC20VL matched:", { tokenAddr, amount });
             onUnlocked({ recipientAddr, tokenAddr, amount });
           }
         }

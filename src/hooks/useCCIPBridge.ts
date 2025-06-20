@@ -10,10 +10,9 @@ import {
 import {  parseUnits, formatUnits } from "viem";
 import { getAddress } from "ethers";
 import {  waitForTransactionReceipt } from "viem/actions";
-import { seiTestnet } from "wagmi/chains";
 import { readContract } from "@wagmi/core";
 import { config } from "@/configs/wagmi";
-import { networkConfig, SEI_BRIDGE_ABI, SEPOLIA_BRIDGE_ABI, sepoliaTestnet, Token } from "@/configs/networkConfig";
+import { networkConfig, SEI_BRIDGE_ABI, SEPOLIA_BRIDGE_ABI, ethChain, Token, seiChain } from "@/configs/networkConfig";
 import { useWallet } from "./useWallet";
 import { getBridgeAddress } from "@/utils";
 const ERC20_ABI = [
@@ -125,7 +124,7 @@ export function useCCIPBridge() {
       throw new Error("Invalid receiver address");
     }
     if (!smETH || !getAddress(smETH)) throw new Error(`Invalid sender contract address for chain ${fromChainId}`);
-    if (!smSEI || (toChainId !== seiTestnet.id && !getAddress(smSEI))) {
+    if (!smSEI || (toChainId !== seiChain.id && !getAddress(smSEI))) {
       throw new Error(`Invalid receiver contract address for chain ${toChainId}`);
     }
   };
@@ -136,10 +135,10 @@ const getBridgeOperationType = (
   tokenAddress: string | undefined
 ): BridgeOperation => {
   const token = getTokenConfig(tokenAddress);
-  const type = getTokenType(token);
 
-  const isSepolia = toChainId === sepoliaTestnet.id &&
-    toChainSelector === networkConfig.chainSelectors[sepoliaTestnet.id];
+  const type = getTokenType(token);
+  const isSepolia = toChainId === ethChain.id &&
+  toChainSelector === networkConfig.chainSelectors[ethChain.id];
 
   if (type === "wrapped-erc20" && isSepolia) return "burn-unlock";
   if (type === "wrapped-native" && isSepolia) return "wrapped-burn-unlock";
@@ -230,7 +229,6 @@ function getTokenType(token?: Token): "native" | "erc20" | "wrapped-native" | "w
   options: { isOFT: boolean }
 ): Promise<void> => {
   try {
-    console.log("🚀 ~ useCCIPBridge ~ receiver:", receiver)
     setState((prev) => ({ ...prev, isBridging: true, error: null }));
     setFromChainId(fromChainId);
     setContractAddress(smETH as `0x${string}`);
@@ -284,14 +282,14 @@ const handleBurnUnlock = async (
       throw new Error(`Insufficient ${tokenConfig?.symbol} balance. Required: ${amount}`);
     }
 
-    const tokenAddressSource = getWrappedOriginAddress(balance.symbol, sepoliaTestnet.id);
+    const tokenAddressSource = getWrappedOriginAddress(balance.symbol, ethChain.id);
 
     const tokenId = await readContract(config, {
       address: smETH as `0x${string}`,
       abi: SEPOLIA_BRIDGE_ABI.abi,
       functionName: "tokenAddressToId",
       args: [tokenAddressSource as `0x${string}`],
-      chainId: sepoliaTestnet.id,
+      chainId: ethChain.id,
     });
 
     await approveToken(tokenAddress as `0x${string}`, smSEI as `0x${string}`, amount,tokenConfig?.decimals ?? 18,wallet?.address as `0x${string}`,walletClient);
@@ -303,7 +301,6 @@ const handleBurnUnlock = async (
       value:ccipFee,
     });
       const receipt = await waitForTransactionReceipt(walletClient!,{ hash: result });
-      console.log("Status:", receipt);
     setState((prev) => ({ ...prev, burnHash: result }));
   } catch (err) {
     console.error("❌ ~ handleBurnUnlock error:", err);
@@ -358,21 +355,6 @@ const handleLockMint = async (
         throw new Error(errorMessage);
       }
       const formatted = formatUnits(ccipFee, 16);
-      // const { request, result: messageId } = await simulateContract(walletClient!,{
-      //     address: smETH as `0x${string}`,
-      //     abi: SEPOLIA_BRIDGE_ABI.abi,
-      //     functionName: "lockTokenCCIP",
-      //     args: [tokenAddress as `0x${string}`, BigInt(toChainSelector), smSEI, receiver, amountInUnits, 0],
-      //     value: parseUnits(formatted, 18),
-      //     account: wallet?.address as `0x${string}`,
-      //   });
-
-      //   // 2. Gửi transaction
-      //   const txHash = await writeContract(walletClient!,request);
-
-      //   // 3. Lưu cả txHash và messageId
-      //   console.log("📤 txHash:", txHash);
-      //   console.log("📨 messageId:", messageId);
         const result = await writeContractAsync({
         address: smETH as `0x${string}`,
         abi: SEPOLIA_BRIDGE_ABI.abi,
@@ -426,7 +408,7 @@ const handleBurnWrappedToken = async (
       abi: SEI_BRIDGE_ABI.abi,
       functionName: "burnTokenVL",
       args: [amountInUnits, wrappedTokenAddress as `0x${string}`,receiver],
-      value: parseUnits("" + amountInUnits, 9) // 0n
+      value: parseUnits("" + amountInUnits, 9)
     });
 
 
