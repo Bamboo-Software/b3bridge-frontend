@@ -114,7 +114,7 @@ usePollMintTokenCCIP({
 usePollUnlockTokenCCIP({
   chainId: Number(process.env.NEXT_PUBLIC_ETH_CHAIN_ID),
   user: wallet?.address ?? "",
-  // enabled: true,
+  // enabled: isBridging,
   onUnlock: handleUnlockedCCIP,
 });
 

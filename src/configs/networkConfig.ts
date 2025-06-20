@@ -1,5 +1,5 @@
 import { Address } from "viem";
-import { arbitrumSepolia, avalancheFuji, baseSepolia, bscTestnet, Chain, optimismSepolia, polygonAmoy, sepolia } from "viem/chains";
+import { Chain } from "viem/chains";
 import NativeBridgeABI from "@/constants/contracts/ccip-eth-sepolia.json";
 import B3BridgeDest from "@/constants/contracts/ccip-sei-testnet.json";
 export const ethChain = {
@@ -160,8 +160,8 @@ const chains = [
 // };
 
 export const chainSelectors: Record<number, string> = {
-  [ethChain.id]: "16015286601757825753",
-  [seiChain.id]: "1216300075444106652",
+  [ethChain.id]: process.env.NEXT_PUBLIC_ETH_SELECTOR!,
+  [seiChain.id]:  process.env.NEXT_PUBLIC_SEI_SELECTOR!,
 };
 
 // const ccipContracts = {
@@ -187,5 +187,5 @@ export const networkConfig: NetworkConfig = {
 };
 
 // Import the ABI
-export const SEPOLIA_BRIDGE_ABI = NativeBridgeABI;
+export const ETH_BRIDGE_ABI = NativeBridgeABI;
 export const SEI_BRIDGE_ABI = B3BridgeDest;

@@ -4,14 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TabsContent } from "@/components/ui/tabs";
-import {  networkConfig, SEI_BRIDGE_ABI, seiChain, SEPOLIA_BRIDGE_ABI, ethChain, Token, chainSelectors } from "@/configs/networkConfig";
+import {  networkConfig, SEI_BRIDGE_ABI, seiChain, ETH_BRIDGE_ABI, ethChain, Token, chainSelectors } from "@/configs/networkConfig";
 import { useWallet } from "@/hooks/useWallet";
 import { useModalStore } from "@/store/useModalStore";
 import { formatBalance, formatLength, getBridgeAddress } from "@/utils";
 import { motion } from "framer-motion";
 import { useForm, Controller, UseFormReset, UseFormSetValue } from "react-hook-form";
 import React, { useEffect, useMemo, useState } from "react";
-import { formatEther, isAddress, parseUnits } from "ethers";
+import { formatEther, formatUnits, isAddress, parseUnits } from "ethers";
 import { useReadContract } from "wagmi";
 import {  useCCIPBridge } from "@/hooks/useCCIPBridge";
 import { config } from "@/configs/wagmi";
@@ -262,7 +262,7 @@ const BridgeTab = ({
   const smSEI = getBridgeAddress("sei");
   const [elapsedTime, setElapsedTime] = useState(0);
   const [startTime, setStartTime] = useState<number | null>(null);
-  const [seiTokenId, setSeiTokenId] = useState<bigint | null>(null);
+  const [seiTokenId, setSeiTokenId] = useState<string | null>(null);
   const [isFetchingTokenId, setIsFetchingTokenId] = useState(false);
   const [tokenIdError, setTokenIdError] = useState<string | null>(null);
   const recipient = useMemo(() => wallet?.address ?? "", [wallet]);
@@ -306,7 +306,9 @@ const {
   
   const formValues = watch();
   const isSeiChain = Number(formValues.fromChainId) === Number(process.env.NEXT_PUBLIC_SEI_CHAIN_ID);
+  console.log("🚀 ~ isSeiChain:", isSeiChain)
   const isSepoliaChain = Number(formValues.fromChainId) === Number(process.env.NEXT_PUBLIC_ETH_CHAIN_ID);
+  console.log("🚀 ~ isSepoliaChain:", isSepoliaChain)
   
   // State to store the selected chain selector
   const [toChainSelector, setToChainSelector] = useState<string>("");
@@ -367,21 +369,24 @@ const {
           throw new Error(`Token ${selectedToken} not found in tokenConfig`);
         }
         
+        console.log("🚀 ~ fetchTokenId ~ token:", token)
         const tokenAddressSource = token.address[seiChain.id];
-        
+          console.log("🚀 ~ fetchTokenId ~ tokenAddressSource:", tokenAddressSource)
         if (!tokenAddressSource || !/^0x[a-fA-F0-9]{40}$/.test(tokenAddressSource)) {
           throw new Error(`Invalid token address for ${selectedToken}: ${tokenAddressSource}`);
         }
         
+       
         const id = await readContract(config, {
           address: smETH as `0x${string}`,
-          abi: SEPOLIA_BRIDGE_ABI.abi,
+          abi: ETH_BRIDGE_ABI.abi,
           functionName: 'tokenAddressToId',
           args: [tokenAddressSource as `0x${string}`],
           chainId: ethChain.id,
       });
+        console.log("🚀 ~ fetchTokenId ~ id:", id)
       
-      setSeiTokenId(id as bigint);
+      setSeiTokenId(id as string);
     } catch (err: any) {
       console.error(`❌ Failed to fetch tokenId for ${selectedToken}:`, {
         error: err.message,
@@ -428,7 +433,7 @@ if (isNativeToken) {
         address: smSEI as `0x${string}`,
         abi: SEI_BRIDGE_ABI.abi,
         functionName: "getFeeCCIP",
-        args: [parsedAmount, seiTokenId],
+        args: [parsedAmount, "0xd6aca1be9729c13d677335161321649cccae6a591554772516700f986f942eaa"],
       };
     }
     if (isSepoliaChain) {
@@ -439,7 +444,7 @@ if (isNativeToken) {
       }
       return {
         address: smETH as `0x${string}`,
-        abi: SEPOLIA_BRIDGE_ABI.abi,
+        abi: ETH_BRIDGE_ABI.abi,
       functionName: "getFeeCCIP",
       args: [toChainSelector, receiver, "0x", 0, tokenAddress, parsedAmount],
     };
@@ -789,8 +794,8 @@ useEffect(() => {
 
         const isSeiTx = !!(burnWrappedHash || burnHash);
         const url = isSeiTx
-          ? `https://seitrace.com/tx/${hash}?chain=atlantic-2`
-          : `https://sepolia.etherscan.io/tx/${hash}`;
+          ? `https://seitrace.com/tx/${hash}?chain=pacific-1`
+          : `https://etherscan.io/tx/${hash}`;
 
         window.open(url, "_blank");
       }}

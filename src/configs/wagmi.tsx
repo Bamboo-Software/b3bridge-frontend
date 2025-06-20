@@ -8,8 +8,8 @@ export const config = createConfig({
   chains: [ethChain, seiChain],
   connectors: [metaMask()],
   transports: {
-    [ethChain.id]: http(ethChain.rpcUrls.default.http[0]),
-    [seiChain.id]: http(seiChain.rpcUrls.default.http[0]),
+    [ethChain.id]: http(process.env.NEXT_PUBLIC_ETH_CHAIN_RPC_URL!),
+    [seiChain.id]: http(process.env.NEXT_PUBLIC_SEI_CHAIN_RPC_URL!),
   },
 });
 

@@ -12,7 +12,7 @@ import { getAddress } from "ethers";
 import {  waitForTransactionReceipt } from "viem/actions";
 import { readContract } from "@wagmi/core";
 import { config } from "@/configs/wagmi";
-import { networkConfig, SEI_BRIDGE_ABI, SEPOLIA_BRIDGE_ABI, ethChain, Token, seiChain } from "@/configs/networkConfig";
+import { networkConfig, SEI_BRIDGE_ABI, ETH_BRIDGE_ABI, ethChain, Token, seiChain } from "@/configs/networkConfig";
 import { useWallet } from "./useWallet";
 import { getBridgeAddress } from "@/utils";
 const ERC20_ABI = [
@@ -101,13 +101,13 @@ export function useCCIPBridge() {
 
   const { data: routerAddress } = useReadContract({
     address: contractAddress,
-    abi: SEPOLIA_BRIDGE_ABI.abi,
+    abi: ETH_BRIDGE_ABI.abi,
     functionName: "getRouter",
   });
 
   const { data: isPaused } = useReadContract({
     address: contractAddress,
-    abi: SEPOLIA_BRIDGE_ABI.abi,
+    abi: ETH_BRIDGE_ABI.abi,
     functionName: "paused",
   });
   const validateInputs = (
@@ -286,14 +286,14 @@ const handleBurnUnlock = async (
 
     const tokenId = await readContract(config, {
       address: smETH as `0x${string}`,
-      abi: SEPOLIA_BRIDGE_ABI.abi,
+      abi: ETH_BRIDGE_ABI.abi,
       functionName: "tokenAddressToId",
       args: [tokenAddressSource as `0x${string}`],
       chainId: ethChain.id,
     });
 
     await approveToken(tokenAddress as `0x${string}`, smSEI as `0x${string}`, amount,tokenConfig?.decimals ?? 18,wallet?.address as `0x${string}`,walletClient);
-    const result = await writeContractAsync({
+        const result = await writeContractAsync({
       address: smSEI as `0x${string}`,
       abi: SEI_BRIDGE_ABI.abi,
       functionName: "burnTokenCCIP",
@@ -334,7 +334,7 @@ const handleLockMint = async (
       }
       const result = await writeContractAsync({
         address: smETH as `0x${string}`,
-        abi: SEPOLIA_BRIDGE_ABI.abi,
+        abi: ETH_BRIDGE_ABI.abi,
         functionName: "lockTokenVL",
         args: ["0x0000000000000000000000000000000000000000",amountInUnits,smSEI, receiver],
         value: amountInUnits,
@@ -354,10 +354,16 @@ const handleLockMint = async (
         const errorMessage = err.message === "Transaction rejected by user" ? "Giao dịch đã bị hủy bởi người dùng" : "Phê duyệt token thất bại";
         throw new Error(errorMessage);
       }
+      console.log("🚀 ~ useCCIPBridge ~ formatUnits(198612514339629n, 18):", formatUnits(ccipFee, 18))
+      // const feeString = formatUnits(ccipFee, 18);
+      // console.log("🚀 ~ useCCIPBridge ~  parseUnits(feeString, 18:",  parseUnits(feeString, 18))
       const formatted = formatUnits(ccipFee, 16);
+      // const adjustedFee = ccipFee * 100n;
+        // console.log("🚀 ~ useCCIPBridge ~ formatted:", formatted)
+        // console.log("🚀 ~ useCCIPBridge ~ parseUnits(formatted, 18):", parseUnits(formatted, 18))
         const result = await writeContractAsync({
         address: smETH as `0x${string}`,
-        abi: SEPOLIA_BRIDGE_ABI.abi,
+        abi: ETH_BRIDGE_ABI.abi,
         functionName: "lockTokenCCIP",
         args: [tokenAddress as `0x${string}`, BigInt(toChainSelector), smSEI, receiver, amountInUnits, 0],
         value: parseUnits(formatted, 18),
@@ -400,8 +406,7 @@ const handleBurnWrappedToken = async (
     // Approve the bridge contract to spend the wrapped tokens
     await approveToken(wrappedTokenAddress as `0x${string}`, smSEI as `0x${string}`, amount,tokenConfig?.decimals ?? 18,wallet?.address as `0x${string}`,walletClient);
 
-   
-    
+
     // Call the burnTokenVL function for wrapped tokens
     const result = await writeContractAsync({
       address: smSEI as `0x${string}`,

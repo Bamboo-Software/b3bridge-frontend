@@ -17,11 +17,11 @@ interface UsePollUnlockTokenCCIPParams {
   }) => void;
 }
 
-export function usePollUnlockTokenCCIP({ chainId, user, onUnlock, enabled = true }: UsePollUnlockTokenCCIPParams) {
+export function usePollUnlockTokenCCIP({ chainId, user, onUnlock }: UsePollUnlockTokenCCIPParams) {
   const lastCheckedBlockRef = useRef<bigint | null>(null);
 
   useEffect(() => {
-    if (!enabled || !user || chainId !== Number(process.env.NEXT_PUBLIC_ETH_CHAIN_ID)) return;
+    if ( !user || chainId !== Number(process.env.NEXT_PUBLIC_ETH_CHAIN_ID)) return;
 
     let isMounted = true;
     const bridgeAddress = getBridgeAddress("ethereum");
@@ -61,6 +61,6 @@ export function usePollUnlockTokenCCIP({ chainId, user, onUnlock, enabled = true
       isMounted = false;
       clearInterval(interval);
     };
-  }, [user, chainId, enabled, onUnlock]);
+  }, [user, chainId, onUnlock]);
 }
 
