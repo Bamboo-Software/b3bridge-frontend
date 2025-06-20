@@ -40,11 +40,11 @@ export const seiChain = {
   },
   rpcUrls: {
     default: {
-      http: [process.env.NEXT_PUBLIC_SEI_RPC_URL!],
-      wss: [process.env.NEXT_PUBLIC_SEI_WS_URL!],
+      http: [process.env.NEXT_PUBLIC_SEI_CHAIN_RPC_URL!],
+      wss: [process.env.NEXT_PUBLIC_SEI_CHAIN_WS_URL!],
     },
     public: {
-      http: [process.env.NEXT_PUBLIC_SEI_RPC_URL!],
+      http: [process.env.NEXT_PUBLIC_SEI_CHAIN_RPC_URL!],
     },
   },
   blockExplorers: {
@@ -97,11 +97,11 @@ export declare type NetworkConfig = {
   // };
 };
 
-const tokensList: Token[] = [
+export const tokensList: Token[] = [
   {
     symbol: "ETH",
     address: {
-      [ethChain.id]: undefined,
+      [ethChain.id]: undefined, // native
     },
     decimals: 18,
     logoURL: "/images/eth.avif",
@@ -110,7 +110,7 @@ const tokensList: Token[] = [
   {
     symbol: "USDC",
     address: {
-      [ethChain.id]: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+      [ethChain.id]: process.env.NEXT_PUBLIC_ETH_USDC_ADDRESS! as `0x${string}`,
     },
     decimals: 6,
     logoURL: "/images/usdc.avif",
@@ -120,22 +120,22 @@ const tokensList: Token[] = [
     symbol: "wUSDC",
     wrappedFrom: "USDC",
     address: {
-    [seiChain.id]: "0xAb2A4D46982E2a511443324368A0777C7f41faF6",
-  },
-  decimals: 6,
-  logoURL: "/images/usdc.avif",
-  tags: ["wrapped", "stablecoin"],
+      [seiChain.id]: process.env.NEXT_PUBLIC_SEI_WUSDC_ADDRESS! as `0x${string}`,
+    },
+    decimals: 6,
+    logoURL: "/images/usdc.avif",
+    tags: ["wrapped", "stablecoin"],
   },
   {
     symbol: "wETH",
     wrappedFrom: "ETH",
     address: {
-    [seiChain.id]: "0x42d6A135b813265134f5e3d72e95F1472F626504",
+      [seiChain.id]: process.env.NEXT_PUBLIC_SEI_WETH_ADDRESS! as `0x${string}`,
+    },
+    decimals: 6,
+    logoURL: "/images/eth.avif",
+    tags: ["wrapped", "default"],
   },
-  decimals: 6,
-  logoURL: "/images/eth.avif",
-  tags: ["wrapped", "default"],
-  }
 ];
 
 const chains = [
