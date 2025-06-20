@@ -21,7 +21,7 @@ export const usePollUnlockedTokenVL = ({
     if (!recipient) return;
 
     let isMounted = true;
-    const chainId = 11155111;
+    const chainId = Number(process.env.NEXT_PUBLIC_ETH_CHAIN_ID);
     const smETH = getBridgeAddress("ethereum");
     const publicClient = getPublicClient(config, { chainId });
 

@@ -305,8 +305,8 @@ const {
   });
   
   const formValues = watch();
-  const isSeiChain = Number(formValues.fromChainId) === 1328;
-  const isSepoliaChain = Number(formValues.fromChainId) === 11155111;
+  const isSeiChain = Number(formValues.fromChainId) === Number(process.env.NEXT_PUBLIC_SEI_CHAIN_ID);
+  const isSepoliaChain = Number(formValues.fromChainId) === Number(process.env.NEXT_PUBLIC_ETH_CHAIN_ID);
   
   // State to store the selected chain selector
   const [toChainSelector, setToChainSelector] = useState<string>("");

@@ -3,7 +3,7 @@ import { arbitrumSepolia, avalancheFuji, baseSepolia, bscTestnet, Chain, optimis
 import NativeBridgeABI from "@/constants/contracts/ccip-eth-sepolia.json";
 import B3BridgeDest from "@/constants/contracts/ccip-sei-testnet.json";
 export const ethChain = {
-  id: +process.env.NEXT_PUBLIC_ETH_CHAIN_ID!,
+  id: Number(process.env.NEXT_PUBLIC_ETH_CHAIN_ID),
   name: "Ethereum",
   network: "ethereum",
   nativeCurrency: {
@@ -30,7 +30,7 @@ export const ethChain = {
 };
 
 export const seiChain = {
-  id: +process.env.NEXT_PUBLIC_SEI_CHAIN_ID!,
+  id: Number(process.env.NEXT_PUBLIC_SEI_CHAIN_ID),
   name: "Sei",
   network: "sei",
   nativeCurrency: {

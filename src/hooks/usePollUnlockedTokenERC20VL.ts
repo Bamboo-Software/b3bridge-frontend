@@ -23,7 +23,7 @@ export const usePollUnlockedTokenERC20VL = ({
     if (!recipient) return;
 
     const smETH = getBridgeAddress("ethereum");
-    const publicClient = getPublicClient(config, { chainId: 11155111 });
+    const publicClient = getPublicClient(config, { chainId: Number(process.env.NEXT_PUBLIC_ETH_CHAIN_ID) });
     const abiEvent = parseAbiItem(
       "event UnlockedTokenERC20VL(address indexed recipientAddr, address tokenAddr, uint256 amount)"
     );
