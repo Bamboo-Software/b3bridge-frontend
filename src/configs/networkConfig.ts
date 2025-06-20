@@ -13,11 +13,11 @@ export const ethChain = {
   },
   rpcUrls: {
     default: {
-      http: [process.env.NEXT_PUBLIC_ETH_RPC_URL!],
-      wss: [process.env.NEXT_PUBLIC_ETH_WS_URL!],
+      http: [process.env.NEXT_PUBLIC_ETH_CHAIN_RPC_URL!],
+      wss: [process.env.NEXT_PUBLIC_ETH_CHAIN_WS_URL!],
     },
     public: {
-      http: [process.env.NEXT_PUBLIC_ETH_RPC_URL!],
+      http: [process.env.NEXT_PUBLIC_ETH_CHAIN_RPC_URL!],
     },
   },
   blockExplorers: {
@@ -44,7 +44,7 @@ export const seiChain = {
       wss: [process.env.NEXT_PUBLIC_SEI_CHAIN_WS_URL!],
     },
     public: {
-      http: [process.env.NEXT_PUBLIC_SEI_CHAIN_RPC_URL!],
+      http: [process.env.NEXT_PUBLIC_SEI_CHAIN_WS_URL!],
     },
   },
   blockExplorers: {
