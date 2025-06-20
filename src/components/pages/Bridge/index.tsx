@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWallet } from "@/hooks/useWallet";
 import { useCCIPBridge } from "@/hooks/useCCIPBridge";
-import { networkConfig, sepoliaTestnet } from "@/configs/networkConfig";
+import { networkConfig, ethChain } from "@/configs/networkConfig";
 import { useBalance, useChainId } from "wagmi";
 import BridgeTab from "./BridgeTab";
 import { bridgeTabs } from "@/constants";
@@ -26,12 +26,6 @@ interface ChainConfig {
   logoURL?: string;
 }
 
-interface Token {
-  symbol: string;
-  address: { [chainId: number]: string };
-  decimals: number;
-  logoURL: string;
-}
 
 export default function BridgePage() {
   const { wallet } = useWallet();
@@ -44,7 +38,6 @@ export default function BridgePage() {
   const [selectedTab, setSelectedTab] = useState("bridge");
   const recipient = useMemo(() => wallet?.address ?? "", [wallet]);
   const triggerReset = useBridgeStatusStore((state) => state.triggerReset);
-  console.log("👀 Hook recipient:", recipient);
   const setFromChainIdStore = useModalStore.getState().setFromChainIdStore;
   const selectedTokenConfig = useMemo(
     () => networkConfig.tokensList.find((t) => t.symbol === selectedToken),
@@ -56,7 +49,7 @@ export default function BridgePage() {
     if (!fromChainId) return [];
     return networkConfig.tokensList.filter((token) => {
       if (token.symbol === "ETH") {
-        return fromChainId === sepoliaTestnet.id;
+        return fromChainId === ethChain.id;
       }
       return token.address[fromChainId] !== undefined;
     });
@@ -78,7 +71,7 @@ export default function BridgePage() {
     triggerReset();
   }, [triggerReset]);
     usePollMintedTokenVL({
-    recipient: recipient,
+      recipient: recipient,
     onMinted:handleMinted,
     });
 
@@ -117,7 +110,6 @@ usePollMintTokenCCIP({
   triggerReset();
 }, [wallet?.address, triggerReset]);
 
-// const currentChainId = useChainId();
 
 usePollUnlockTokenCCIP({
   chainId: 11155111,
@@ -191,8 +183,3 @@ useEffect(() => {
     </div>
   );
 }
-
-// export const formatBalance = (value: bigint | undefined, decimals: number = 18) => {
-//   if (!value) return "0";
-//   return formatUnits(value, decimals);
-// };

@@ -1,9 +1,10 @@
+import { Address } from 'viem';
 export const CONTRACT_ADDRESSES = {
   ethereum: {
-    bridge: "0x44E44963dd3933D70453F457D772A81Eb2F55fcf",
+     bridge: process.env.NEXT_PUBLIC_ETH_BRIDGE_CONTRACT as Address,
   },
   sei: {
-    bridge: "0xf3Ed274027eDE779A86C4aA118dD7b36DbE8ea7F"
+    bridge:process.env.NEXT_PUBLIC_SEI_BRIDGE_CONTRACT as Address
   },
 
 } as const;

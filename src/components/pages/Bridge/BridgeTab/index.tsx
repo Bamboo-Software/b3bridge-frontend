@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TabsContent } from "@/components/ui/tabs";
-import {  chainSelectors, networkConfig, SEI_BRIDGE_ABI, seiTestnet, SEPOLIA_BRIDGE_ABI, sepoliaTestnet, Token } from "@/configs/networkConfig";
+import {  networkConfig, SEI_BRIDGE_ABI, seiChain, SEPOLIA_BRIDGE_ABI, ethChain, Token, chainSelectors } from "@/configs/networkConfig";
 import { useWallet } from "@/hooks/useWallet";
 import { useModalStore } from "@/store/useModalStore";
 import { formatBalance, formatLength, getBridgeAddress } from "@/utils";
@@ -254,14 +254,8 @@ const BridgeTab = ({
   state,
   setReceiverAddress,
 }: PropBridge) => {
-  console.log("🚀 ~ fromChain:", fromChain)
-  console.log("🚀 ~ toChain:", toChain)
-  console.log("🚀 ~ state:", state)
   const { wallet} = useWallet();
   const { handleBridge,erc20LockHash,setState,burnWrappedHash, burnHash,nativeLockHash } = useCCIPBridge();
-  console.log("🚀 ~ erc20LockHash:", erc20LockHash)
-  console.log("🚀 ~ burnHash:", burnHash)
-  console.log("🚀 ~ burnWrappedHash:", burnWrappedHash)
   const { openWalletModal, setFromChainIdStore } = useModalStore();
   const isDisabled = isBridging || isNativeLockPending || isERC20LockPending;
   const smETH = getBridgeAddress("ethereum");
@@ -272,7 +266,6 @@ const BridgeTab = ({
   const [isFetchingTokenId, setIsFetchingTokenId] = useState(false);
   const [tokenIdError, setTokenIdError] = useState<string | null>(null);
   const recipient = useMemo(() => wallet?.address ?? "", [wallet]);
-  console.log("👀 Hook recipient:", recipient);
 
 
 useEffect(() => {
@@ -310,7 +303,6 @@ const {
     },
     mode: "onChange",
   });
-    console.log("🚀 ~ selectedToken:", selectedToken)
   
   const formValues = watch();
   const isSeiChain = Number(formValues.fromChainId) === 1328;
@@ -353,7 +345,6 @@ const {
   
   // Fetch tokenId for SEI chain
   useEffect(() => {
-    console.log((process.env.SEPOLIA_CHAIN_RPC_URL))
     if (!isSeiChain || !selectedTokenConfig || !selectedToken || !formValues.fromChainId) {
       console.warn('⚠️ fetchTokenId not called due to missing conditions:', {
         isSeiChain,
@@ -376,7 +367,7 @@ const {
           throw new Error(`Token ${selectedToken} not found in tokenConfig`);
         }
         
-        const tokenAddressSource = token.address[seiTestnet.id];
+        const tokenAddressSource = token.address[seiChain.id];
         
         if (!tokenAddressSource || !/^0x[a-fA-F0-9]{40}$/.test(tokenAddressSource)) {
           throw new Error(`Invalid token address for ${selectedToken}: ${tokenAddressSource}`);
@@ -387,7 +378,7 @@ const {
           abi: SEPOLIA_BRIDGE_ABI.abi,
           functionName: 'tokenAddressToId',
           args: [tokenAddressSource as `0x${string}`],
-          chainId: sepoliaTestnet.id,
+          chainId: ethChain.id,
       });
       
       setSeiTokenId(id as bigint);
@@ -397,7 +388,7 @@ const {
         stack: err.stack,
         token: selectedToken,
         smETH,
-        chainId: sepoliaTestnet.id,
+        chainId: ethChain.id,
       });
       setTokenIdError(
         err.message.includes('revert')
@@ -480,7 +471,6 @@ if (isNativeToken) {
   !isFetchingTokenId &&
     !tokenIdError;
 
-    console.log("🚀 ~ contractOptions ~ bridgeConfig:", bridgeConfig)
  const contractOptions = useMemo(() => {
     if (!shouldRead || !bridgeConfig) return null;
   return {
@@ -490,7 +480,6 @@ if (isNativeToken) {
     args: bridgeConfig.args,
   };
 }, [bridgeConfig, shouldRead]);
-console.log("🚀 ~ contractOptions ~ contractOptions:", contractOptions)
 
   const { data: ccipFee, isLoading: isFeeLoading } = useReadContract(contractOptions ?? {});
  const onSubmit = async (data: FormData) => {
@@ -551,17 +540,6 @@ console.log("🚀 ~ contractOptions ~ contractOptions:", contractOptions)
     if (tokenIdError) return "Error Fetching Token ID";
     return "Bridge";
   };
-  console.log("🚀 ~ useEffect ~ state.isBridging:", state.isBridging)
-// useEffect(() => {
-//   if (state.isBridging) {
-//     setStartTime(Date.now());
-//   } else {
-  //     setStartTime(null); // reset timer khi bridging kết thúc
-  //     setElapsedTime(0);  // optional: reset thời gian hiển thị
-  //   }
-  // }, [state.isBridging]);
-  console.log("🚀 ~ balance:", balance)
-  console.log("🚀 ~ ccipFee:", ccipFee)
   
   const {
   shouldResetForm,
@@ -755,7 +733,7 @@ useEffect(() => {
                   {...field}
                   placeholder="0x..."
                   disabled={isDisabled}
-                  className="border border-green-500/40 bg-gray-800/70 rounded-xl text-lg text-gray-100 focus:ring-2 focus:ring-green-500/60"
+                  className="border border-green-500/40 bg-gray-800/70 rounded-xl text-lg text-gray-100 focus:ring-2 focus:ring-green-500/60 font-bold"
                 />
                 {errors.receiverAddress && (
                   <p className="font-manrope text-red-500 text-sm mt-1">{errors.receiverAddress.message}</p>

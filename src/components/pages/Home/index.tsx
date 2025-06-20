@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import img, { StaticImageData } from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { seiTestnet, sepoliaTestnet } from "@/configs/networkConfig";
 
 interface IFeatureCardProps {
   icon: React.ReactNode;

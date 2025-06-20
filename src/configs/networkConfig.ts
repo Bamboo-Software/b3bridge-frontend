@@ -2,59 +2,60 @@ import { Address } from "viem";
 import { arbitrumSepolia, avalancheFuji, baseSepolia, bscTestnet, Chain, optimismSepolia, polygonAmoy, sepolia } from "viem/chains";
 import NativeBridgeABI from "@/constants/contracts/ccip-eth-sepolia.json";
 import B3BridgeDest from "@/constants/contracts/ccip-sei-testnet.json";
-export const sepoliaTestnet = {
-  id: 11155111,
-  name: 'Sepolia Testnet',
-  network: 'sepolia',
+export const ethChain = {
+  id: +process.env.NEXT_PUBLIC_ETH_CHAIN_ID!,
+  name: "Ethereum",
+  network: "ethereum",
   nativeCurrency: {
+    name: "Ether",
+    symbol: "ETH",
     decimals: 18,
-    name: 'Sepolia Ether',
-    symbol: 'ETH',
   },
   rpcUrls: {
     default: {
-      http: [`${process.env.NEXT_PUBLIC_SEPOLIA_CHAIN_RPC_URL}/${process.env.NEXT_PUBLIC_SEPOLIA_CHAIN_RPC_KEY}`],
-      wss: [`${process.env.NEXT_PUBLIC_SEPOLIA_CHAIN_WS_URL}/${process.env.NEXT_PUBLIC_SEPOLIA_CHAIN_RPC_KEY}`],
+      http: [process.env.NEXT_PUBLIC_ETH_RPC_URL!],
+      wss: [process.env.NEXT_PUBLIC_ETH_WS_URL!],
     },
     public: {
-      http: [`${process.env.NEXT_PUBLIC_SEPOLIA_CHAIN_RPC_URL}/${process.env.NEXT_PUBLIC_SEPOLIA_CHAIN_RPC_KEY}`],
+      http: [process.env.NEXT_PUBLIC_ETH_RPC_URL!],
     },
   },
   blockExplorers: {
     default: {
-      name: 'Etherscan',
-      url: 'https://sepolia.etherscan.io',
+      name: "Etherscan",
+      url: "https://sepolia.etherscan.io",
     },
   },
   testnet: true,
 };
 
-export const seiTestnet = {
-  id: 1328,
-  name: 'Sei Testnet',
-  network: 'sei-testnet',
+export const seiChain = {
+  id: +process.env.NEXT_PUBLIC_SEI_CHAIN_ID!,
+  name: "Sei",
+  network: "sei",
   nativeCurrency: {
+    name: "Sei",
+    symbol: "SEI",
     decimals: 18,
-    name: 'Sei',
-    symbol: 'SEI',
   },
   rpcUrls: {
     default: {
-      http: [process.env.NEXT_PUBLIC_SEI_CHAIN_RPC_URL!],
-      wss: [process.env.NEXT_PUBLIC_SEI_CHAIN_WS_URL!],
+      http: [process.env.NEXT_PUBLIC_SEI_RPC_URL!],
+      wss: [process.env.NEXT_PUBLIC_SEI_WS_URL!],
     },
     public: {
-      http: [process.env.NEXT_PUBLIC_SEI_CHAIN_RPC_URL!],
+      http: [process.env.NEXT_PUBLIC_SEI_RPC_URL!],
     },
   },
   blockExplorers: {
     default: {
-      name: 'Sei EVM Explorer',
-      url: 'https://sei.explorers.guru',
+      name: "Sei Explorer",
+      url: "https://sei.explorers.guru",
     },
   },
   testnet: true,
 };
+
 
 export declare type Token = {
   /** The token's symbol that will be shown in the UI  */
@@ -81,27 +82,26 @@ export declare type NetworkConfig = {
     logoURL?: string;
   }[];
   tokensList: Token[];
-  /** Addresses for the LINK token contract on the corresponding chains */
-  linkContracts: AddressMap;
-  /** Addresses for the router contracts on the corresponding chains */
-  routerAddresses: AddressMap;
+  // /** Addresses for the LINK token contract on the corresponding chains */
+  // linkContracts: AddressMap;
+  // /** Addresses for the router contracts on the corresponding chains */
+  // routerAddresses: AddressMap;
   /** Selectors for the chains that should be supported */
   chainSelectors: {
     [chainId: number]: string;
   };
   /** CCIP contracts for separate token transfers */
-  ccipContracts: {
-    sender: AddressMap;
-    receiver: AddressMap;
-  };
+  // ccipContracts: {
+  //   sender: AddressMap;
+  //   receiver: AddressMap;
+  // };
 };
 
 const tokensList: Token[] = [
   {
     symbol: "ETH",
     address: {
-      [sepoliaTestnet.id]: undefined,
-      // [seiTestnet.id]: undefined,
+      [ethChain.id]: undefined,
     },
     decimals: 18,
     logoURL: "/images/eth.avif",
@@ -110,7 +110,7 @@ const tokensList: Token[] = [
   {
     symbol: "USDC",
     address: {
-      [sepoliaTestnet.id]: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+      [ethChain.id]: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
     },
     decimals: 6,
     logoURL: "/images/usdc.avif",
@@ -120,7 +120,7 @@ const tokensList: Token[] = [
     symbol: "wUSDC",
     wrappedFrom: "USDC",
     address: {
-    [seiTestnet.id]: "0x12CD8503ECBd48B4c3F920c48565a56c328207E4",
+    [seiChain.id]: "0xAb2A4D46982E2a511443324368A0777C7f41faF6",
   },
   decimals: 6,
   logoURL: "/images/usdc.avif",
@@ -130,7 +130,7 @@ const tokensList: Token[] = [
     symbol: "wETH",
     wrappedFrom: "ETH",
     address: {
-    [seiTestnet.id]: "0x087cFed0f5993e6C849172c5Ad59A3FD67FA3b99",
+    [seiChain.id]: "0x42d6A135b813265134f5e3d72e95F1472F626504",
   },
   decimals: 6,
   logoURL: "/images/eth.avif",
@@ -140,50 +140,50 @@ const tokensList: Token[] = [
 
 const chains = [
   {
-    chain: sepoliaTestnet,
+    chain: ethChain,
     logoURL: "/svg/ethereum.svg"
   },
   {
-    chain: seiTestnet,
+    chain: seiChain,
     logoURL: "/svg/sei.svg"
   },
 ];
 
-const linkContracts: AddressMap = {
-  [sepoliaTestnet.id]: "0x779877A7B0D9E8603169DdbD7836e478b4624789",
-  [seiTestnet.id]: "0x..." as Address,
-};
+// const linkContracts: AddressMap = {
+//   [ethChain.id]: "0x779877A7B0D9E8603169DdbD7836e478b4624789",
+//   [seiChain.id]: "0x..." as Address,
+// };
 
-const routerAddresses: AddressMap = {
-  [sepoliaTestnet.id]: "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59",
-  [seiTestnet.id]: "0x59F5222c5d77f8D3F56e34Ff7E75A05d2cF3a98A",
-};
+// const routerAddresses: AddressMap = {
+//   [ethChain.id]: "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59",
+//   [seiChain.id]: "0x59F5222c5d77f8D3F56e34Ff7E75A05d2cF3a98A",
+// };
 
 export const chainSelectors: Record<number, string> = {
-  [sepoliaTestnet.id]: "16015286601757825753",
-  [seiTestnet.id]: "1216300075444106652",
+  [ethChain.id]: "16015286601757825753",
+  [seiChain.id]: "1216300075444106652",
 };
 
-const ccipContracts = {
-  sender: {
-    [sepoliaTestnet.id]: "0x29a9fABe9138f2A228782FA58943f7c5E1936089" as Address,
-    [seiTestnet.id]: "sei1wxy0plgymm6kka3lgnez67wu8pj47qqqc74l0fdgu74vxan2ykrszawfdx" as Address,
-  },
-  receiver: {
+// const ccipContracts = {
+//   sender: {
+//     [ethChain.id]: "0x29a9fABe9138f2A228782FA58943f7c5E1936089" as Address,
+//     [seiChain.id]: "sei1wxy0plgymm6kka3lgnez67wu8pj47qqqc74l0fdgu74vxan2ykrszawfdx" as Address,
+//   },
+//   receiver: {
 
-    [sepoliaTestnet.id]: "0x29a9fABe9138f2A228782FA58943f7c5E1936089" as Address,
+//     [ethChain.id]: "0x29a9fABe9138f2A228782FA58943f7c5E1936089" as Address,
 
-    [seiTestnet.id]: "sei1wxy0plgymm6kka3lgnez67wu8pj47qqqc74l0fdgu74vxan2ykrszawfdx" as Address,
-  },
-};
+//     [seiChain.id]: "sei1wxy0plgymm6kka3lgnez67wu8pj47qqqc74l0fdgu74vxan2ykrszawfdx" as Address,
+//   },
+// };
 
 export const networkConfig: NetworkConfig = {
   chains,
-  linkContracts,
-  routerAddresses,
+  // linkContracts,
+  // routerAddresses,
   chainSelectors,
   tokensList,
-  ccipContracts,
+  // ccipContracts,
 };
 
 // Import the ABI
