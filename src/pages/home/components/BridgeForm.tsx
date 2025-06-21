@@ -1,108 +1,33 @@
-import { useForm } from "react-hook-form";
-import { useState, useEffect } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import type { BridgeFormData } from "./BridgeFormWrap";
-import { bridgeFormSchema, type BridgeFormValues } from "@/lib/types/schemas/bridge";
-import { CHAINS, TOKENS } from "@/lib/configs";
-
+import { useBridgeTokens } from "@/lib/hooks/useBridgeTokens";
+import { CHAINS } from "@/lib/configs";
 
 interface BridgeFormProps {
   onSubmit: (data: BridgeFormData) => void;
 }
 
 const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
-  const [fromChain, setFromChain] = useState(CHAINS[0]);
-  const [toChain, setToChain] = useState(CHAINS[1]);
-  const [selectedTokenSymbol, setSelectedTokenSymbol] = useState<string>("eth");
+  const {
+    form,
+    fromChain,
+    toChain,
+    selectedTokenSymbol,
+    selectedToken,
+    destinationToken,
+    availableTokens,
+    handleFromChainChange,
+    handleToChainChange,
+    handleTokenChange,
+    handleSubmit,
+  } = useBridgeTokens(onSubmit);
+
+
+  console.log("fromWalletAddress: ", form.getValues('fromWalletAddress'));
   
-  const getTokensForChain = (chainId: string) => {
-    const chain = TOKENS[chainId as keyof typeof TOKENS];
-    if (!chain) return [];
-    
-    return Object.values(chain.tokens).map(token => ({
-      symbol: token.symbol,
-      name: token.name,
-      address: token.address
-    }));
-  };
-  
-  const availableTokens = getTokensForChain(fromChain.id);
-  
-  const getSelectedToken = () => {
-    const chain = TOKENS[fromChain.id as keyof typeof TOKENS];
-    if (!chain) return { symbol: "", name: "", address: "" };
-    
-    const token = chain.tokens[selectedTokenSymbol as keyof typeof chain.tokens];
-    return token || { symbol: "", name: "", address: "" };
-  };
-  
-  const selectedToken = getSelectedToken();
-
-  const form = useForm<BridgeFormValues>({
-    resolver: zodResolver(bridgeFormSchema),
-    defaultValues: {
-      fromChain: CHAINS[0],
-      toChain: CHAINS[1],
-      fromWalletAddress: "",
-      toWalletAddress: "",
-      tokenAddress: selectedToken.address,
-      tokenSymbol: selectedToken.symbol,
-      amount: "",
-    },
-  });
-
-  useEffect(() => {
-    if (fromChain.id === toChain.id) {
-      const otherChain = CHAINS.find(chain => chain.id !== fromChain.id);
-      if (otherChain) {
-        setToChain(otherChain);
-        form.setValue("toChain", otherChain);
-      }
-    }
-  }, [fromChain, toChain, form]);
-
-  useEffect(() => {
-    const token = getSelectedToken();
-    form.setValue("tokenAddress", token.address);
-    form.setValue("tokenSymbol", token.symbol);
-  }, [fromChain, selectedTokenSymbol, form]);
-
-  const handleSubmit = (values: BridgeFormValues) => {
-    const fromChainData = {
-      name: values.fromChain.name,
-      id: values.fromChain.id,
-      chainSelector: values.fromChain.chainSelector
-    };
-    
-    const toChainData = {
-      name: values.toChain.name,
-      id: values.toChain.id,
-      chainSelector: values.toChain.chainSelector
-    };
-    
-    onSubmit({
-      ...values,
-      fromChain: fromChainData,
-      toChain: toChainData,
-      timestamp: new Date().toISOString(),
-    });
-  };
-
-  // Lấy thông tin token ở chain đích
-  const getDestinationToken = () => {
-    const chain = TOKENS[toChain.id as keyof typeof TOKENS];
-    if (!chain) return { symbol: "", name: "", address: "" };
-    
-    const token = chain.tokens[selectedTokenSymbol as keyof typeof chain.tokens];
-    return token || { symbol: "", name: "", address: "" };
-  };
-
-  const destinationToken = getDestinationToken();
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
@@ -110,28 +35,16 @@ const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
           {/* From Section */}
           <div className="space-y-4 p-4 rounded-lg border border-primary/20 bg-primary/5 shadow-sm">
             <h3 className="font-medium text-lg border-b pb-2 text-primary">From</h3>
-            
+
             <FormField
               control={form.control}
               name="fromChain"
-              render={({ field }) => (
+              render={() => (
                 <FormItem>
                   <FormLabel>Chain</FormLabel>
-                  <Select 
+                  <Select
                     value={fromChain.id}
-                    onValueChange={(value) => {
-                      const chain = CHAINS.find(c => c.id === value) || CHAINS[0];
-                      setFromChain(chain);
-                      field.onChange(chain);
-                      
-                      if (toChain.id === value) {
-                        const otherChain = CHAINS.find(c => c.id !== value);
-                        if (otherChain) {
-                          setToChain(otherChain);
-                          form.setValue("toChain", otherChain);
-                        }
-                      }
-                    }}
+                    onValueChange={handleFromChainChange}
                   >
                     <FormControl>
                       <SelectTrigger className="w-full">
@@ -142,7 +55,7 @@ const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
                       {CHAINS.map((chain) => (
                         <SelectItem key={chain.id} value={chain.id}>
                           <div className="flex items-center gap-2">
-                            <img src={chain.avatar} alt={chain.name} className="w-5 h-5"/>
+                            <img src={chain.avatar} alt={chain.name} className="w-5 h-5" />
                             <span>{chain.name}</span>
                           </div>
                         </SelectItem>
@@ -153,15 +66,18 @@ const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
                 </FormItem>
               )}
             />
-            
+
             <FormField
               control={form.control}
               name="fromWalletAddress"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Wallet Address</FormLabel>
+                  <FormLabel className="flex flex-row items-end">
+                    <span>Wallet Address</span> {form.getValues('fromWalletAddress').length > 0 ? '' : <span className="text-[9px] text-red-500">(You need to connect wallet first)</span>}
+                  </FormLabel>
                   <FormControl>
                     <Input
+                      disabled
                       placeholder="0x..."
                       {...field}
                       className="bg-background/50"
@@ -174,27 +90,16 @@ const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
                 </FormItem>
               )}
             />
-            
+
             <FormField
               control={form.control}
               name="tokenSymbol"
-              render={({ field }) => (
+              render={() => (
                 <FormItem>
                   <FormLabel>Token</FormLabel>
-                  <Select 
+                  <Select
                     value={selectedTokenSymbol}
-                    onValueChange={(value) => {
-                      setSelectedTokenSymbol(value);
-                      field.onChange(value);
-                      
-                      const chain = TOKENS[fromChain.id as keyof typeof TOKENS];
-                      if (chain) {
-                        const token = chain.tokens[value as keyof typeof chain.tokens];
-                        if (token) {
-                          form.setValue("tokenAddress", token.address);
-                        }
-                      }
-                    }}
+                    onValueChange={handleTokenChange}
                   >
                     <FormControl>
                       <SelectTrigger className="w-full">
@@ -218,7 +123,7 @@ const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
                 </FormItem>
               )}
             />
-            
+
             <FormField
               control={form.control}
               name="amount"
@@ -237,29 +142,20 @@ const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
               )}
             />
           </div>
-          
+
           {/* To Section */}
           <div className="space-y-4 p-4 rounded-lg border border-primary/20 bg-primary/5 shadow-sm">
             <h3 className="font-medium text-lg border-b pb-2 text-primary">To</h3>
-            
+
             <FormField
               control={form.control}
               name="toChain"
-              render={({ field }) => (
+              render={() => (
                 <FormItem>
                   <FormLabel>Chain</FormLabel>
-                  <Select 
+                  <Select
                     value={toChain.id}
-                    onValueChange={(value) => {
-                      // Không cho phép chọn chain giống với fromChain
-                      if (value === fromChain.id) {
-                        return;
-                      }
-                      
-                      const chain = CHAINS.find(c => c.id === value) || CHAINS[1];
-                      setToChain(chain);
-                      field.onChange(chain);
-                    }}
+                    onValueChange={handleToChainChange}
                   >
                     <FormControl>
                       <SelectTrigger className="w-full">
@@ -268,13 +164,13 @@ const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
                     </FormControl>
                     <SelectContent>
                       {CHAINS.map((chain) => (
-                        <SelectItem 
-                          key={chain.id} 
+                        <SelectItem
+                          key={chain.id}
                           value={chain.id}
-                          disabled={chain.id === fromChain.id} // Disable option nếu giống với fromChain
+                          disabled={chain.id === fromChain.id} 
                         >
                           <div className="flex items-center gap-2">
-                            <img src={chain.avatar} alt={chain.name} className="w-5 h-5"/>
+                            <img src={chain.avatar} alt={chain.name} className="w-5 h-5" />
                             <span>{chain.name}</span>
                           </div>
                         </SelectItem>
@@ -288,13 +184,13 @@ const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
                 </FormItem>
               )}
             />
-            
+
             <FormField
               control={form.control}
               name="toWalletAddress"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Wallet Address</FormLabel>
+                  <FormLabel>Wallet Address Receiver</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="0x..."
@@ -309,7 +205,7 @@ const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
                 </FormItem>
               )}
             />
-            
+
             <div className="p-3 bg-primary/10 rounded-lg mt-4">
               <h4 className="text-sm font-medium mb-2">Destination Token Information</h4>
               <div className="text-sm">
@@ -319,10 +215,10 @@ const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
             </div>
           </div>
         </div>
-        
+
         <div className="pt-4">
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             className="w-full bg-gradient-to-r from-primary via-cyan-400 to-purple-500 hover:opacity-90 transition-all duration-300 shadow-md hover:shadow-lg"
             disabled={form.formState.isSubmitting}
           >

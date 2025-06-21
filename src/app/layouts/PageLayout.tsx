@@ -6,6 +6,7 @@ import { routesPaths } from "@/lib/types/constants/routes";
 import { HomeIcon, MenuIcon, XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { ConnectButton } from "@/components/ui/connect-button";
 
 const PageLayout = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -14,13 +15,11 @@ const PageLayout = () => {
   const location = useLocation();
   const { ROOT } = routesPaths;
 
-  // Close mobile menu when path changes
   useEffect(() => {
     setIsMobileMenuOpen(false);
     setIsDropdownOpen(false);
   }, [location.pathname]);
 
-  // Add scroll event listener
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
@@ -73,7 +72,7 @@ const PageLayout = () => {
             </Link>
 
             {/* Desktop navigation */}
-            <nav className="hidden md:flex items-center space-x-1">
+            <nav className="hidden md:flex items-center space-x-3">
               {navItems.map((item) => (
                 <NavLink 
                   key={item.path} 
@@ -92,11 +91,13 @@ const PageLayout = () => {
                   {item.label}
                 </NavLink>
               ))}
+              <ConnectButton />
               <ThemeToggle />
             </nav>
 
             {/* Mobile menu button */}
             <div className="md:hidden flex items-center gap-2">
+              <ConnectButton />
               <ThemeToggle />
               <Button 
                 variant="ghost" 
@@ -149,12 +150,6 @@ const PageLayout = () => {
                   </NavLink>
                 </motion.div>
               ))}
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: navItems.length * 0.05, duration: 0.3 }}
-              >
-              </motion.div>
             </div>
           </motion.div>
         )}

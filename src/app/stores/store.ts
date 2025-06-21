@@ -10,6 +10,8 @@ export const listenerMiddleware = createListenerMiddleware({
 
 const reducer = {
   [themeNamespace]: themeReducer,
+
+  
   [bridgeApi.reducerPath]: bridgeApi.reducer,
 };
 

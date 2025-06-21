@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { store } from "@/app/stores/store";
 import { Provider } from "react-redux";
 import { ThemeProvider } from "@/app/providers/theme/ThemeProvider";
+import { WagmiProvider } from "@/app/providers/wallet/WagmiProvider";
 import LoadingPage from "./pages/common/LoadingPage";
 import "@fontsource/inter/400.css";
 import "@fontsource/inter/400-italic.css";
@@ -18,10 +19,12 @@ createRoot(document.getElementById('root')!).render(
       {/* <I18nProvider> */}
         <Provider store={store}>
           <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-            <Suspense fallback={<LoadingPage/>}>
-              <App />
-              <Toaster />
-            </Suspense>
+            <WagmiProvider>
+              <Suspense fallback={<LoadingPage/>}>
+                <App />
+                <Toaster />
+              </Suspense>
+            </WagmiProvider>
           </ThemeProvider>
         </Provider>
       {/* </I18nProvider> */}
