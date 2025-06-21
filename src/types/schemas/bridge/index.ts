@@ -13,13 +13,16 @@ export const bridgeFormSchema = z.object({
   }),
   fromWalletAddress: z.string()
     .min(1, "Wallet address is required")
-    .regex(/^(0x)?[0-9a-fA-F]{40}$|^[a-z0-9]{65,90}$/, "Invalid wallet address format"),
+    .regex(/^(0x)?[0-9a-fA-F]{40}$|^[a-z0-9]{65,90}$/, "Invalid wallet address format")
+    ,
   toWalletAddress: z.string()
     .min(1, "Wallet address is required")
-    .regex(/^(0x)?[0-9a-fA-F]{40}$|^[a-z0-9]{65,90}$/, "Invalid wallet address format"),
+    .regex(/^(0x)?[0-9a-fA-F]{40}$|^[a-z0-9]{65,90}$/, "Invalid wallet address format")
+    ,
   tokenAddress: z.string()
     .min(1, "Token address is required")
-    .regex(/^(0x)?[0-9a-fA-F]{40}$/, "Invalid token address format"),
+    .regex(/^(0x)?[0-9a-fA-F]{40}$/, "Invalid token address format")
+    ,
   amount: z.string()
     .min(1, "Amount is required")
     .refine(

@@ -35,10 +35,8 @@ const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
     },
   });
 
-  // Đảm bảo không chọn cùng một chain ở cả From và To
   useEffect(() => {
     if (fromChain.id === toChain.id) {
-      // Nếu fromChain và toChain giống nhau, tự động chọn chain khác cho toChain
       const otherChain = CHAINS.find(chain => chain.id !== fromChain.id);
       if (otherChain) {
         setToChain(otherChain);
@@ -53,8 +51,6 @@ const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
       timestamp: new Date().toISOString(),
     });
     
-    // Không reset form để người dùng có thể thấy dữ liệu đã nhập
-    // form.reset();
   };
 
   return (
@@ -78,7 +74,6 @@ const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
                       setFromChain(chain);
                       field.onChange(chain);
                       
-                      // Nếu toChain giống với fromChain mới, tự động chọn chain khác
                       if (toChain.id === value) {
                         const otherChain = CHAINS.find(c => c.id !== value);
                         if (otherChain) {
@@ -130,7 +125,6 @@ const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
               )}
             />
             
-            {/* Thêm trường Token Address */}
             <FormField
               control={form.control}
               name="tokenAddress"
