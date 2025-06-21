@@ -49,7 +49,7 @@ export const usePollUnlockedTokenVL = ({
             amount: bigint;
           };
           if (recipientAddr.toLowerCase() === recipient.toLowerCase()) {
-            console.log("✅ UnlockedTokenVL matched:", { amount });
+
             onUnlocked({ recipientAddr, amount });
           }
         }

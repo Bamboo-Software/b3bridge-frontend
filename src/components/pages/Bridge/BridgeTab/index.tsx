@@ -306,9 +306,7 @@ const {
   
   const formValues = watch();
   const isSeiChain = Number(formValues.fromChainId) === Number(process.env.NEXT_PUBLIC_SEI_CHAIN_ID);
-  console.log("🚀 ~ isSeiChain:", isSeiChain)
   const isSepoliaChain = Number(formValues.fromChainId) === Number(process.env.NEXT_PUBLIC_ETH_CHAIN_ID);
-  console.log("🚀 ~ isSepoliaChain:", isSepoliaChain)
   
   // State to store the selected chain selector
   const [toChainSelector, setToChainSelector] = useState<string>("");
@@ -369,9 +367,8 @@ const {
           throw new Error(`Token ${selectedToken} not found in tokenConfig`);
         }
         
-        console.log("🚀 ~ fetchTokenId ~ token:", token)
+
         const tokenAddressSource = token.address[seiChain.id];
-          console.log("🚀 ~ fetchTokenId ~ tokenAddressSource:", tokenAddressSource)
         if (!tokenAddressSource || !/^0x[a-fA-F0-9]{40}$/.test(tokenAddressSource)) {
           throw new Error(`Invalid token address for ${selectedToken}: ${tokenAddressSource}`);
         }
@@ -384,7 +381,6 @@ const {
           args: [tokenAddressSource as `0x${string}`],
           chainId: ethChain.id,
       });
-        console.log("🚀 ~ fetchTokenId ~ id:", id)
       
       setSeiTokenId(id as string);
     } catch (err: any) {
@@ -410,13 +406,6 @@ const {
   }, [isSeiChain, selectedToken, smETH, selectedTokenConfig, formValues.fromChainId, smSEI]);
   const isNativeToken = isNativeRelatedToken(formValues.selectedToken);
 
-if (isNativeToken) {
-  // Bỏ qua fee CCIP
-  console.log("🟢 Native or wrapped native token. Không cần ccipFee.");
-} else {
-  // Tính fee CCIP
-  console.log("🟡 ERC20 or wrapped ERC20. Cần tính ccipFee.");
-}
 // Calculate parsed amount
   const parsedAmount = useMemo(() => {
     return parseUnits(formValues.amount || "0", selectedTokenConfig?.decimals || 18);
@@ -433,7 +422,7 @@ if (isNativeToken) {
         address: smSEI as `0x${string}`,
         abi: SEI_BRIDGE_ABI.abi,
         functionName: "getFeeCCIP",
-        args: [parsedAmount, "0xd6aca1be9729c13d677335161321649cccae6a591554772516700f986f942eaa"],
+        args: [parsedAmount, seiTokenId],
       };
     }
     if (isSepoliaChain) {

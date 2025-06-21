@@ -15,6 +15,7 @@ import { config } from "@/configs/wagmi";
 import { networkConfig, SEI_BRIDGE_ABI, ETH_BRIDGE_ABI, ethChain, Token, seiChain } from "@/configs/networkConfig";
 import { useWallet } from "./useWallet";
 import { getBridgeAddress } from "@/utils";
+import { tokenAddressNativeToken } from "@/constants";
 const ERC20_ABI = [
   {
     constant: true,
@@ -200,7 +201,6 @@ function getTokenType(token?: Token): "native" | "erc20" | "wrapped-native" | "w
         functionName: "approve",
         args: [spender, amountInUnits],
       });
-      console.log("🚀 ~ useCCIPBridge ~ approveTx:", approveTx)
       await waitForTransactionReceipt(walletClient, { hash: approveTx });
        setState({ isBridging: false, error: null });
     } else {
@@ -244,10 +244,8 @@ function getTokenType(token?: Token): "native" | "erc20" | "wrapped-native" | "w
     const opType = getBridgeOperationType(fromChainId, toChainId, toChainSelector, tokenAddress);
 
     const isBurnUnlock = opType === "burn-unlock";
-    console.log("🚀 ~ useCCIPBridge ~ isBurnUnlock:", isBurnUnlock)
     const isWrappedToken = opType === "wrapped-burn-unlock";
-    console.log("🚀 ~ useCCIPBridge ~ isWrappedToken:", isWrappedToken)
-
+ 
 
     if (isBurnUnlock) {
       await handleBurnUnlock(amount, balance, tokenConfig, tokenAddress, ccipFee);
@@ -328,17 +326,19 @@ const handleLockMint = async (
     if (!writeContractAsync) throw new Error("Contract write not available");
 
     if (!tokenAddress) {
-      const amountInUnits = parseUnits(amount, 18);
-      if (!balance || balance.value < amountInUnits) {
-        throw new Error(`Insufficient ETH balance. Required: ${formatUnits(amountInUnits, 18)} ETH`);
+      const amountETHInWei = parseUnits(amount, 18);
+      const amountTokenInDecimals = parseUnits(amount, 6);
+      if (!balance || balance.value < amountETHInWei) {
+        throw new Error(`Insufficient ETH balance. Required: ${formatUnits(amountETHInWei, 18)} ETH`);
       }
-      const result = await writeContractAsync({
-        address: smETH as `0x${string}`,
-        abi: ETH_BRIDGE_ABI.abi,
-        functionName: "lockTokenVL",
-        args: ["0x0000000000000000000000000000000000000000",amountInUnits,smSEI, receiver],
-        value: amountInUnits,
-      });
+
+        const result = await writeContractAsync({
+          address: smETH as `0x${string}`,
+          abi: ETH_BRIDGE_ABI.abi,
+          functionName: "lockTokenVL",
+          args: [tokenAddressNativeToken, amountTokenInDecimals, smSEI, receiver],
+          value: amountETHInWei,
+        });
 
 
       setState((prev) => ({ ...prev, nativeLockHash: result }));
@@ -354,13 +354,7 @@ const handleLockMint = async (
         const errorMessage = err.message === "Transaction rejected by user" ? "Giao dịch đã bị hủy bởi người dùng" : "Phê duyệt token thất bại";
         throw new Error(errorMessage);
       }
-      console.log("🚀 ~ useCCIPBridge ~ formatUnits(198612514339629n, 18):", formatUnits(ccipFee, 18))
-      // const feeString = formatUnits(ccipFee, 18);
-      // console.log("🚀 ~ useCCIPBridge ~  parseUnits(feeString, 18:",  parseUnits(feeString, 18))
       const formatted = formatUnits(ccipFee, 16);
-      // const adjustedFee = ccipFee * 100n;
-        // console.log("🚀 ~ useCCIPBridge ~ formatted:", formatted)
-        // console.log("🚀 ~ useCCIPBridge ~ parseUnits(formatted, 18):", parseUnits(formatted, 18))
         const result = await writeContractAsync({
         address: smETH as `0x${string}`,
         abi: ETH_BRIDGE_ABI.abi,

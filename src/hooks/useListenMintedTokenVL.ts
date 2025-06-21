@@ -47,7 +47,6 @@ export const usePollMintedTokenVL = ({
           };
 
           if (recipientAddr.toLowerCase() === recipient.toLowerCase()) {
-            console.log("✅ MintedTokenVL matched:", { token, amount });
             onMinted({ recipientAddr, token, amount });
 
             onAfterMinted?.();

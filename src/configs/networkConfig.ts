@@ -2,10 +2,9 @@ import { Address } from "viem";
 import { Chain } from "viem/chains";
 import NativeBridgeABI from "@/constants/contracts/ccip-eth-sepolia.json";
 import B3BridgeDest from "@/constants/contracts/ccip-sei-testnet.json";
-export const ethChain = {
+export const ethChain :Chain = {
   id: Number(process.env.NEXT_PUBLIC_ETH_CHAIN_ID),
-  name: "Ethereum",
-  network: "ethereum",
+  name: process.env.NEXT_PUBLIC_ETH_CHAIN_NAME || "Ethereum",
   nativeCurrency: {
     name: "Ether",
     symbol: "ETH",
@@ -14,7 +13,6 @@ export const ethChain = {
   rpcUrls: {
     default: {
       http: [process.env.NEXT_PUBLIC_ETH_CHAIN_RPC_URL!],
-      wss: [process.env.NEXT_PUBLIC_ETH_CHAIN_WS_URL!],
     },
     public: {
       http: [process.env.NEXT_PUBLIC_ETH_CHAIN_RPC_URL!],
@@ -23,16 +21,15 @@ export const ethChain = {
   blockExplorers: {
     default: {
       name: "Etherscan",
-      url: "https://sepolia.etherscan.io",
+      url: "https://etherscan.io",
     },
   },
-  testnet: true,
+  testnet: process.env.NEXT_PUBLIC_ETH_TESTNET === "true",
 };
 
-export const seiChain = {
+export const seiChain: Chain = {
   id: Number(process.env.NEXT_PUBLIC_SEI_CHAIN_ID),
-  name: "Sei",
-  network: "sei",
+  name: process.env.NEXT_PUBLIC_SEI_CHAIN_NAME || "Sei",
   nativeCurrency: {
     name: "Sei",
     symbol: "SEI",
@@ -41,10 +38,9 @@ export const seiChain = {
   rpcUrls: {
     default: {
       http: [process.env.NEXT_PUBLIC_SEI_CHAIN_RPC_URL!],
-      wss: [process.env.NEXT_PUBLIC_SEI_CHAIN_WS_URL!],
     },
     public: {
-      http: [process.env.NEXT_PUBLIC_SEI_CHAIN_WS_URL!],
+      http: [process.env.NEXT_PUBLIC_SEI_CHAIN_RPC_URL!],
     },
   },
   blockExplorers: {
@@ -53,9 +49,8 @@ export const seiChain = {
       url: "https://sei.explorers.guru",
     },
   },
-  testnet: true,
+  testnet: process.env.NEXT_PUBLIC_SEI_TESTNET === "true",
 };
-
 
 export declare type Token = {
   /** The token's symbol that will be shown in the UI  */
@@ -101,7 +96,7 @@ export const tokensList: Token[] = [
   {
     symbol: "ETH",
     address: {
-      [ethChain.id]: undefined, // native
+      [ethChain.id]: undefined,
     },
     decimals: 18,
     logoURL: "/images/eth.avif",

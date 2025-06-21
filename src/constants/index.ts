@@ -8,3 +8,4 @@ export const bridgeTabs = [
     label: "History",
   },
 ];
+export const tokenAddressNativeToken= "0x0000000000000000000000000000000000000000"

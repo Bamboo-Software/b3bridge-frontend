@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWallet } from "@/hooks/useWallet";
 import { useCCIPBridge } from "@/hooks/useCCIPBridge";
-import { networkConfig, ethChain } from "@/configs/networkConfig";
+import { ethChain, networkConfig } from "@/configs/networkConfig";
 import { useBalance, useChainId } from "wagmi";
 import BridgeTab from "./BridgeTab";
 import { bridgeTabs } from "@/constants";
