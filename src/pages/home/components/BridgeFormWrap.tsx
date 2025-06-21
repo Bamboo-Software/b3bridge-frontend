@@ -9,14 +9,17 @@ export interface BridgeFormData {
     name: string;
     avatar: string;
     id: string;
+    chainSelector: string;
   };
   fromWalletAddress: string;
   amount: string;
-  tokenAddress: string; // Thêm trường tokenAddress
+  tokenAddress: string;
+  tokenSymbol: string; // Thêm trường tokenSymbol
   toChain: {
     name: string;
     avatar: string;
     id: string;
+    chainSelector: string;
   };
   toWalletAddress: string;
   timestamp: string;

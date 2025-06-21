@@ -88,7 +88,7 @@ const TransferHistory = ({ history }: TransferHistoryProps) => {
                 </div>
               </TableCell>
               <TableCell>
-                <div className="font-medium">{item.amount}</div>
+                <div className="font-medium">{item.amount} {item.tokenSymbol}</div>
               </TableCell>
               <TableCell>
                 <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">

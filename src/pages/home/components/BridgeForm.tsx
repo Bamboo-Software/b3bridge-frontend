@@ -1,4 +1,5 @@
 import { useForm } from "react-hook-form";
+import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,14 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import type { BridgeFormData } from "./BridgeFormWrap";
 import { bridgeFormSchema, type BridgeFormValues } from "@/types/schemas/bridge";
-import ether from "@/assets/icons/ether.svg";
-import sei from "@/assets/icons/sei.svg";
-import { useState, useEffect } from "react";
+import { CHAINS, TOKENS } from "@/lib/configs";
 
-const CHAINS = [
-  { name: "Ethereum", avatar: ether, id: "ether" },
-  { name: "SEI", avatar: sei, id: "sei" },
-];
 
 interface BridgeFormProps {
   onSubmit: (data: BridgeFormData) => void;
@@ -22,6 +17,32 @@ interface BridgeFormProps {
 const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
   const [fromChain, setFromChain] = useState(CHAINS[0]);
   const [toChain, setToChain] = useState(CHAINS[1]);
+  const [selectedTokenSymbol, setSelectedTokenSymbol] = useState<string>("eth");
+  
+  // Lấy danh sách token từ cấu trúc mới
+  const getTokensForChain = (chainId: string) => {
+    const chain = TOKENS[chainId as keyof typeof TOKENS];
+    if (!chain) return [];
+    
+    return Object.values(chain.tokens).map(token => ({
+      symbol: token.symbol,
+      name: token.name,
+      address: token.address
+    }));
+  };
+  
+  const availableTokens = getTokensForChain(fromChain.id);
+  
+  // Lấy thông tin token đã chọn
+  const getSelectedToken = () => {
+    const chain = TOKENS[fromChain.id as keyof typeof TOKENS];
+    if (!chain) return { symbol: "", name: "", address: "" };
+    
+    const token = chain.tokens[selectedTokenSymbol as keyof typeof chain.tokens];
+    return token || { symbol: "", name: "", address: "" };
+  };
+  
+  const selectedToken = getSelectedToken();
 
   const form = useForm<BridgeFormValues>({
     resolver: zodResolver(bridgeFormSchema),
@@ -30,7 +51,8 @@ const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
       toChain: CHAINS[1],
       fromWalletAddress: "",
       toWalletAddress: "",
-      tokenAddress: "",
+      tokenAddress: selectedToken.address,
+      tokenSymbol: selectedToken.symbol,
       amount: "",
     },
   });
@@ -45,13 +67,30 @@ const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
     }
   }, [fromChain, toChain, form]);
 
+  useEffect(() => {
+    // Cập nhật token khi thay đổi fromChain
+    const token = getSelectedToken();
+    form.setValue("tokenAddress", token.address);
+    form.setValue("tokenSymbol", token.symbol);
+  }, [fromChain, selectedTokenSymbol, form]);
+
   const handleSubmit = (values: BridgeFormValues) => {
     onSubmit({
       ...values,
       timestamp: new Date().toISOString(),
     });
-    
   };
+
+  // Lấy thông tin token ở chain đích
+  const getDestinationToken = () => {
+    const chain = TOKENS[toChain.id as keyof typeof TOKENS];
+    if (!chain) return { symbol: "", name: "", address: "" };
+    
+    const token = chain.tokens[selectedTokenSymbol as keyof typeof chain.tokens];
+    return token || { symbol: "", name: "", address: "" };
+  };
+
+  const destinationToken = getDestinationToken();
 
   return (
     <Form {...form}>
@@ -127,19 +166,42 @@ const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
             
             <FormField
               control={form.control}
-              name="tokenAddress"
+              name="tokenSymbol"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Token Address</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="0x..."
-                      {...field}
-                      className="bg-background/50"
-                    />
-                  </FormControl>
+                  <FormLabel>Token</FormLabel>
+                  <Select 
+                    value={selectedTokenSymbol}
+                    onValueChange={(value) => {
+                      setSelectedTokenSymbol(value);
+                      field.onChange(value);
+                      
+                      const chain = TOKENS[fromChain.id as keyof typeof TOKENS];
+                      if (chain) {
+                        const token = chain.tokens[value as keyof typeof chain.tokens];
+                        if (token) {
+                          form.setValue("tokenAddress", token.address);
+                        }
+                      }
+                    }}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select token" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {availableTokens.map((token) => (
+                        <SelectItem key={token.symbol} value={token.symbol}>
+                          <div className="flex items-center gap-2">
+                            <span>{token.name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormDescription>
-                    Enter the token contract address you want to bridge.
+                    Selected token: {selectedToken.name} ({selectedToken.address.substring(0, 6)}...{selectedToken.address.substring(selectedToken.address.length - 4)})
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -236,6 +298,14 @@ const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
                 </FormItem>
               )}
             />
+            
+            <div className="p-3 bg-primary/10 rounded-lg mt-4">
+              <h4 className="text-sm font-medium mb-2">Destination Token Information</h4>
+              <div className="text-sm">
+                <p><span className="font-medium">Token:</span> {destinationToken.name}</p>
+                <p className="truncate"><span className="font-medium">Address:</span> {destinationToken.address}</p>
+              </div>
+            </div>
           </div>
         </div>
         
