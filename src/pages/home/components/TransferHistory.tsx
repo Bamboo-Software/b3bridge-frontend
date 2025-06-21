@@ -1,4 +1,5 @@
 import type { BridgeFormData } from "./BridgeFormWrap";
+import { CHAINS } from "@/lib/configs";
 import {
   Table,
   TableBody,
@@ -14,6 +15,12 @@ interface TransferHistoryProps {
 }
 
 const TransferHistory = ({ history }: TransferHistoryProps) => {
+  // Hàm để lấy avatar từ id của chain
+  const getChainAvatar = (chainId: string) => {
+    const chain = CHAINS.find(c => c.id === chainId);
+    return chain?.avatar || "";
+  };
+  
   if (history.length === 0) {
     return (
       <div className="text-center p-12 rounded-lg border border-dashed border-primary/20 bg-primary/5">
@@ -64,7 +71,7 @@ const TransferHistory = ({ history }: TransferHistoryProps) => {
               <TableCell>
                 <div className="flex items-center gap-2">
                   <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <img src={item.fromChain.avatar} alt={item.fromChain.name} className="h-5 w-5" />
+                    <img src={getChainAvatar(item.fromChain.id)} alt={item.fromChain.name} className="h-5 w-5" />
                   </div>
                   <div>
                     <div className="font-medium">{item.fromChain.name}</div>
@@ -77,7 +84,7 @@ const TransferHistory = ({ history }: TransferHistoryProps) => {
               <TableCell>
                 <div className="flex items-center gap-2">
                   <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <img src={item.toChain.avatar} alt={item.toChain.name} className="h-5 w-5" />
+                    <img src={getChainAvatar(item.toChain.id)} alt={item.toChain.name} className="h-5 w-5" />
                   </div>
                   <div>
                     <div className="font-medium">{item.toChain.name}</div>

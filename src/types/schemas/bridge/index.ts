@@ -3,13 +3,11 @@ import { z } from "zod";
 export const bridgeFormSchema = z.object({
   fromChain: z.object({
     name: z.string(),
-    avatar: z.string(),
     id: z.string(),
     chainSelector: z.string(),
   }),
   toChain: z.object({
     name: z.string(),
-    avatar: z.string(),
     id: z.string(),
     chainSelector: z.string(),
   }),

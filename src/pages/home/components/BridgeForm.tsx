@@ -19,7 +19,6 @@ const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
   const [toChain, setToChain] = useState(CHAINS[1]);
   const [selectedTokenSymbol, setSelectedTokenSymbol] = useState<string>("eth");
   
-  // Lấy danh sách token từ cấu trúc mới
   const getTokensForChain = (chainId: string) => {
     const chain = TOKENS[chainId as keyof typeof TOKENS];
     if (!chain) return [];
@@ -33,7 +32,6 @@ const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
   
   const availableTokens = getTokensForChain(fromChain.id);
   
-  // Lấy thông tin token đã chọn
   const getSelectedToken = () => {
     const chain = TOKENS[fromChain.id as keyof typeof TOKENS];
     if (!chain) return { symbol: "", name: "", address: "" };
@@ -68,15 +66,28 @@ const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
   }, [fromChain, toChain, form]);
 
   useEffect(() => {
-    // Cập nhật token khi thay đổi fromChain
     const token = getSelectedToken();
     form.setValue("tokenAddress", token.address);
     form.setValue("tokenSymbol", token.symbol);
   }, [fromChain, selectedTokenSymbol, form]);
 
   const handleSubmit = (values: BridgeFormValues) => {
+    const fromChainData = {
+      name: values.fromChain.name,
+      id: values.fromChain.id,
+      chainSelector: values.fromChain.chainSelector
+    };
+    
+    const toChainData = {
+      name: values.toChain.name,
+      id: values.toChain.id,
+      chainSelector: values.toChain.chainSelector
+    };
+    
     onSubmit({
       ...values,
+      fromChain: fromChainData,
+      toChain: toChainData,
       timestamp: new Date().toISOString(),
     });
   };

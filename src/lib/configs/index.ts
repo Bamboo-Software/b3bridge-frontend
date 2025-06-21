@@ -17,7 +17,6 @@ export const seiUsdcAddress = import.meta.env.VITE_SEI_USDC_ADDRESS || '0x000000
 export const seiBridgeAddress = import.meta.env.VITE_SEI_BRIDGE_ADDRESS || '0x0000000000000000000000000000000000000000';
 export const seiBridgeAbi = import.meta.env.VITE_SEI_BRIDGE_ABI || '[]';
 
-// Cấu trúc CHAINS và TOKENS theo yêu cầu mới
 export const CHAINS = [
   { name: "Ethereum", avatar: ether, id: "ethereum", chainSelector: ethereumChainSelector },
   { name: "SEI", avatar: sei, id: "sei", chainSelector: seiChainSelector },

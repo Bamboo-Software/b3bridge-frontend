@@ -7,17 +7,15 @@ import TransferHistory from "./TransferHistory";
 export interface BridgeFormData {
   fromChain: {
     name: string;
-    avatar: string;
     id: string;
     chainSelector: string;
   };
   fromWalletAddress: string;
   amount: string;
   tokenAddress: string;
-  tokenSymbol: string; // Thêm trường tokenSymbol
+  tokenSymbol: string;
   toChain: {
     name: string;
-    avatar: string;
     id: string;
     chainSelector: string;
   };
