@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import type { BridgeFormData } from "./BridgeFormWrap";
-import { bridgeFormSchema, type BridgeFormValues } from "@/types/schemas/bridge";
+import { bridgeFormSchema, type BridgeFormValues } from "@/lib/types/schemas/bridge";
 import { CHAINS, TOKENS } from "@/lib/configs";
 
 

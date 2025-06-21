@@ -1,4 +1,4 @@
-import { routesPaths } from '@/types/constants/routes';
+import { routesPaths } from '@/lib/types/constants/routes';
 import { createBrowserRouter } from 'react-router-dom';
 import Home from '@/pages/home';
 

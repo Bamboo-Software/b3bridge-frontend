@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils"
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
-import { routesPaths } from "@/types/constants/routes";
+import { routesPaths } from "@/lib/types/constants/routes";
 import { HomeIcon, MenuIcon, XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
