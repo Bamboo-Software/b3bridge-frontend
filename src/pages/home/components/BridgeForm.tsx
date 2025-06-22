@@ -1,10 +1,25 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import type { BridgeFormData } from "./BridgeFormWrap";
 import { useBridgeTokens } from "@/lib/hooks/useBridgeTokens";
 import { CHAINS } from "@/lib/configs";
+import { shortenAddress } from "@/lib/utils";
 
 interface BridgeFormProps {
   onSubmit: (data: BridgeFormData) => void;
@@ -25,16 +40,23 @@ const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
     handleSubmit,
   } = useBridgeTokens(onSubmit);
 
+  console.log("fromWalletAddress: ", form.getValues("fromWalletAddress"));
 
-  console.log("fromWalletAddress: ", form.getValues('fromWalletAddress'));
-  
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+      <form
+        onSubmit={form.handleSubmit((data) => {
+          console.log("Form submitted: ", data);
+          handleSubmit(data);
+        })}
+        className="space-y-6"
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* From Section */}
           <div className="space-y-4 p-4 rounded-lg border border-primary/20 bg-primary/5 shadow-sm">
-            <h3 className="font-medium text-lg border-b pb-2 text-primary">From</h3>
+            <h3 className="font-medium text-lg border-b pb-2 text-primary">
+              From
+            </h3>
 
             <FormField
               control={form.control}
@@ -55,7 +77,11 @@ const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
                       {CHAINS.map((chain) => (
                         <SelectItem key={chain.id} value={chain.id}>
                           <div className="flex items-center gap-2">
-                            <img src={chain.avatar} alt={chain.name} className="w-5 h-5" />
+                            <img
+                              src={chain.avatar}
+                              alt={chain.name}
+                              className="w-5 h-5"
+                            />
                             <span>{chain.name}</span>
                           </div>
                         </SelectItem>
@@ -73,7 +99,14 @@ const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="flex flex-row items-end">
-                    <span>Wallet Address</span> {form.getValues('fromWalletAddress').length > 0 ? '' : <span className="text-[9px] text-red-500">(You need to connect wallet first)</span>}
+                    <span>Wallet Address</span>{" "}
+                    {form.getValues("fromWalletAddress").length > 0 ? (
+                      ""
+                    ) : (
+                      <span className="text-[9px] text-red-500">
+                        (You need to connect wallet first)
+                      </span>
+                    )}
                   </FormLabel>
                   <FormControl>
                     <Input
@@ -117,7 +150,12 @@ const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
                     </SelectContent>
                   </Select>
                   <FormDescription>
-                    Selected token: {selectedToken.name} ({selectedToken.address.substring(0, 6)}...{selectedToken.address.substring(selectedToken.address.length - 4)})
+                    Selected token: {selectedToken.name} (
+                    {selectedToken.address.substring(0, 6)}...
+                    {selectedToken.address.substring(
+                      selectedToken.address.length - 4
+                    )}
+                    )
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -145,7 +183,9 @@ const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
 
           {/* To Section */}
           <div className="space-y-4 p-4 rounded-lg border border-primary/20 bg-primary/5 shadow-sm">
-            <h3 className="font-medium text-lg border-b pb-2 text-primary">To</h3>
+            <h3 className="font-medium text-lg border-b pb-2 text-primary">
+              To
+            </h3>
 
             <FormField
               control={form.control}
@@ -167,10 +207,14 @@ const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
                         <SelectItem
                           key={chain.id}
                           value={chain.id}
-                          disabled={chain.id === fromChain.id} 
+                          disabled={chain.id === fromChain.id}
                         >
                           <div className="flex items-center gap-2">
-                            <img src={chain.avatar} alt={chain.name} className="w-5 h-5" />
+                            <img
+                              src={chain.avatar}
+                              alt={chain.name}
+                              className="w-5 h-5"
+                            />
                             <span>{chain.name}</span>
                           </div>
                         </SelectItem>
@@ -207,33 +251,57 @@ const BridgeForm = ({ onSubmit }: BridgeFormProps) => {
             />
 
             <div className="p-3 bg-primary/10 rounded-lg mt-4">
-              <h4 className="text-sm font-medium mb-2">Destination Token Information</h4>
+              <h4 className="text-sm font-medium mb-2">
+                Destination Token Information
+              </h4>
               <div className="text-sm">
-                <p><span className="font-medium">Token:</span> {destinationToken.name}</p>
-                <p className="truncate"><span className="font-medium">Address:</span> {destinationToken.address}</p>
+                <p>
+                  <span className="font-medium">Token:</span>{" "}
+                  {destinationToken.name}
+                </p>
+                <p className="truncate">
+                  <span className="font-medium">Address:</span>{" "}
+                  {shortenAddress(destinationToken.address)}
+                </p>
               </div>
             </div>
           </div>
         </div>
 
         <div className="pt-4">
-          <Button
+          <button
             type="submit"
             className="w-full bg-gradient-to-r from-primary via-cyan-400 to-purple-500 hover:opacity-90 transition-all duration-300 shadow-md hover:shadow-lg"
             disabled={form.formState.isSubmitting}
           >
             {form.formState.isSubmitting ? (
               <span className="flex items-center gap-2">
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
                 </svg>
                 Processing...
               </span>
             ) : (
               "Bridge Tokens"
             )}
-          </Button>
+          </button>
         </div>
       </form>
     </Form>

@@ -117,6 +117,7 @@ export const useBridgeTokens = (onSubmit: (data: BridgeFormData) => void) => {
 
   const handleSubmit = (values: BridgeFormValues) => {
     try {
+      console.log('handleSubmit: ---------------', values)
       const fromChainData = {
         name: values.fromChain.name,
         id: values.fromChain.id,
