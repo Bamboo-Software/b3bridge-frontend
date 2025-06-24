@@ -1,11 +1,10 @@
 import { Address } from "viem";
-import { arbitrumSepolia, avalancheFuji, baseSepolia, bscTestnet, Chain, optimismSepolia, polygonAmoy, sepolia } from "viem/chains";
+import { Chain } from "viem/chains";
 import NativeBridgeABI from "@/constants/contracts/ccip-eth-sepolia.json";
 import B3BridgeDest from "@/constants/contracts/ccip-sei-testnet.json";
-export const ethChain = {
+export const ethChain :Chain = {
   id: Number(process.env.NEXT_PUBLIC_ETH_CHAIN_ID),
-  name: "Ethereum",
-  network: "ethereum",
+  name: process.env.NEXT_PUBLIC_ETH_CHAIN_NAME || "Ethereum",
   nativeCurrency: {
     name: "Ether",
     symbol: "ETH",
@@ -14,25 +13,25 @@ export const ethChain = {
   rpcUrls: {
     default: {
       http: [process.env.NEXT_PUBLIC_ETH_CHAIN_RPC_URL!],
-      wss: [process.env.NEXT_PUBLIC_ETH_CHAIN_WS_URL!],
+      webSocket: [process.env.NEXT_PUBLIC_ETH_CHAIN_WS_URL!],
     },
     public: {
       http: [process.env.NEXT_PUBLIC_ETH_CHAIN_RPC_URL!],
+      webSocket: [process.env.NEXT_PUBLIC_ETH_CHAIN_WS_URL!],
     },
   },
   blockExplorers: {
     default: {
       name: "Etherscan",
-      url: "https://sepolia.etherscan.io",
+      url: "https://etherscan.io",
     },
   },
-  testnet: true,
+  testnet: process.env.NEXT_PUBLIC_ETH_TESTNET === "true",
 };
 
-export const seiChain = {
+export const seiChain: Chain = {
   id: Number(process.env.NEXT_PUBLIC_SEI_CHAIN_ID),
-  name: "Sei",
-  network: "sei",
+  name: process.env.NEXT_PUBLIC_SEI_CHAIN_NAME || "Sei",
   nativeCurrency: {
     name: "Sei",
     symbol: "SEI",
@@ -41,10 +40,11 @@ export const seiChain = {
   rpcUrls: {
     default: {
       http: [process.env.NEXT_PUBLIC_SEI_CHAIN_RPC_URL!],
-      wss: [process.env.NEXT_PUBLIC_SEI_CHAIN_WS_URL!],
+      webSocket: [process.env.NEXT_PUBLIC_SEI_CHAIN_WS_URL!],
     },
     public: {
-      http: [process.env.NEXT_PUBLIC_SEI_CHAIN_WS_URL!],
+      http: [process.env.NEXT_PUBLIC_SEI_CHAIN_RPC_URL!],
+      webSocket: [process.env.NEXT_PUBLIC_SEI_CHAIN_WS_URL!],
     },
   },
   blockExplorers: {
@@ -53,7 +53,7 @@ export const seiChain = {
       url: "https://sei.explorers.guru",
     },
   },
-  testnet: true,
+  testnet: process.env.NEXT_PUBLIC_SEI_TESTNET === "true",
 };
 
 
@@ -101,7 +101,7 @@ export const tokensList: Token[] = [
   {
     symbol: "ETH",
     address: {
-      [ethChain.id]: undefined, // native
+      [ethChain.id]: undefined,
     },
     decimals: 18,
     logoURL: "/images/eth.avif",
@@ -132,7 +132,7 @@ export const tokensList: Token[] = [
     address: {
       [seiChain.id]: process.env.NEXT_PUBLIC_SEI_WETH_ADDRESS! as `0x${string}`,
     },
-    decimals: 6,
+    decimals: 18,
     logoURL: "/images/eth.avif",
     tags: ["wrapped", "default"],
   },
@@ -160,8 +160,8 @@ const chains = [
 // };
 
 export const chainSelectors: Record<number, string> = {
-  [ethChain.id]: "16015286601757825753",
-  [seiChain.id]: "1216300075444106652",
+  [ethChain.id]: process.env.NEXT_PUBLIC_ETH_SELECTOR!,
+  [seiChain.id]:  process.env.NEXT_PUBLIC_SEI_SELECTOR!,
 };
 
 // const ccipContracts = {
@@ -187,5 +187,5 @@ export const networkConfig: NetworkConfig = {
 };
 
 // Import the ABI
-export const SEPOLIA_BRIDGE_ABI = NativeBridgeABI;
+export const ETH_BRIDGE_ABI = NativeBridgeABI;
 export const SEI_BRIDGE_ABI = B3BridgeDest;

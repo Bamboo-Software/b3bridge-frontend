@@ -87,6 +87,25 @@
       {
         "indexed": false,
         "internalType": "uint256",
+        "name": "sent",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "fee",
+        "type": "uint256"
+      }
+    ],
+    "name": "CompareFee",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
         "name": "allowance",
         "type": "uint256"
       }
@@ -665,34 +684,34 @@
   {
     "inputs": [
       {
+        "internalType": "contract IERC20",
+        "name": "token",
+        "type": "address"
+      },
+      {
         "internalType": "uint64",
         "name": "destChainSelector",
         "type": "uint64"
       },
       {
         "internalType": "address",
-        "name": "receiver",
+        "name": "destAddress",
         "type": "address"
       },
       {
-        "internalType": "bytes",
-        "name": "data",
-        "type": "bytes"
+        "internalType": "address",
+        "name": "desWalletAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amountToBridge",
+        "type": "uint256"
       },
       {
         "internalType": "enum NativeBridge.PayFeesIn",
         "name": "payFeesIn",
         "type": "uint8"
-      },
-      {
-        "internalType": "address",
-        "name": "tokenAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "tokenAmount",
-        "type": "uint256"
       }
     ],
     "name": "getFeeCCIP",

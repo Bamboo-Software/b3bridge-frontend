@@ -5,21 +5,22 @@ import { motion } from "framer-motion";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWallet } from "@/hooks/useWallet";
 import { useCCIPBridge } from "@/hooks/useCCIPBridge";
-import { networkConfig, ethChain } from "@/configs/networkConfig";
+import { ethChain, networkConfig } from "@/configs/networkConfig";
 import { useBalance, useChainId } from "wagmi";
 import BridgeTab from "./BridgeTab";
 import { bridgeTabs } from "@/constants";
 import HistoryTab from "./HistoryTab";
 import { useModalStore } from "@/store/useModalStore";
-import { usePollMintedTokenVL } from "@/hooks/useListenMintedTokenVL";
+import { useWatchMintedTokenVL } from "@/hooks/useListenMintedTokenVL";
 import { toast } from "sonner";
 import { usePollUnlockedTokenERC20VL } from "@/hooks/usePollUnlockedTokenERC20VL";
-import { usePollUnlockedTokenVL } from "@/hooks/usePollUnlockedTokenVL";
-import { usePollMintTokenCCIP } from "@/hooks/usePollMintTokenCCIP";
-import { usePollUnlockTokenCCIP } from "@/hooks/usePollUnlockTokenCCIP";
+import { useWatchUnlockedTokenVL } from "@/hooks/usePollUnlockedTokenVL";
+import { useWatchMintTokenCCIP } from "@/hooks/usePollMintTokenCCIP";
+import { useWatchUnlockTokenCCIP } from "@/hooks/usePollUnlockTokenCCIP";
 import { useForm } from "react-hook-form";
 import { formatLength } from "@/utils";
 import { useBridgeStatusStore } from "@/store/useBridgeStatusStore";
+import { formatUnits } from "ethers";
 
 interface ChainConfig {
   chain: { id: number; name: string };
@@ -29,7 +30,7 @@ interface ChainConfig {
 
 export default function BridgePage() {
   const { wallet } = useWallet();
-  const { isBridging, isNativeLockPending, isERC20LockPending, error,state,setState } = useCCIPBridge();
+  const {  error,state,setState } = useCCIPBridge();
   const [fromChainId, setFromChainId] = useState<number | undefined>(undefined);
   const [toChainId, setToChainId] = useState<number | undefined>(undefined);
   const [amount, setAmount] = useState("");
@@ -66,37 +67,38 @@ export default function BridgePage() {
   const handleMinted = useCallback(({ recipientAddr, token, amount }: any) => {
     if (!recipientAddr) return;
     console.log("🎉 Minted on SEI!", { recipientAddr, token, amount });
-    toast.success(`Token minted: ${amount.toString()} at ${token}`);
-    // setState((prev) => ({ ...prev, nativeLockHash: undefined  }));
+    toast.success(`Token minted: ${formatUnits(amount, 6).toString()} at ${token}`);
     triggerReset();
   }, [triggerReset]);
-    usePollMintedTokenVL({
+    useWatchMintedTokenVL({
       recipient: recipient,
     onMinted:handleMinted,
     });
 
-  const handleUnlocked = useCallback(({ amount }: { amount: bigint }) => {
-  if (!wallet?.address) return;
+  const handleUnlocked = useCallback(
+  ({ recipientAddr, amount }: { recipientAddr: string; amount: bigint }) => {
+    if (!wallet?.address) return;
 
-  console.log("🎉 Native unlocked", amount);
-  toast.success(`Token unlocked: ${amount.toString()}`);
-  triggerReset();
-}, [wallet?.address, triggerReset]);
+    toast.success(`Token unlocked: ${formatUnits(amount, 6).toString()}`);
+    triggerReset();
+  },
+  [wallet?.address, triggerReset]
+);
 
-usePollUnlockedTokenVL({
+useWatchUnlockedTokenVL({
   recipient: wallet?.address ?? "",
   onUnlocked: handleUnlocked,
 });
 
-  const handleMintedCCIP = useCallback(({ tokenId, amount }: { tokenId: string; amount: bigint }) => {
+ const handleMintedCCIP = useCallback(({ tokenId, amount }: { tokenId: string; amount: bigint }) => {
   if (!wallet?.address) return;
 
   console.log("✅ Minted:", tokenId, amount);
-  toast.success(`Token minted: ${amount.toString()} (Token ID: ${tokenId})`);
+  toast.success(`Token minted: ${formatUnits(amount, 6).toString()} (Token ID: ${tokenId})`);
   triggerReset();
 }, [wallet?.address, triggerReset]);
 
-usePollMintTokenCCIP({
+useWatchMintTokenCCIP({
   chainId: Number(process.env.NEXT_PUBLIC_SEI_CHAIN_ID),
   recipient: wallet?.address ?? "",
   onMint: handleMintedCCIP,
@@ -105,17 +107,16 @@ usePollMintTokenCCIP({
   const handleUnlockedCCIP = useCallback(({ token, amount }: { token: string; amount: bigint }) => {
   if (!wallet?.address) return;
 
-  console.log("🔓 Unlocked:", token, amount);
-  toast.success(`Token unlocked: ${amount.toString()} from ${token}`);
+  console.log("🔓 Unlocked:", token, formatUnits(amount, 6));
+  toast.success(`Token unlocked: ${formatUnits(amount, 6).toString()} from ${token}`);
   triggerReset();
 }, [wallet?.address, triggerReset]);
 
 
-usePollUnlockTokenCCIP({
+useWatchUnlockTokenCCIP({
   chainId: Number(process.env.NEXT_PUBLIC_ETH_CHAIN_ID),
   user: wallet?.address ?? "",
-  // enabled: true,
-  onUnlock: handleUnlockedCCIP,
+  onUnlock: handleUnlockedCCIP
 });
 
 useEffect(() => {
@@ -123,8 +124,7 @@ useEffect(() => {
     setFromChainIdStore(fromChainId);
     refetchBalance();
   }
-// eslint-disable-next-line react-hooks/exhaustive-deps
-}, [address, fromChainId, selectedToken, selectedTokenConfig, refetchBalance]);
+}, [address, fromChainId, selectedToken, selectedTokenConfig,setFromChainIdStore, refetchBalance]);
 
 
   const fromChain = fromChainId ? networkConfig.chains.find((c) => c.chain.id === fromChainId) : undefined;
@@ -151,7 +151,7 @@ useEffect(() => {
               </TabsTrigger>
             ))}
           </TabsList>
-          <div className="font-manrope h-[calc(70vh-100px)] overflow-y-auto px-4 custom-scrollbar">
+          <div className="font-manrope h-[calc(80vh-100px)] overflow-y-auto px-4 custom-scrollbar">
           <BridgeTab
             setFromChainId={setFromChainId}
             setToChainId={setToChainId}
@@ -160,13 +160,10 @@ useEffect(() => {
             toChain={toChain}
             fromChainId={fromChainId}
             toChainId={toChainId}
-            isBridging={isBridging}
             supportedChains={supportedChains}
             availableTokens={availableTokens}
             selectedToken={selectedToken}
             setSelectedToken={setSelectedToken}
-            isNativeLockPending={isNativeLockPending}
-            isERC20LockPending={isERC20LockPending}
             amount={amount}
             state={state}
             balance={balance}

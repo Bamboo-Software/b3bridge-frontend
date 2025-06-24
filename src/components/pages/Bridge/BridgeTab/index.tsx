@@ -4,14 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TabsContent } from "@/components/ui/tabs";
-import {  networkConfig, SEI_BRIDGE_ABI, seiChain, SEPOLIA_BRIDGE_ABI, ethChain, Token, chainSelectors } from "@/configs/networkConfig";
+import {  networkConfig, SEI_BRIDGE_ABI, seiChain, ETH_BRIDGE_ABI, ethChain, Token, chainSelectors } from "@/configs/networkConfig";
 import { useWallet } from "@/hooks/useWallet";
 import { useModalStore } from "@/store/useModalStore";
 import { formatBalance, formatLength, getBridgeAddress } from "@/utils";
 import { motion } from "framer-motion";
 import { useForm, Controller, UseFormReset, UseFormSetValue } from "react-hook-form";
 import React, { useEffect, useMemo, useState } from "react";
-import { formatEther, isAddress, parseUnits } from "ethers";
+import { formatEther, formatUnits, isAddress, parseUnits } from "ethers";
 import { useReadContract } from "wagmi";
 import {  useCCIPBridge } from "@/hooks/useCCIPBridge";
 import { config } from "@/configs/wagmi";
@@ -94,14 +94,11 @@ interface PropBridge {
   toChain: any;
   fromChainId: number | undefined;
   toChainId: number | undefined;
-  isBridging: boolean;
   supportedChains: any;
   availableTokens: Token[];
   selectedTokenConfig: Token | undefined;
   selectedToken: string;
   setSelectedToken: (token: string) => void;
-  isNativeLockPending: boolean;
-  isERC20LockPending: boolean;
   amount: string;
   state:{
   isBridging: boolean;
@@ -147,29 +144,42 @@ const ChainSelector = ({
   const { wallet,disconnect,switchNetWorkWallet } = useWallet();
   const walletInfo = wallet ? wallet : undefined;
   const { setFromChainIdStore, setToChainIdStore } = useModalStore();
+  const triggerReset = useBridgeStatusStore((state) => state.triggerReset);
   return (
     <div className="space-y-2 font-manrope">
       <div className="flex justify-between items-center">
         <label className="text-lg font-semibold text-gray-200">{label}</label>
         {label !== "To" && walletInfo?.address && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="text-gray-400 font-bold focus:outline-none">
-                {`${walletInfo.address.slice(0, 6)}...${walletInfo.address.slice(-4)}`}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="text-gray-400 font-bold focus:outline-none">
+                    {`${walletInfo.address.slice(0, 6)}...${walletInfo.address.slice(-4)}`}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      reset?.();
+                      disconnect();
+                    }}
+                    className="text-red-500 cursor-pointer"
+                  >
+                    Disconnect
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <button
                 onClick={() => {
-                  reset?.()
-                  disconnect()
+                  reset?.();
+                  triggerReset();
                 }}
-                className="text-red-500 cursor-pointer"
+                className="text-sm text-gray-300 px-3 py-1 border border-gray-500 rounded-lg hover:bg-gray-700 transition"
               >
-                Disconnect
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                Reset
+              </button>
+            </div>
           )}
       </div>
       <Select
@@ -239,13 +249,10 @@ const BridgeTab = ({
   toChain,
   fromChainId,
   toChainId,
-  isBridging,
   supportedChains,
   availableTokens,
   selectedToken,
   setSelectedToken,
-  isNativeLockPending,
-  isERC20LockPending,
   amount,
   balance,
   error,
@@ -255,18 +262,17 @@ const BridgeTab = ({
   setReceiverAddress,
 }: PropBridge) => {
   const { wallet} = useWallet();
-  const { handleBridge,erc20LockHash,setState,burnWrappedHash, burnHash,nativeLockHash } = useCCIPBridge();
+  const { isBridging, isNativeLockPending, isERC20LockPending,handleBridge,erc20LockHash,setState,burnWrappedHash, burnHash,nativeLockHash } = useCCIPBridge();
   const { openWalletModal, setFromChainIdStore } = useModalStore();
   const isDisabled = isBridging || isNativeLockPending || isERC20LockPending;
   const smETH = getBridgeAddress("ethereum");
   const smSEI = getBridgeAddress("sei");
   const [elapsedTime, setElapsedTime] = useState(0);
   const [startTime, setStartTime] = useState<number | null>(null);
-  const [seiTokenId, setSeiTokenId] = useState<bigint | null>(null);
+  const [seiTokenId, setSeiTokenId] = useState<string | null>(null);
   const [isFetchingTokenId, setIsFetchingTokenId] = useState(false);
   const [tokenIdError, setTokenIdError] = useState<string | null>(null);
   const recipient = useMemo(() => wallet?.address ?? "", [wallet]);
-
 
 useEffect(() => {
   if (!startTime) return;
@@ -368,20 +374,20 @@ const {
         }
         
         const tokenAddressSource = token.address[seiChain.id];
-        
         if (!tokenAddressSource || !/^0x[a-fA-F0-9]{40}$/.test(tokenAddressSource)) {
           throw new Error(`Invalid token address for ${selectedToken}: ${tokenAddressSource}`);
         }
         
+       
         const id = await readContract(config, {
           address: smETH as `0x${string}`,
-          abi: SEPOLIA_BRIDGE_ABI.abi,
+          abi: ETH_BRIDGE_ABI.abi,
           functionName: 'tokenAddressToId',
           args: [tokenAddressSource as `0x${string}`],
           chainId: ethChain.id,
       });
       
-      setSeiTokenId(id as bigint);
+      setSeiTokenId(id as string);
     } catch (err: any) {
       console.error(`❌ Failed to fetch tokenId for ${selectedToken}:`, {
         error: err.message,
@@ -405,17 +411,11 @@ const {
   }, [isSeiChain, selectedToken, smETH, selectedTokenConfig, formValues.fromChainId, smSEI]);
   const isNativeToken = isNativeRelatedToken(formValues.selectedToken);
 
-if (isNativeToken) {
-  // Bỏ qua fee CCIP
-  console.log("🟢 Native or wrapped native token. Không cần ccipFee.");
-} else {
-  // Tính fee CCIP
-  console.log("🟡 ERC20 or wrapped ERC20. Cần tính ccipFee.");
-}
 // Calculate parsed amount
   const parsedAmount = useMemo(() => {
     return parseUnits(formValues.amount || "0", selectedTokenConfig?.decimals || 18);
   }, [formValues.amount, selectedTokenConfig]);
+  // error too many decimals for format
 
   // Construct bridgeConfig based on chain direction
   const bridgeConfig = useMemo(() => {
@@ -428,7 +428,7 @@ if (isNativeToken) {
         address: smSEI as `0x${string}`,
         abi: SEI_BRIDGE_ABI.abi,
         functionName: "getFeeCCIP",
-        args: [parsedAmount, seiTokenId],
+        args: [parsedAmount,seiTokenId ],
       };
     }
     if (isSepoliaChain) {
@@ -439,9 +439,9 @@ if (isNativeToken) {
       }
       return {
         address: smETH as `0x${string}`,
-        abi: SEPOLIA_BRIDGE_ABI.abi,
+        abi: ETH_BRIDGE_ABI.abi,
       functionName: "getFeeCCIP",
-      args: [toChainSelector, receiver, "0x", 0, tokenAddress, parsedAmount],
+      args: [tokenAddress,toChainSelector,smSEI, receiver,parsedAmount, 0],
     };
   }
   
@@ -459,12 +459,13 @@ if (isNativeToken) {
   selectedTokenConfig,
   formValues.fromChainId,
   formValues.toChainId,
-  formValues.amount,
+    formValues.amount,
+  
 ]);
 
   const isError = !!error;
   const shouldRead =
-     !isNativeToken && 
+  !isNativeToken && 
   !!bridgeConfig?.address &&
   !!bridgeConfig?.args &&
   (isSeiChain || isAddress(formValues.receiverAddress || "0x")) &&
@@ -525,7 +526,7 @@ if (isNativeToken) {
 
 
   const isButtonEnabled = () => {
-    if (elapsedTime > 0) return false;
+    if (isBridging || elapsedTime > 0) return false;
     if (!formValues.fromChainId || tokenIdError) return false;
     if (!wallet) return true;
     return !isDisabled || isError;
@@ -534,7 +535,7 @@ if (isNativeToken) {
   const getButtonText = () => {
     if (error === "Giao dịch đã bị hủy bởi người dùng") return "Giao dịch đã bị hủy";
     if (isError) return "Retry Bridge";
-    if (isDisabled || elapsedTime > 0) return "Bridging...";
+    if (isBridging || elapsedTime > 0) return "Bridging...";
     if (!formValues.fromChainId) return "Select Source Chain";
     if (!wallet) return "Connect Wallet";
     if (tokenIdError) return "Error Fetching Token ID";
@@ -604,7 +605,7 @@ useEffect(() => {
             <div className="flex justify-between items-center mb-2">
               <span className="text-lg text-gray-400 font-medium">Token</span>
               <span className="text-lg text-gray-400 font-medium">
-                Balance: {balance && formValues.fromChainId ? formatLength(formatBalance(balance.value, selectedTokenConfig?.decimals || 18)) : "0"} {balance && formValues.fromChainId ? (balance?.symbol || selectedToken):""}
+                Balance: {balance && formValues.fromChainId ? formatLength(""+ balance.formatted,true) : "0"} {balance && formValues.fromChainId ? (balance?.symbol || selectedToken):""}
               </span>
             </div>
             <div className="flex gap-3 items-center">
@@ -750,13 +751,8 @@ useEffect(() => {
             {[
               {
                 label: 'Transaction Fee',
-                value: isDisabled
-                  ? 'Bridging...'
-                  : tokenIdError
-                  ? 'Error fetching token ID'
-                  : isFetchingTokenId || isFeeLoading
-                  ? 'Calculating...'
-                  : ccipFee != null
+                value: 
+                   ccipFee != null
                   ? `${formatLength(formatEther(ccipFee as bigint), true)} ${fromChain?.chain?.nativeCurrency?.symbol}`
                         : ` ${formValues.amount} ${ fromChain ?fromChain?.chain?.nativeCurrency?.symbol : ""}`
               },
@@ -789,8 +785,8 @@ useEffect(() => {
 
         const isSeiTx = !!(burnWrappedHash || burnHash);
         const url = isSeiTx
-          ? `https://seitrace.com/tx/${hash}?chain=atlantic-2`
-          : `https://sepolia.etherscan.io/tx/${hash}`;
+          ? `https://seitrace.com/tx/${hash}?chain=pacific-1`
+          : `https://etherscan.io/tx/${hash}`;
 
         window.open(url, "_blank");
       }}
@@ -822,4 +818,4 @@ useEffect(() => {
 };
 
 
-export default BridgeTab;
+export default React.memo(BridgeTab);

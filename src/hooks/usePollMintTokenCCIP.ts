@@ -1,65 +1,54 @@
-import { useEffect, useRef } from "react";
-import { getPublicClient } from "wagmi/actions";
+import { useEffect } from "react";
 import { parseAbiItem } from "viem";
+import { watchContractEvent } from "@wagmi/core";
 import { getBridgeAddress } from "@/utils";
 import { config } from "@/configs/wagmi";
 
-interface UsePollMintTokenCCIPParams {
+interface UseWatchMintTokenCCIPParams {
   chainId: number;
   recipient: string;
   enabled?: boolean;
   onMint?: (data: {
-    messageId: string;
-    sourceChainSelector: bigint;
     receiver: string;
     tokenId: string;
     amount: bigint;
   }) => void;
 }
 
-export function usePollMintTokenCCIP({
+export function useWatchMintTokenCCIP({
   chainId,
   recipient,
-  // enabled = true,
   onMint,
-}: UsePollMintTokenCCIPParams) {
-  const lastCheckedBlockRef = useRef<bigint | null>(null);
-
+}: UseWatchMintTokenCCIPParams) {
   useEffect(() => {
     if (!recipient) return;
 
     const bridgeAddress = getBridgeAddress("sei");
-    const publicClient = getPublicClient(config, { chainId: Number(process.env.NEXT_PUBLIC_SEI_CHAIN_ID) });
 
-    const abiEvent = parseAbiItem(
-      "event MintTokenCCIP(bytes32 indexed messageId, uint64 indexed sourceChainSelector, address receiver, bytes32 tokenId, uint256 amount)"
-    );
-
-    const poll = async () => {
-      try {
-        const currentBlock = await publicClient!.getBlockNumber();
-        const fromBlock = lastCheckedBlockRef.current ?? (currentBlock - BigInt(50));
-        lastCheckedBlockRef.current = currentBlock;
-
-        const logs = await publicClient!.getLogs({
-          address: bridgeAddress,
-          event: abiEvent,
-          fromBlock,
-          toBlock: currentBlock,
-        });
-
+    const unwatch = watchContractEvent(config, {
+      chainId,
+      address: bridgeAddress,
+      abi: [
+        parseAbiItem(
+          "event MintTokenCCIP(address receiver, bytes32 tokenId, uint256 amount)"
+        ),
+      ],
+      eventName: "MintTokenCCIP",
+      onLogs: (logs) => {
         for (const log of logs) {
-          const { messageId, sourceChainSelector, receiver, tokenId, amount } = log.args as any;
+          const { receiver, tokenId, amount } = log.args as {
+            receiver: string;
+            tokenId: string;
+            amount: bigint;
+          };
+
           if (receiver.toLowerCase() === recipient.toLowerCase()) {
-            onMint?.({ messageId, sourceChainSelector, receiver, tokenId, amount });
+            onMint?.({ receiver, tokenId, amount });
           }
         }
-      } catch (err) {
-        console.error("Polling MintTokenCCIP error:", err);
-      }
-    };
+      },
+    });
 
-    const interval = setInterval(poll, 10000);
-    return () => clearInterval(interval);
-  }, [recipient, chainId, onMint]);
+    return () => unwatch(); // Cleanup
+  }, [chainId, recipient, onMint]);
 }
