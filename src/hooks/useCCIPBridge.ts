@@ -291,7 +291,7 @@ const handleBurnUnlock = async (
     });
 
     await approveToken(tokenAddress as `0x${string}`, smSEI as `0x${string}`, amount,tokenConfig?.decimals ?? 18,wallet?.address as `0x${string}`,walletClient);
-        const result = await writeContractAsync({
+    const result = await writeContractAsync({
       address: smSEI as `0x${string}`,
       abi: SEI_BRIDGE_ABI.abi,
       functionName: "burnTokenCCIP",
@@ -327,7 +327,7 @@ const handleLockMint = async (
 
     if (!tokenAddress) {
       const amountETHInWei = parseUnits(amount, 18);
-      const amountTokenInDecimals = parseUnits(amount, 6);
+      const amountTokenInDecimals = parseUnits(amount, 18);
       if (!balance || balance.value < amountETHInWei) {
         throw new Error(`Insufficient ETH balance. Required: ${formatUnits(amountETHInWei, 18)} ETH`);
       }
@@ -354,7 +354,7 @@ const handleLockMint = async (
         const errorMessage = err.message === "Transaction rejected by user" ? "Giao dịch đã bị hủy bởi người dùng" : "Phê duyệt token thất bại";
         throw new Error(errorMessage);
       }
-      const formatted = formatUnits(ccipFee, 16);
+      const formatted = formatUnits(ccipFee, 18);
         const result = await writeContractAsync({
         address: smETH as `0x${string}`,
         abi: ETH_BRIDGE_ABI.abi,
@@ -388,7 +388,9 @@ const handleBurnWrappedToken = async (
   try {
     if (!writeContractAsync) throw new Error("Contract write not available");
 
+    console.log("🚀 ~ useCCIPBridge ~ tokenConfig?.decimals:", tokenConfig?.decimals)
     const amountInUnits = parseUnits(amount, tokenConfig?.decimals || 18);
+    console.log("🚀 ~ useCCIPBridge ~ amountInUnits:", amountInUnits)
     if (!balance || balance.value < amountInUnits) {
       throw new Error(`Insufficient ${tokenConfig?.symbol} balance. Required: ${amount}`);
     }
@@ -407,7 +409,7 @@ const handleBurnWrappedToken = async (
       abi: SEI_BRIDGE_ABI.abi,
       functionName: "burnTokenVL",
       args: [amountInUnits, wrappedTokenAddress as `0x${string}`,receiver],
-      value: parseUnits("" + amountInUnits, 9)
+      value: amountInUnits
     });
 
 

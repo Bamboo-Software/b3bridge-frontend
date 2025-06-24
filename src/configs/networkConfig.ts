@@ -13,9 +13,11 @@ export const ethChain :Chain = {
   rpcUrls: {
     default: {
       http: [process.env.NEXT_PUBLIC_ETH_CHAIN_RPC_URL!],
+      webSocket: [process.env.NEXT_PUBLIC_ETH_CHAIN_WS_URL!],
     },
     public: {
       http: [process.env.NEXT_PUBLIC_ETH_CHAIN_RPC_URL!],
+      webSocket: [process.env.NEXT_PUBLIC_ETH_CHAIN_WS_URL!],
     },
   },
   blockExplorers: {
@@ -38,9 +40,11 @@ export const seiChain: Chain = {
   rpcUrls: {
     default: {
       http: [process.env.NEXT_PUBLIC_SEI_CHAIN_RPC_URL!],
+      webSocket: [process.env.NEXT_PUBLIC_SEI_CHAIN_WS_URL!],
     },
     public: {
       http: [process.env.NEXT_PUBLIC_SEI_CHAIN_RPC_URL!],
+      webSocket: [process.env.NEXT_PUBLIC_SEI_CHAIN_WS_URL!],
     },
   },
   blockExplorers: {
@@ -51,6 +55,7 @@ export const seiChain: Chain = {
   },
   testnet: process.env.NEXT_PUBLIC_SEI_TESTNET === "true",
 };
+
 
 export declare type Token = {
   /** The token's symbol that will be shown in the UI  */
@@ -127,7 +132,7 @@ export const tokensList: Token[] = [
     address: {
       [seiChain.id]: process.env.NEXT_PUBLIC_SEI_WETH_ADDRESS! as `0x${string}`,
     },
-    decimals: 6,
+    decimals: 18,
     logoURL: "/images/eth.avif",
     tags: ["wrapped", "default"],
   },

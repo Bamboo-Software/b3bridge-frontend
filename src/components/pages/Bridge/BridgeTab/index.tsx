@@ -94,14 +94,11 @@ interface PropBridge {
   toChain: any;
   fromChainId: number | undefined;
   toChainId: number | undefined;
-  isBridging: boolean;
   supportedChains: any;
   availableTokens: Token[];
   selectedTokenConfig: Token | undefined;
   selectedToken: string;
   setSelectedToken: (token: string) => void;
-  isNativeLockPending: boolean;
-  isERC20LockPending: boolean;
   amount: string;
   state:{
   isBridging: boolean;
@@ -147,29 +144,42 @@ const ChainSelector = ({
   const { wallet,disconnect,switchNetWorkWallet } = useWallet();
   const walletInfo = wallet ? wallet : undefined;
   const { setFromChainIdStore, setToChainIdStore } = useModalStore();
+  const triggerReset = useBridgeStatusStore((state) => state.triggerReset);
   return (
     <div className="space-y-2 font-manrope">
       <div className="flex justify-between items-center">
         <label className="text-lg font-semibold text-gray-200">{label}</label>
         {label !== "To" && walletInfo?.address && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="text-gray-400 font-bold focus:outline-none">
-                {`${walletInfo.address.slice(0, 6)}...${walletInfo.address.slice(-4)}`}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="text-gray-400 font-bold focus:outline-none">
+                    {`${walletInfo.address.slice(0, 6)}...${walletInfo.address.slice(-4)}`}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40">
+                  <DropdownMenuItem
+                    onClick={() => {
+                      reset?.();
+                      disconnect();
+                    }}
+                    className="text-red-500 cursor-pointer"
+                  >
+                    Disconnect
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <button
                 onClick={() => {
-                  reset?.()
-                  disconnect()
+                  reset?.();
+                  triggerReset();
                 }}
-                className="text-red-500 cursor-pointer"
+                className="text-sm text-gray-300 px-3 py-1 border border-gray-500 rounded-lg hover:bg-gray-700 transition"
               >
-                Disconnect
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                Reset
+              </button>
+            </div>
           )}
       </div>
       <Select
@@ -239,13 +249,10 @@ const BridgeTab = ({
   toChain,
   fromChainId,
   toChainId,
-  isBridging,
   supportedChains,
   availableTokens,
   selectedToken,
   setSelectedToken,
-  isNativeLockPending,
-  isERC20LockPending,
   amount,
   balance,
   error,
@@ -255,7 +262,7 @@ const BridgeTab = ({
   setReceiverAddress,
 }: PropBridge) => {
   const { wallet} = useWallet();
-  const { handleBridge,erc20LockHash,setState,burnWrappedHash, burnHash,nativeLockHash } = useCCIPBridge();
+  const { isBridging, isNativeLockPending, isERC20LockPending,handleBridge,erc20LockHash,setState,burnWrappedHash, burnHash,nativeLockHash } = useCCIPBridge();
   const { openWalletModal, setFromChainIdStore } = useModalStore();
   const isDisabled = isBridging || isNativeLockPending || isERC20LockPending;
   const smETH = getBridgeAddress("ethereum");
@@ -266,7 +273,6 @@ const BridgeTab = ({
   const [isFetchingTokenId, setIsFetchingTokenId] = useState(false);
   const [tokenIdError, setTokenIdError] = useState<string | null>(null);
   const recipient = useMemo(() => wallet?.address ?? "", [wallet]);
-
 
 useEffect(() => {
   if (!startTime) return;
@@ -367,7 +373,6 @@ const {
           throw new Error(`Token ${selectedToken} not found in tokenConfig`);
         }
         
-
         const tokenAddressSource = token.address[seiChain.id];
         if (!tokenAddressSource || !/^0x[a-fA-F0-9]{40}$/.test(tokenAddressSource)) {
           throw new Error(`Invalid token address for ${selectedToken}: ${tokenAddressSource}`);
@@ -410,6 +415,7 @@ const {
   const parsedAmount = useMemo(() => {
     return parseUnits(formValues.amount || "0", selectedTokenConfig?.decimals || 18);
   }, [formValues.amount, selectedTokenConfig]);
+  // error too many decimals for format
 
   // Construct bridgeConfig based on chain direction
   const bridgeConfig = useMemo(() => {
@@ -422,7 +428,7 @@ const {
         address: smSEI as `0x${string}`,
         abi: SEI_BRIDGE_ABI.abi,
         functionName: "getFeeCCIP",
-        args: [parsedAmount, seiTokenId],
+        args: [parsedAmount,seiTokenId ],
       };
     }
     if (isSepoliaChain) {
@@ -435,7 +441,7 @@ const {
         address: smETH as `0x${string}`,
         abi: ETH_BRIDGE_ABI.abi,
       functionName: "getFeeCCIP",
-      args: [toChainSelector, receiver, "0x", 0, tokenAddress, parsedAmount],
+      args: [tokenAddress,toChainSelector,smSEI, receiver,parsedAmount, 0],
     };
   }
   
@@ -453,12 +459,13 @@ const {
   selectedTokenConfig,
   formValues.fromChainId,
   formValues.toChainId,
-  formValues.amount,
+    formValues.amount,
+  
 ]);
 
   const isError = !!error;
   const shouldRead =
-     !isNativeToken && 
+  !isNativeToken && 
   !!bridgeConfig?.address &&
   !!bridgeConfig?.args &&
   (isSeiChain || isAddress(formValues.receiverAddress || "0x")) &&
@@ -519,7 +526,7 @@ const {
 
 
   const isButtonEnabled = () => {
-    if (elapsedTime > 0) return false;
+    if (isBridging || elapsedTime > 0) return false;
     if (!formValues.fromChainId || tokenIdError) return false;
     if (!wallet) return true;
     return !isDisabled || isError;
@@ -528,7 +535,7 @@ const {
   const getButtonText = () => {
     if (error === "Giao dịch đã bị hủy bởi người dùng") return "Giao dịch đã bị hủy";
     if (isError) return "Retry Bridge";
-    if (isDisabled || elapsedTime > 0) return "Bridging...";
+    if (isBridging || elapsedTime > 0) return "Bridging...";
     if (!formValues.fromChainId) return "Select Source Chain";
     if (!wallet) return "Connect Wallet";
     if (tokenIdError) return "Error Fetching Token ID";
@@ -598,7 +605,7 @@ useEffect(() => {
             <div className="flex justify-between items-center mb-2">
               <span className="text-lg text-gray-400 font-medium">Token</span>
               <span className="text-lg text-gray-400 font-medium">
-                Balance: {balance && formValues.fromChainId ? formatLength(formatBalance(balance.value, selectedTokenConfig?.decimals || 18)) : "0"} {balance && formValues.fromChainId ? (balance?.symbol || selectedToken):""}
+                Balance: {balance && formValues.fromChainId ? formatLength(""+ balance.formatted,true) : "0"} {balance && formValues.fromChainId ? (balance?.symbol || selectedToken):""}
               </span>
             </div>
             <div className="flex gap-3 items-center">
@@ -744,13 +751,8 @@ useEffect(() => {
             {[
               {
                 label: 'Transaction Fee',
-                value: isDisabled
-                  ? 'Bridging...'
-                  : tokenIdError
-                  ? 'Error fetching token ID'
-                  : isFetchingTokenId || isFeeLoading
-                  ? 'Calculating...'
-                  : ccipFee != null
+                value: 
+                   ccipFee != null
                   ? `${formatLength(formatEther(ccipFee as bigint), true)} ${fromChain?.chain?.nativeCurrency?.symbol}`
                         : ` ${formValues.amount} ${ fromChain ?fromChain?.chain?.nativeCurrency?.symbol : ""}`
               },
@@ -816,4 +818,4 @@ useEffect(() => {
 };
 
 
-export default BridgeTab;
+export default React.memo(BridgeTab);
