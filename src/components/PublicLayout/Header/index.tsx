@@ -7,13 +7,14 @@ import { Button } from "@/components/ui/button";
 import { WalletConnectModal } from "@/components/Modal/ConnectWalletModal";
 import { useModalStore } from "@/store/useModalStore";
 import { useWallet } from "@/hooks/useWallet";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
 const Header = () => {
   const pathname = usePathname();
   const isActive = (path: string) => pathname === path;
   const { openWalletModal } = useModalStore();
-  const { wallet,isConnected } = useWallet();
+  const { wallet,disconnect,isConnected } = useWallet();
     const walletInfo = wallet ? wallet : undefined;
   return (
     <div className="w-full">
@@ -38,12 +39,30 @@ const Header = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            <Button
-              onClick={openWalletModal}
-              className="px-5 py-2.5 text-lg font-semibold bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-full shadow-lg hover:shadow-green-500/50 transition-all duration-300"
-            >
-              {isConnected ? `${walletInfo?.address?.slice(0, 6)}...${walletInfo?.address?.slice(-4)}` : "Connect Wallet"}
-            </Button>
+           {isConnected ? (
+                <Select onValueChange={(value) => value === "disconnect" && disconnect()}>
+                  <SelectTrigger className="w-[200px] rounded-full px-5 py-2.5 bg-gradient-to-r from-green-500 to-blue-500 !text-white text-lg font-semibold shadow-lg hover:shadow-green-500/50 transition-all duration-300 items-center justify-center ">
+                    <SelectValue
+                      placeholder={`${walletInfo?.address?.slice(0, 6)}...${walletInfo?.address?.slice(-4)}`}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {/* <SelectItem value="wallet" disabled>
+                      <span className="text-xs font-mono break-all">{walletInfo?.address}</span>
+                    </SelectItem> */}
+                    <SelectItem value="disconnect" className="text-red-600 font-semibold">
+                      Disconnect
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Button
+                  onClick={openWalletModal}
+                  className="px-5 py-2.5 text-lg font-semibold bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-full shadow-lg hover:shadow-green-500/50 transition-all duration-300"
+                >
+                  Connect Wallet
+                </Button>
+              )}
           </motion.div>
 
           </motion.div>

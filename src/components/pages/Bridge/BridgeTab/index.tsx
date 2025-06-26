@@ -292,7 +292,8 @@ const formatElapsed = (seconds: number) => {
 };
 
 // Initialize react-hook-form
-const {
+  const {
+  register,
   control,
   handleSubmit,
   formState: { errors, isValid },
@@ -606,7 +607,7 @@ useEffect(() => {
             <div className="flex justify-between items-center mb-2">
               <span className="text-lg text-gray-400 font-medium">Token</span>
               <span className="text-lg text-gray-400 font-medium">
-                Balance: {balance && formValues.fromChainId ? formatLength(""+ balance.formatted,true) : "0"} {balance && formValues.fromChainId ? (balance?.symbol || selectedToken):""}
+                Balance: {balance && formValues.fromChainId && formValues.selectedToken ? formatLength(""+ balance.formatted,true) : "0"} {balance && formValues.fromChainId && formValues.selectedToken ? (balance?.symbol || selectedToken):""}
               </span>
             </div>
             <div className="flex gap-3 items-center">
@@ -614,9 +615,15 @@ useEffect(() => {
                 name="amount"
                 control={control}
                 rules={{
-                  required: "Please enter an amount",
-                  validate: (value) =>
-                    Number(value) > 0 ? true : "Amount must be greater than 0",
+                  required: "Amount is required",
+                  validate: {
+                    positive: value => parseFloat(value) > 0 || "Amount must be greater than 0",
+                    withinBalance: value => {
+                      const parsed = parseFloat(value);
+                      const currentBalance = parseFloat(balance?.formatted || "0");
+                      return parsed <= currentBalance || "Amount exceeds your balance";
+                    }
+                  },
                 }}
                 render={({ field }) => (
                   <Input
