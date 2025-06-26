@@ -5,17 +5,14 @@ import { config } from "@/configs/wagmi";
 import { getBridgeAddress } from "@/utils";
 
 export const useWatchUnlockedTokenVL = ({
-  recipient,
   onUnlocked,
 }: {
-  recipient: string;
   onUnlocked: (event: {
     recipientAddr: string;
     amount: bigint;
   }) => void;
 }) => {
   useEffect(() => {
-    if (!recipient) return;
 
     const chainId = Number(process.env.NEXT_PUBLIC_ETH_CHAIN_ID);
     const contractAddress = getBridgeAddress("ethereum");
@@ -32,15 +29,13 @@ export const useWatchUnlockedTokenVL = ({
             amount: bigint;
           };
 
-          if (recipientAddr.toLowerCase() === recipient.toLowerCase()) {
-            onUnlocked({ recipientAddr, amount });
-          }
+          onUnlocked({ recipientAddr, amount });
         }
-      },
+      }
     });
 
     return () => {
       unwatch(); // Clean up when component unmounts or recipient changes
     };
-  }, [recipient, onUnlocked]);
+  }, [onUnlocked]);
 };

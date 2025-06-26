@@ -526,7 +526,7 @@ const {
 
 
   const isButtonEnabled = () => {
-    if (isBridging || elapsedTime > 0) return false;
+    if (isDisabled || elapsedTime > 0) return false;
     if (!formValues.fromChainId || tokenIdError) return false;
     if (!wallet) return true;
     return !isDisabled || isError;
@@ -535,7 +535,7 @@ const {
   const getButtonText = () => {
     if (error === "Giao dịch đã bị hủy bởi người dùng") return "Giao dịch đã bị hủy";
     if (isError) return "Retry Bridge";
-    if (isBridging || elapsedTime > 0) return "Bridging...";
+    if (isDisabled || elapsedTime > 0) return "Bridging...";
     if (!formValues.fromChainId) return "Select Source Chain";
     if (!wallet) return "Connect Wallet";
     if (tokenIdError) return "Error Fetching Token ID";
@@ -560,6 +560,7 @@ useEffect(() => {
     setState((prev) => ({ ...prev, nativeLockHash: undefined  }));
     setState((prev) => ({ ...prev, erc20LockHash: undefined  }));
     setState((prev) => ({ ...prev, burnWrappedHash: undefined  }));
+    setState((prev) => ({ ...prev, isBridging: false  }));
     setState((prev) => ({ ...prev, burnHash: undefined  }));
   }
 
@@ -757,7 +758,7 @@ useEffect(() => {
                         : ` ${formValues.amount} ${ fromChain ?fromChain?.chain?.nativeCurrency?.symbol : ""}`
               },
               {
-                label: "Estimated Time",
+                label: "Elapsed Time",
                 value: elapsedTime > 0 ? formatElapsed(elapsedTime) : "",
               },
               {
