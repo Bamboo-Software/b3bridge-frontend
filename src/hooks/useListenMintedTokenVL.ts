@@ -5,17 +5,14 @@ import { getBridgeAddress } from "@/utils";
 import { config } from "@/configs/wagmi";
 
 export const useWatchMintedTokenVL = ({
-  recipient,
   onMinted,
   onAfterMinted,
 }: {
-  recipient: string;
   enabled?: boolean;
   onMinted: (event: { recipientAddr: string; token: string; amount: bigint }) => void;
   onAfterMinted?: () => void;
 }) => {
   useEffect(() => {
-    if (!recipient) return;
 
     const smSEI = getBridgeAddress("sei");
 
@@ -36,10 +33,8 @@ export const useWatchMintedTokenVL = ({
             amount: bigint;
           };
 
-          if (recipientAddr.toLowerCase() === recipient.toLowerCase()) {
-            onMinted({ recipientAddr, token, amount });
-            onAfterMinted?.();
-          }
+          onMinted({ recipientAddr, token, amount });
+          onAfterMinted?.();
         }
       },
       onError(error) {
@@ -48,5 +43,5 @@ export const useWatchMintedTokenVL = ({
     });
 
     return () => unwatch?.();
-  }, [recipient, onMinted, onAfterMinted]);
+  }, [onMinted, onAfterMinted]);
 };

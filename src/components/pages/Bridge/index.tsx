@@ -67,11 +67,11 @@ export default function BridgePage() {
   const handleMinted = useCallback(({ recipientAddr, token, amount }: any) => {
     if (!recipientAddr) return;
     console.log("🎉 Minted on SEI!", { recipientAddr, token, amount });
-    toast.success(`Token minted: ${formatUnits(amount, 6).toString()} at ${token}`);
+    toast.success(`Token minted: ${formatUnits(amount, 18).toString()} at ${token}`);
     triggerReset();
   }, [triggerReset]);
     useWatchMintedTokenVL({
-      recipient: recipient,
+      // recipient: recipient,
     onMinted:handleMinted,
     });
 
@@ -79,14 +79,13 @@ export default function BridgePage() {
   ({ recipientAddr, amount }: { recipientAddr: string; amount: bigint }) => {
     if (!wallet?.address) return;
 
-    toast.success(`Token unlocked: ${formatUnits(amount, 6).toString()}`);
+    toast.success(`Token unlocked: ${formatUnits(amount, 18).toString()}`);
     triggerReset();
   },
   [wallet?.address, triggerReset]
 );
 
 useWatchUnlockedTokenVL({
-  recipient: wallet?.address ?? "",
   onUnlocked: handleUnlocked,
 });
 
@@ -151,7 +150,7 @@ useEffect(() => {
               </TabsTrigger>
             ))}
           </TabsList>
-          <div className="font-manrope h-[calc(80vh-100px)] overflow-y-auto px-4 custom-scrollbar">
+          <div className="font-manrope h-[calc(70vh-100px)] overflow-y-auto px-4 custom-scrollbar">
           <BridgeTab
             setFromChainId={setFromChainId}
             setToChainId={setToChainId}

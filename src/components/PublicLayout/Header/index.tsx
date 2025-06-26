@@ -13,7 +13,8 @@ const Header = () => {
   const pathname = usePathname();
   const isActive = (path: string) => pathname === path;
   const { openWalletModal } = useModalStore();
-  const {  wallet ,currentChainId } = useWallet()
+  const { wallet,isConnected } = useWallet();
+    const walletInfo = wallet ? wallet : undefined;
   return (
     <div className="w-full">
       <motion.header
@@ -30,33 +31,7 @@ const Header = () => {
                 B3 Bridge
               </h1>
             </Link>
-            {/* <motion.nav
-              className="hidden md:flex items-center justify-center gap-8 bg-gray-800/50 backdrop-blur-md p-3 px-8 rounded-full border border-green-500/30 shadow-xl"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.5 }}
-            >
-              {[
-                { path: "/swap", label: "Swap" },
-                { path: "/bridge", label: "Bridge" },
-                { path: "/pool", label: "Pool" },
-                { path: "/docs", label: "Docs" },
-                { path: "/about", label: "About us" },
-              ].map(({ path, label }) => (
-                <Link
-                  key={path}
-                  href={path}
-                  className={`text-lg font-semibold   transition-all duration-300 ease-in-out ${
-                    isActive(path)
-                      ? "text-green-400 border-green-400"
-                      : "text-gray-300 hover:text-green-400 hover:scale-105"
-                  }`}
-                >
-                  {label}
-                </Link>
-              ))}
-            </motion.nav> */}
-            {/* <motion.div
+             <motion.div
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1, duration: 0.2 }}
@@ -69,7 +44,7 @@ const Header = () => {
             >
               {isConnected ? `${walletInfo?.address?.slice(0, 6)}...${walletInfo?.address?.slice(-4)}` : "Connect Wallet"}
             </Button>
-          </motion.div> */}
+          </motion.div>
 
           </motion.div>
         </motion.div>
