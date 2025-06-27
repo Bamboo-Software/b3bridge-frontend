@@ -7,7 +7,7 @@ import { useWallet } from "@/hooks/useWallet";
 import { useCCIPBridge } from "@/hooks/useCCIPBridge";
 import { ethChain, networkConfig } from "@/configs/networkConfig";
 import { useBalance, useChainId } from "wagmi";
-import BridgeTab from "./BridgeTab";
+import BridgeTab, { FormData } from "./BridgeTab";
 import { bridgeTabs } from "@/constants";
 import HistoryTab from "./HistoryTab";
 import { useModalStore } from "@/store/useModalStore";
@@ -21,7 +21,7 @@ import { useForm } from "react-hook-form";
 import { formatLength } from "@/utils";
 import { useBridgeStatusStore } from "@/store/useBridgeStatusStore";
 import { formatUnits } from "ethers";
-
+import { CustomToastBridged } from "@/components/Modal/ToastBridged";
 interface ChainConfig {
   chain: { id: number; name: string };
   logoURL?: string;
@@ -37,7 +37,6 @@ export default function BridgePage() {
   const [selectedToken, setSelectedToken] = useState<string>("");
   const [receiverAddress, setReceiverAddress] = useState<string>("");
   const [selectedTab, setSelectedTab] = useState("bridge");
-  const recipient = useMemo(() => wallet?.address ?? "", [wallet]);
   const triggerReset = useBridgeStatusStore((state) => state.triggerReset);
   const setFromChainIdStore = useModalStore.getState().setFromChainIdStore;
   const selectedTokenConfig = useMemo(
@@ -45,7 +44,26 @@ export default function BridgePage() {
     [selectedToken]
   );
   const address = wallet ? wallet?.address : undefined;
-
+// Initialize react-hook-form
+  const {
+  register,
+  control,
+  handleSubmit,
+  formState: { errors, isValid },
+  setValue,
+  watch,
+  reset
+} = useForm<FormData>({
+  defaultValues: {
+    fromChainId: fromChainId?.toString() || "",
+    toChainId: toChainId?.toString() || "",
+    amount: formatLength(amount) || "",
+    selectedToken: selectedToken || "",
+    receiverAddress: receiverAddress || "",
+    },
+    mode: "onChange",
+});
+  const formValues = watch();
   const availableTokens = useMemo(() => {
     if (!fromChainId) return [];
     return networkConfig.tokensList.filter((token) => {
@@ -64,12 +82,27 @@ export default function BridgePage() {
         ? (selectedTokenConfig.address[fromChainId] as `0x${string}`)
         : undefined,
   });
-  const handleMinted = useCallback(({ recipientAddr, token, amount }: any) => {
+  const handleMinted = useCallback(
+  ({ recipientAddr, token, amount }: any) => {
     if (!recipientAddr) return;
-    console.log("🎉 Minted on SEI!", { recipientAddr, token, amount });
-    toast.success(`Token minted: ${formatUnits(amount, 18).toString()} at ${token}`);
+    toast.custom((t) => (
+      <CustomToastBridged
+        t={t}
+        title="🎉 Token Minted on SEI"
+        content={
+          <>
+            <p><strong>Recipient:</strong> {recipientAddr}</p>
+            <p><strong>Token:</strong> {token}</p>
+            <p><strong>Amount:</strong> {formatUnits(amount, 18).toString()}</p>
+          </>
+        }
+      />
+    ));
+
     triggerReset();
-  }, [triggerReset]);
+  },
+  [triggerReset]
+);
     useWatchMintedTokenVL({
       // recipient: recipient,
     onMinted:handleMinted,
@@ -79,7 +112,19 @@ export default function BridgePage() {
   ({ recipientAddr, amount }: { recipientAddr: string; amount: bigint }) => {
     if (!wallet?.address) return;
 
-    toast.success(`Token unlocked: ${formatUnits(amount, 18).toString()}`);
+    toast.custom((t) => (
+      <CustomToastBridged
+        t={t}
+        title="🔓 Token Unlocked"
+        content={
+          <>
+            <p><strong>Recipient:</strong> {wallet.address}</p>
+            <p><strong>Amount:</strong> {formatUnits(amount, 18).toString()}</p>
+          </>
+        }
+      />
+    ));
+
     triggerReset();
   },
   [wallet?.address, triggerReset]
@@ -89,13 +134,27 @@ useWatchUnlockedTokenVL({
   onUnlocked: handleUnlocked,
 });
 
- const handleMintedCCIP = useCallback(({ tokenId, amount }: { tokenId: string; amount: bigint }) => {
-  if (!wallet?.address) return;
+ const handleMintedCCIP = useCallback(
+  ({ tokenId, amount }: { tokenId: string; amount: bigint }) => {
+    if (!wallet?.address) return;
 
-  console.log("✅ Minted:", tokenId, amount);
-  toast.success(`Token minted: ${formatUnits(amount, 6).toString()} (Token ID: ${tokenId})`);
-  triggerReset();
-}, [wallet?.address, triggerReset]);
+    toast.custom((t) => (
+      <CustomToastBridged
+        t={t}
+        title="✅ Token Minted (CCIP)"
+        content={
+          <>
+            <p><strong>Token ID:</strong> {tokenId}</p>
+            <p><strong>Amount:</strong> {formatUnits(amount, 6).toString()}</p>
+          </>
+        }
+      />
+    ));
+
+    triggerReset();
+  },
+  [wallet?.address, triggerReset]
+);
 
 useWatchMintTokenCCIP({
   chainId: Number(process.env.NEXT_PUBLIC_SEI_CHAIN_ID),
@@ -103,13 +162,27 @@ useWatchMintTokenCCIP({
   onMint: handleMintedCCIP,
 });
 
-  const handleUnlockedCCIP = useCallback(({ token, amount }: { token: string; amount: bigint }) => {
-  if (!wallet?.address) return;
+  const handleUnlockedCCIP = useCallback(
+  ({ token, amount }: { token: string; amount: bigint }) => {
+    if (!wallet?.address) return;
 
-  console.log("🔓 Unlocked:", token, formatUnits(amount, 6));
-  toast.success(`Token unlocked: ${formatUnits(amount, 6).toString()} from ${token}`);
-  triggerReset();
-}, [wallet?.address, triggerReset]);
+    toast.custom((t) => (
+      <CustomToastBridged
+        t={t}
+        title="🔓 Token Unlocked (CCIP)"
+        content={
+          <>
+            <p><strong>Token:</strong> {token}</p>
+            <p><strong>Amount:</strong> {formatUnits(amount, 6).toString()}</p>
+          </>
+        }
+      />
+    ));
+
+    triggerReset();
+  },
+  [wallet?.address, triggerReset]
+);
 
 
 useWatchUnlockTokenCCIP({
@@ -139,36 +212,38 @@ useEffect(() => {
         className="bg-gradient-to-br from-gray-900/90 to-black/90 backdrop-blur-xl rounded-2xl border border-green-500/40 shadow-2xl p-6"
       >
         <Tabs defaultValue={selectedTab} onValueChange={setSelectedTab}>
-          <TabsList className="grid w-full grid-cols-2 bg-gray-800/60 border border-green-500/40 rounded-full p-1 h-12 mb-8">
+          <TabsList className="grid w-full grid-cols-2 bg-gray-800/60 border border-green-500/40 rounded-full p-1 h-12 mb-2">
             {bridgeTabs.map((tab) => (
               <TabsTrigger
                 key={tab.value}
                 value={tab.value}
-                className="text-lg font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white rounded-full transition-all"
+                className="text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white rounded-full transition-all"
               >
                 {tab.label}
               </TabsTrigger>
             ))}
           </TabsList>
-          <div className="font-manrope h-[calc(70vh-100px)] overflow-y-auto px-4 custom-scrollbar">
+          <div className="font-manrope  overflow-y-auto px-4 custom-scrollbar">
           <BridgeTab
             setFromChainId={setFromChainId}
+            formValues={formValues}
             setToChainId={setToChainId}
             setAmount={setAmount}
             fromChain={fromChain}
-            toChain={toChain}
-            fromChainId={fromChainId}
-            toChainId={toChainId}
+              toChain={toChain}
+              handleSubmit={handleSubmit}
+              control={control}
+              setValue={setValue}
+              reset={reset}
+              errors={errors}
             supportedChains={supportedChains}
             availableTokens={availableTokens}
-            selectedToken={selectedToken}
             setSelectedToken={setSelectedToken}
-            amount={amount}
             state={state}
             balance={balance}
-            error={error}
+              error={error}
+              isValid={isValid}
             selectedTokenConfig={selectedTokenConfig}
-            receiverAddress={receiverAddress}
             setReceiverAddress={setReceiverAddress}
           />
           <HistoryTab />

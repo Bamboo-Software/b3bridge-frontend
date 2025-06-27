@@ -5,7 +5,11 @@ import { useWallet } from "@/hooks/useWallet";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { useModalStore } from "@/store/useModalStore";
-
+type WalletType = {
+  id: string;
+  name: string;
+  icon:string
+}
 const FIXED_WALLETS = [
   {
     id: "metaMaskSDK",
@@ -56,7 +60,7 @@ export const WalletConnectModal = () => {
           <DialogTitle className="text-white">Select Wallet</DialogTitle>
         </DialogHeader>
         <div className="grid grid-cols-1 gap-4">
-          {FIXED_WALLETS.map((wallet) => (
+          {FIXED_WALLETS.map((wallet:WalletType) => (
             <Button
               key={wallet.id}
               onClick={() => handleConnect(wallet.id)}
