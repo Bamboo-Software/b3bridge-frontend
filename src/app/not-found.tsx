@@ -1,37 +1,44 @@
-import React, { Fragment } from "react";
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-// import AuthProvider from "@/provider/auth-provider";
-// import Header from "@/components/PublicLayout/Header";
-// import Footer from "@/components/PublicLayout/Footer";
+"use client";
+import { HomeIcon } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
-const notfound = () => {
+
+const NotFound = () => {
+  const router = useRouter();
+
   return (
-    <Fragment>
-      {/* <Header /> */}
-      <div className="pt-[72px] min-h-[calc(100vh-48px)] xl:min-h-[calc(100vh-48px)] flex justify-center items-center">
-        <div className="flex justify-center items-center">
-          <div className="max-w-md justify-center flex flex-col gap-[64px]">
-            <Image
-              src="/svg/404.svg"
-              alt="arrow icon"
-              width={803}
-              height={204}
-            />
-            <div className="flex justify-center">
-              <Link href="/">
-                <Button className="flex justify-center items-center py-[8px] px-[24px] gap-[8px] bg-[#D1F151] text-[32px] font-evogria text-[#010002] font-normal uppercase">
-                  Back to newsfeed
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 bg-transparent">
+      <div className="text-center">
+        <h1 className="text-9xl font-bold text-green-600 mb-4 
+          bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text">
+          404
+        </h1>
+        
+        <h2 className="text-4xl font-semibold text-gray-200 mb-3">
+          Not Found
+        </h2>
+        
+        <p className="text-gray-300 text-lg mb-8 font-semibold">
+          Page you are looking for does not exist.
+        </p>
+        
+        <button
+          onClick={() => router.push("/")}
+          className="inline-flex items-center px-6 py-3 rounded-lg 
+            bg-gradient-to-r from-green-500 to-emerald-600 
+            hover:from-green-600 hover:to-emerald-700 
+            transition-colors duration-200 shadow-md hover:shadow-lg"
+        >
+          <HomeIcon className="w-5 h-5 mr-2 text-white" />
+          <span className="text-white font-medium">Go back</span>
+        </button>
       </div>
-      {/* <Footer /> */}
-    </Fragment>
+
+      <div className="mt-12 text-gray-400 text-sm font-semibold">
+        © 2025 Bamboo Software. All rights reserved.
+      </div>
+    </div>
   );
 };
 
-export default notfound;
+export default NotFound;
