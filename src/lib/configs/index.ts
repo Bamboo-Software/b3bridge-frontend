@@ -24,72 +24,96 @@ export const seiEthAddress = import.meta.env.VITE_SEI_ETH_ADDRESS || "";
 export const seiUsdcAddress = import.meta.env.VITE_SEI_USDC_ADDRESS || "";
 export const seiBridgeAddress = import.meta.env.VITE_SEI_BRIDGE_ADDRESS || "";
 export const seiBridgeAbi = import.meta.env.VITE_SEI_BRIDGE_ABI || seiABI;
+export interface IToken {
+  symbol: string;
+  name?: string;
+  address: string;
+  decimal?: number;
+}
 
+export interface IChain {
+  id: string,
+  name: string,
+  avatar?: any,
+  chainSelector?: string,
+  nativeCurrency?: {
+    name: string,
+    symbol: string,
+    decimals: number
+  },
+  blockExplorers?: {
+    default: {
+      name: string,
+      url: string,
+    },
+  },
+  testnet: boolean,
+}
 export const CHAINS =
   import.meta.env.VITE_ENVIRONMENT == "production"
     ? [
-        {
-          id: "1",
-          name: "Ethereum",
-          avatar: ether,
-          chainSelector: ethereumChainSelector,
-          nativeCurrency: {
-            name: "Ether",
-            symbol: "ETH",
-            decimals: 18,
-          },
+      {
+        id: "1",
+        name: "Ethereum",
+        avatar: ether,
+        chainSelector: ethereumChainSelector,
+        nativeCurrency: {
+          name: "Ether",
+          symbol: "ETH",
+          decimals: 18,
         },
-        {
-          id: "1329",
-          name: "SEI",
-          avatar: sei,
-          chainSelector: seiChainSelector,
-        },
-      ]
+      },
+      {
+        id: "1329",
+        name: "SEI",
+        avatar: sei,
+        chainSelector: seiChainSelector,
+      },
+    ]
     : [
-        {
-          id: "11155111",
-          name: "Sepolia",
-          avatar: ether,
-          chainSelector: seiChainSelector,
-          nativeCurrency: {
-            name: "Ether",
-            symbol: "ETH",
-            decimals: 18,
-          },
-          blockExplorers: {
-            default: {
-              name: "Etherscan",
-              url: "https://sepolia.etherscan.io",
-            },
-          },
-          testnet: true,
+      {
+        id: "11155111",
+        name: "Sepolia",
+        avatar: ether,
+        chainSelector: seiChainSelector,
+        nativeCurrency: {
+          name: "Ether",
+          symbol: "ETH",
+          decimals: 18,
         },
-        {
-          id: "1328",
-          name: "SEI testnet",
-          avatar: sei,
-          nativeCurrency: {
-            name: "Sei",
-            symbol: "SEI",
-            decimals: 18,
+        blockExplorers: {
+          default: {
+            name: "Etherscan",
+            url: "https://sepolia.etherscan.io",
           },
-          blockExplorers: {
-            default: {
-              name: "Sei Explorer",
-              url: "https://sei.explorers.guru",
-            },
-          },
-          chainSelector: seiChainSelector,
-          testnet: true,
         },
-      ];
+        testnet: true,
+      },
+      {
+        id: "1328",
+        name: "SEI testnet",
+        avatar: sei,
+        nativeCurrency: {
+          name: "Sei",
+          symbol: "SEI",
+          decimals: 18,
+        },
+        blockExplorers: {
+          default: {
+            name: "Sei Explorer",
+            url: "https://sei.explorers.guru",
+          },
+        },
+        chainSelector: seiChainSelector,
+        testnet: true,
+      },
+    ];
 
 export const TOKENS = {
   "1": {
     tokens: {
-      eth: { symbol: "eth", name: "ETH", address: ethereumEthAddress },
-      usdc: { symbol: "usdc", name: "USDC", address: ethereumUsdcAddress },
+      eth: { symbol: "eth", name: "ETH", address: ethereumEthAddress, decimal: 18 },
+      usdc: { symbol: "usdc", name: "USDC", address: ethereumUsdcAddress, decimal: 6 },
     },
     bridgeSmartcontract: {
       address: ethereumBridgeAddress,
@@ -98,15 +122,15 @@ export const TOKENS = {
   },
   "1328": {
     tokens: {
-      eth: { symbol: "eth", name: "wETH", address: seiEthAddress },
-      usdc: { symbol: "usdc", name: "wUSDC", address: seiUsdcAddress },
+      eth: { symbol: "eth", name: "wETH", address: seiEthAddress, decimal: 18 },
+      usdc: { symbol: "usdc", name: "wUSDC", address: seiUsdcAddress, decimal: 6 },
     },
     bridgeSmartcontract: { address: seiBridgeAddress, abi: seiBridgeAbi },
   },
   "11155111": {
     tokens: {
-      eth: { symbol: "eth", name: "ETH", address: ethereumEthAddress },
-      usdc: { symbol: "usdc", name: "USDC", address: ethereumUsdcAddress },
+      eth: { symbol: "eth", name: "ETH", address: ethereumEthAddress, decimal: 18 },
+      usdc: { symbol: "usdc", name: "USDC", address: ethereumUsdcAddress, decimal: 6 },
     },
     bridgeSmartcontract: {
       address: ethereumBridgeAddress,
@@ -115,8 +139,8 @@ export const TOKENS = {
   },
   "1329": {
     tokens: {
-      eth: { symbol: "eth", name: "wETH", address: seiEthAddress },
-      usdc: { symbol: "usdc", name: "wUSDC", address: seiUsdcAddress },
+      eth: { symbol: "eth", name: "wETH", address: seiEthAddress, decimal: 18 },
+      usdc: { symbol: "usdc", name: "wUSDC", address: seiUsdcAddress, decimal: 6 },
     },
     bridgeSmartcontract: { address: seiBridgeAddress, abi: seiBridgeAbi },
   },
