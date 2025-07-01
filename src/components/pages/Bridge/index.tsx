@@ -13,7 +13,6 @@ import HistoryTab from "./HistoryTab";
 import { useModalStore } from "@/store/useModalStore";
 import { useWatchMintedTokenVL } from "@/hooks/useListenMintedTokenVL";
 import { toast } from "sonner";
-import { usePollUnlockedTokenERC20VL } from "@/hooks/usePollUnlockedTokenERC20VL";
 import { useWatchUnlockedTokenVL } from "@/hooks/usePollUnlockedTokenVL";
 import { useWatchMintTokenCCIP } from "@/hooks/usePollMintTokenCCIP";
 import { useWatchUnlockTokenCCIP } from "@/hooks/usePollUnlockTokenCCIP";
@@ -30,7 +29,7 @@ interface ChainConfig {
 
 export default function BridgePage() {
   const { wallet } = useWallet();
-  const {  error,state,setState } = useCCIPBridge();
+  const {  error,state } = useCCIPBridge();
   const [fromChainId, setFromChainId] = useState<number | undefined>(undefined);
   const [toChainId, setToChainId] = useState<number | undefined>(undefined);
   const [amount, setAmount] = useState("");
@@ -202,9 +201,24 @@ useEffect(() => {
   const fromChain = fromChainId ? networkConfig.chains.find((c) => c.chain.id === fromChainId) : undefined;
   const toChain = toChainId ? networkConfig.chains.find((c) => c.chain.id === toChainId) : undefined;
   const supportedChains: ChainConfig[] = networkConfig.chains;
+  useEffect(() => {
+    if (error) {
+      toast.custom((t) => (
+        <CustomToastBridged
+          t={t}
+          title="❌ Bridge Error"
+          content={
+            <div>
+              <p className="text-red-400">{typeof error === "string" ? error : "An unknown error occurred."}</p>
+            </div>
+          }
+        />
+      ));
+    }
+  }, [error]);
 
   return (
-    <div className="w-full max-w-lg mx-auto font-poppins">
+    <div className="w-full max-w-lg mx-auto font-manrope">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -223,7 +237,7 @@ useEffect(() => {
               </TabsTrigger>
             ))}
           </TabsList>
-          <div className="font-manrope  overflow-y-auto px-4 custom-scrollbar">
+          <div className="font-manrope max-h-[calc(85vh-100px)]  overflow-y-auto px-4 custom-scrollbar">
           <BridgeTab
             setFromChainId={setFromChainId}
             formValues={formValues}
