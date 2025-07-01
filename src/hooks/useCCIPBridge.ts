@@ -63,7 +63,6 @@ interface BridgeState {
   burnHash?: `0x${string}`;
 }
 type BridgeOperation = "lock-mint" | "burn-unlock" | "wrapped-burn-unlock" | "unknown";
-type TokenType = "native" | "erc20" | "wrapped" | "unknown";
 export const getWrappedOriginAddress = (symbol: string, chainId: number): string | undefined => {
     const wrappedToken = networkConfig.tokensList.find((t) => t.symbol === symbol);
     if (!wrappedToken || !("wrappedFrom" in wrappedToken)) return undefined;
@@ -77,11 +76,9 @@ export function useCCIPBridge() {
     isBridging: false,
     error: null,
   });
-  const [tokenAddress, setTokenAddress] = useState<`0x${string}` | undefined>();
   const [contractAddress, setContractAddress] = useState<`0x${string}` | undefined>();
   const [selectedTokenConfig, setSelectedTokenConfig] = useState<Token | undefined>();
   const [fromChainId, setFromChainId] = useState<number | undefined>();
-  const requiredFee = BigInt("189044686617089");
   const { wallet, getCurrentChain } = useWallet();
   const { switchChainAsync } = useSwitchChain();
   const { data: walletClient } = useWalletClient();
@@ -185,7 +182,7 @@ function getTokenType(token?: Token): "native" | "erc20" | "wrapped-native" | "w
   force: boolean = true
 ): Promise<void> => {
     try {
-     setState({ isBridging: true, error: null });
+     setState((prev) => ({ ...prev, isBridging: true, error: null }));
     const amountInUnits = parseUnits(amountRaw, decimals);
     const currentAllowance: bigint = await readContract(config, {
       address: tokenAddress,
@@ -202,7 +199,7 @@ function getTokenType(token?: Token): "native" | "erc20" | "wrapped-native" | "w
         args: [spender, amountInUnits],
       });
       await waitForTransactionReceipt(walletClient, { hash: approveTx });
-       setState({ isBridging: false, error: null });
+       setState((prev) => ({ ...prev, isBridging: false, error: null }));
     } else {
     }
     } catch (err: any) {
@@ -232,7 +229,6 @@ function getTokenType(token?: Token): "native" | "erc20" | "wrapped-native" | "w
     setState((prev) => ({ ...prev, isBridging: true, error: null }));
     setFromChainId(fromChainId);
     setContractAddress(smETH as `0x${string}`);
-    setTokenAddress(tokenAddress as `0x${string}`);
 
     validateInputs(amount, receiver, fromChainId, toChainId);
     await ensureCorrectChain(fromChainId);
@@ -254,6 +250,7 @@ function getTokenType(token?: Token): "native" | "erc20" | "wrapped-native" | "w
     } else {
       await handleLockMint(amount, balance, tokenConfig, tokenAddress, toChainSelector, receiver, ccipFee);
     }
+    setState((prev) => ({ ...prev, isBridging: false, error: null }));
   } catch (err) {
     console.error("❌ ~ handleBridge error:", err);
     setState((prev) => ({
@@ -275,6 +272,7 @@ const handleBurnUnlock = async (
   ccipFee: bigint,
 ): Promise<void> => {
   try {
+     setState((prev) => ({ ...prev, isBridging: true, error: null }));
     const amountInUnits = parseUnits(amount, tokenConfig?.decimals || 18);
     if (!balance || balance.value < amountInUnits) {
       throw new Error(`Insufficient ${tokenConfig?.symbol} balance. Required: ${amount}`);
@@ -298,8 +296,8 @@ const handleBurnUnlock = async (
       args: [tokenId, amountInUnits],
       value:ccipFee,
     });
-      const receipt = await waitForTransactionReceipt(walletClient!,{ hash: result });
-    setState((prev) => ({ ...prev, burnHash: result }));
+      await waitForTransactionReceipt(walletClient!,{ hash: result });
+    setState((prev) => ({ ...prev, burnHash: result, isBridging: false, error: null }));
   } catch (err) {
     console.error("❌ ~ handleBurnUnlock error:", err);
     setState((prev) => ({
@@ -324,13 +322,14 @@ const handleLockMint = async (
 ): Promise<void> => {
   try {
     if (!writeContractAsync) throw new Error("Contract write not available");
-
+    
     if (!tokenAddress) {
       const amountETHInWei = parseUnits(amount, 18);
       const amountTokenInDecimals = parseUnits(amount, 18);
       if (!balance || balance.value < amountETHInWei) {
         throw new Error(`Insufficient ETH balance. Required: ${formatUnits(amountETHInWei, 18)} ETH`);
       }
+      setState((prev) => ({ ...prev, isBridging: true, error: null }));
 
         const result = await writeContractAsync({
           address: smETH as `0x${string}`,
@@ -339,9 +338,7 @@ const handleLockMint = async (
           args: [tokenAddressNativeToken, amountTokenInDecimals, smSEI, receiver],
           value: amountETHInWei,
         });
-
-
-      setState((prev) => ({ ...prev, nativeLockHash: result }));
+      setState((prev) => ({ ...prev, nativeLockHash: result, isBridging: false, error: null }));
     } else {
       const amountInUnits = parseUnits(amount, tokenConfig?.decimals || 18);
       if (!balance || balance.value < amountInUnits) {
@@ -354,6 +351,7 @@ const handleLockMint = async (
         const errorMessage = err.message === "Transaction rejected by user" ? "Giao dịch đã bị hủy bởi người dùng" : "Phê duyệt token thất bại";
         throw new Error(errorMessage);
       }
+       setState((prev) => ({ ...prev, isBridging: true, error: null }));
       const formatted = formatUnits(ccipFee, 18);
         const result = await writeContractAsync({
         address: smETH as `0x${string}`,
@@ -362,7 +360,7 @@ const handleLockMint = async (
         args: [tokenAddress as `0x${string}`, BigInt(toChainSelector), smSEI, receiver, amountInUnits, 0],
         value: parseUnits(formatted, 18),
       });
-         setState((prev) => ({ ...prev, erc20LockHash: result }))
+         setState((prev) => ({ ...prev, erc20LockHash: result, isBridging: false, error: null }))
     }
   } catch (err) {
     console.error("❌ ~ handleLockMint error:", err);
@@ -386,11 +384,10 @@ const handleBurnWrappedToken = async (
 ): Promise<void> => {
 
   try {
+     setState((prev) => ({ ...prev, isBridging: true, error: null }));
     if (!writeContractAsync) throw new Error("Contract write not available");
 
-    console.log("🚀 ~ useCCIPBridge ~ tokenConfig?.decimals:", tokenConfig?.decimals)
     const amountInUnits = parseUnits(amount, tokenConfig?.decimals || 18);
-    console.log("🚀 ~ useCCIPBridge ~ amountInUnits:", amountInUnits)
     if (!balance || balance.value < amountInUnits) {
       throw new Error(`Insufficient ${tokenConfig?.symbol} balance. Required: ${amount}`);
     }
@@ -413,7 +410,7 @@ const handleBurnWrappedToken = async (
     });
 
 
-    setState((prev) => ({ ...prev, burnWrappedHash: result }));
+    setState((prev) => ({ ...prev, burnWrappedHash: result, isBridging: false, error: null }));
   } catch (err) {
     setState((prev) => ({
       ...prev,

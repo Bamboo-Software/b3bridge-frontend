@@ -77,7 +77,7 @@ export default function AppLayout({ children }: LayoutProps) {
       </main>
 
       {/* Footer */}
-      <footer className="fixed bottom-4 w-full flex flex-col space-y-1 justify-center items-center z-10 text-center text-xs text-muted-foreground">
+      <footer className="fixed bottom-1 w-full flex gap-4 space-y-1 justify-center items-center z-10 text-center text-xs text-muted-foreground">
         <p>© 2025 B3 Bridge. Powered by </p>
         <div className="flex flex-row space-x-2 justify-center items-center">
           <img className="size-3.5" src={"/images/bamboo.png"} width={14} height={14} alt="" />
