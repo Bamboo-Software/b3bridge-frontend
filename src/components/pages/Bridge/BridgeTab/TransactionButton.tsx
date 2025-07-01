@@ -1,5 +1,5 @@
 "use client";
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 
 export interface FormData {
@@ -44,25 +44,35 @@ const TransactionButton: React.FC<TransactionButtonProps> = ({
     return !isDisabled || !!error;
   };
     const isWalletReady = useMemo(() => !!wallet?.address, [wallet]);
-    const buttonText = useMemo(() => {
-    if (!isWalletReady) return "Bridge";
+    const baseText = useMemo(() => {
+  if (!isWalletReady) return "Connect Wallet";
+  if (!formValues.fromChainId) return "Select Source Chain";
+  if (tokenIdError) return "Error Fetching Token ID";
+  if (error === "Giao dịch đã bị hủy bởi người dùng") return "Giao dịch đã bị hủy";
+  if (error) return "Retry Bridge";
 
-    if (!formValues.fromChainId) return "Select Source Chain";
-    if (tokenIdError) return "Error Fetching Token ID";
-    if (error === "Giao dịch đã bị hủy bởi người dùng") return "Giao dịch đã bị hủy";
-    if (error) return "Retry Bridge";
-    if (isDisabled || elapsedTime > 0) return "Bridging...";
+  return "Bridge";
+}, [
+  isWalletReady,
+  formValues.fromChainId,
+  tokenIdError,
+  error,
+]);
 
-    return "Bridge";
-  }, [
+const buttonText = useMemo(() => {
+  if (isDisabled || elapsedTime > 0) return "Bridging...";
+  return baseText;
+}, [baseText, isDisabled, elapsedTime]);
+useEffect(() => {
+  console.log("💡 ButtonText Changed:", {
     isWalletReady,
-    formValues.fromChainId,
+    fromChainId: formValues.fromChainId,
     tokenIdError,
     error,
     isDisabled,
     elapsedTime,
-  ]);
-
+  });
+}, [isWalletReady, formValues.fromChainId, tokenIdError, error, isDisabled, elapsedTime]);
   return (
     <>
       {(erc20LockHash || nativeLockHash || burnWrappedHash || burnHash) && (
