@@ -1,8 +1,9 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import { useAccount, useDisconnect } from 'wagmi';
 import { Button } from './button';
 import { WalletIcon, Copy, Check, ChevronDown, Unplug } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/utils';
+import { WalletConnectModal } from '@/pages/common/ConnectWalletModal';
 
 // Custom hook useCopyToClipboard
 type CopiedValue = string | null;
@@ -33,21 +34,21 @@ function useCopyToClipboard(): [CopiedValue, CopyFn] {
 
 export function ConnectButton({ className }: { className?: string }) {
   const { address, isConnected } = useAccount();
-  const { connect, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [copiedText, copyToClipboard] = useCopyToClipboard();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const [modalOpen, setModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (modalOpen && isConnected) {
+      setModalOpen(false);
+    }
+  }, [isConnected, modalOpen]);
+
   const formatAddress = (address: string) => {
     return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
-  };
-
-  const handleConnect = () => {
-    const connector = connectors.find(c => c.name === 'Injected');
-    if (connector) {
-      connect({ connector });
-    }
   };
 
   const handleDisconnect = () => {
@@ -86,6 +87,7 @@ export function ConnectButton({ className }: { className?: string }) {
 
   return (
     <div className="relative" ref={dropdownRef}>
+      <WalletConnectModal open={modalOpen} onClose={() => setModalOpen(false)} />
       {isConnected ? (
         <>
           <Button
@@ -133,28 +135,15 @@ export function ConnectButton({ className }: { className?: string }) {
         </>
       ) : (
         <Button
-          onClick={handleConnect}
-          disabled={isPending}
+          onClick={() => setModalOpen(true)}
           variant="default"
           className={cn(
             "bg-gradient-to-r from-primary via-cyan-400 to-purple-500 hover:opacity-90 transition-all duration-300",
             className
           )}
         >
-          {isPending ? (
-            <>
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Connecting...
-            </>
-          ) : (
-            <>
-              <WalletIcon className="h-4 w-4 mr-2" />
-              Connect Wallet
-            </>
-          )}
+          <WalletIcon className="h-4 w-4 mr-2" />
+          Connect Wallet
         </Button>
       )}
     </div>

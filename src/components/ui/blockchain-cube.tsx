@@ -1,7 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useSelector } from 'react-redux';
-import { type RootState } from '@/app/stores/store';
+import {  type RootState } from '@/stores/store';
+
 
 interface BlockchainCubeProps {
   className?: string;

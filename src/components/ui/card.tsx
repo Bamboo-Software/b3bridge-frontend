@@ -1,8 +1,9 @@
 import * as React from "react"
 import { useSelector } from 'react-redux';
-import { type RootState } from '@/app/stores/store';
+import {  type RootState } from '@/stores/store';
+import { cn } from '@/utils';
 
-import { cn } from "@/lib/utils"
+
 
 const Card = React.forwardRef<
   HTMLDivElement,

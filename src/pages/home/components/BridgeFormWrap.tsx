@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import BridgeForm from "./BridgeForm";
+import BridgeForm from "./BridgeForm/BridgeForm";
 
 export interface BridgeFormData {
   fromChain: {
@@ -22,11 +22,10 @@ export interface BridgeFormData {
 
 const BridgeFormWrap = () => {
 
+  // const handleBridgeSubmit = (data: BridgeFormData) => {
+  //   console.log("Bridge Data:", data);
 
-  const handleBridgeSubmit = (data: BridgeFormData) => {
-    console.log("Bridge Data:", data);
-
-  };
+  // };
 
   return (
     <Card className="max-w-8xl mx-auto shadow-lg border-primary/10">
@@ -36,7 +35,9 @@ const BridgeFormWrap = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="p-6">
-        <BridgeForm onSubmit={handleBridgeSubmit} />
+        <BridgeForm 
+          // onSubmit={handleBridgeSubmit} 
+        />
       </CardContent>
     </Card>
   );

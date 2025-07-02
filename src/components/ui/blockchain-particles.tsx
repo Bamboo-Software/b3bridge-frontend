@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
-import { type RootState } from '@/app/stores/store';
+import {  type RootState } from '@/stores/store';
+
 
 interface Particle {
   x: number;

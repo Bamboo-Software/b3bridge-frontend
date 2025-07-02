@@ -1,0 +1,31 @@
+import { mainnet, sepolia, sei, seiTestnet } from '@wagmi/core/chains'
+import { appConfig } from '../constants/app';
+
+export enum ChainId {
+  Ethereum = (appConfig.isProd ? mainnet.id : sepolia.id),
+  SEI = (appConfig.isProd ? sei.id : seiTestnet.id),
+}
+
+
+export enum BlockchainNameEnum {
+  ethereum = 'ethereum',
+  sei = 'sei',
+}
+
+export enum CryptoCurrencyEnum {
+  ETH = "ETH",
+  USDC = "USDC",
+}
+
+export type SUPPORTED_CHAINS_EVM =  ChainId.Ethereum | ChainId.SEI; 
+
+
+export enum ChainType {
+  EVM = 'EVM',
+  Solana = 'Solana',
+}
+
+export enum ChainTokenSource {
+  Stargate = 'Stargate',
+  Local = 'Local',
+}

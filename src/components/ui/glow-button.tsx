@@ -1,10 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Button, buttonVariants } from './button';
-import { cn } from '@/lib/utils';
+import { cn } from '@/utils';
 import { type VariantProps } from 'class-variance-authority';
 import { useSelector } from 'react-redux';
-import { type RootState } from '@/app/stores/store';
+import { type RootState } from '@/stores/store';
 
 interface GlowButtonProps extends React.ComponentProps<typeof Button> {
   glowColor?: string;

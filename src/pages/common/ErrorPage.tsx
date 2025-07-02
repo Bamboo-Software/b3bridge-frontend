@@ -1,10 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 import { HomeIcon, AlertTriangle } from 'lucide-react';
-import { routesPaths } from '@/lib/types/constants/routes';
 import { motion } from 'framer-motion';
 import { GlowButton } from '@/components/ui/glow-button';
 import BlockchainParticles from '@/components/ui/blockchain-particles';
 import BlockchainCube from '@/components/ui/blockchain-cube';
+import { routesPaths } from '@/utils/constants/routes';
 
 const { ROOT } = routesPaths;
 

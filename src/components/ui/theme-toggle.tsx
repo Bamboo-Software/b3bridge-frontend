@@ -1,8 +1,8 @@
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAppDispatch, useAppSelector } from "@/app/stores/store";
-import { setTheme } from "@/app/stores/theme/theme.slice";
 import { motion } from "framer-motion";
+import { useAppDispatch, useAppSelector } from '@/stores/store';
+import { setTheme } from '@/stores/theme/theme.slice';
 
 export function ThemeToggle() {
   const dispatch = useAppDispatch();
