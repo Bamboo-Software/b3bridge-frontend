@@ -2,7 +2,6 @@ import { useEffect, useState, useCallback } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAccount } from 'wagmi';
-
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -23,10 +22,11 @@ import { useChainList } from '@/hooks/useChainList';
 import { useUserTokenBalance } from '@/hooks/useUserBalance';
 import { useDestinationToken } from '@/hooks/useDestinationToken';
 
-import { ArrowDownIcon, CheckCircle2, XCircle } from 'lucide-react';
+import { ArrowDownIcon,ArrowUpIcon , CheckCircle2, XCircle } from 'lucide-react';
 import { cn, shortenAddress } from '@/utils';
 import type { Address } from 'viem';
 import { bridgeFormSchema, type BridgeFormValues } from './BridgeFormValidation';
+import TransactionAccordion from './TransactionAccordion';
 
 const validateReceiver = (value: string) =>
   value ? /^0x[a-fA-F0-9]{40}$/.test(value) : null;
@@ -37,6 +37,7 @@ function BridgeForm() {
   const [useCustomAddress, setUseCustomAddress] = useState(false);
   const [receiverValid, setReceiverValid] = useState<boolean | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [isSwapped, setIsSwapped] = useState(false);
 
   // --- Form ---
   const form = useForm<BridgeFormValues>({
@@ -130,7 +131,8 @@ function BridgeForm() {
 
   // --- Handlers ---
   const handleOpenConnectModal = useCallback(() => setModalOpen(true), []);
-  const handleSwap = ()=> {
+  const handleSwap = () => {
+    setIsSwapped((prev) => !prev);
     const fromChain = form.getValues('fromChain');
     const toChain = form.getValues('toChain');
     const fromWallet = form.getValues('fromWalletAddress');
@@ -149,7 +151,7 @@ function BridgeForm() {
   return (
     <>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className='max-w-md mx-auto'>
+        <form onSubmit={form.handleSubmit(onSubmit)} className='max-w-md mx-auto relative flex flex-col gap-3'>
           {/* FROM SECTION */}
           <div className='rounded-2xl border border-primary/20 bg-primary/5 p-4 shadow-sm flex flex-col gap-5 h-fit'>
             {/* Wallet info row (FROM) */}
@@ -336,15 +338,20 @@ function BridgeForm() {
           </div>
 
           {/* SWAP ICON */}
-          <div className='flex justify-center my-3'>
+          <div className='flex justify-center my-3 absolute top-[250px] left-[200px]'>
             <button
               type='button'
               onClick={handleSwap}
               className='bg-background border border-primary/20 p-2 rounded-full shadow-md hover:bg-accent transition'
             >
-              <ArrowDownIcon className='w-6 h-6 text-primary' />
+              {isSwapped ? (
+                <ArrowUpIcon className='w-6 h-6 text-primary' />
+              ) : (
+                <ArrowDownIcon className='w-6 h-6 text-primary' />
+              )}
             </button>
           </div>
+
 
           {/* TO SECTION */}
           <div className='rounded-2xl border border-primary/20 bg-primary/5 p-4 shadow-sm space-y-5'>
@@ -517,7 +524,7 @@ function BridgeForm() {
               />
             ) : null}
           </div>
-
+           <TransactionAccordion />
           {/* SUBMIT */}
          <div className='pt-4'>
             {!isConnected ? (
