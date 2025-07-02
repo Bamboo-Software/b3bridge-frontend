@@ -85,7 +85,7 @@ function BridgeSourceSection({
               value={form.getValues('fromChain')?.id?.toString() || ''}
             >
               <FormControl>
-                <SelectTrigger className='w-full min-h-[44px] text-base font-medium bg-background/70 border-primary/30 hover:border-primary/50 focus:border-primary/60 rounded-lg cursor-pointer'>
+                <SelectTrigger className='w-full min-h-[44px] text-base font-medium bg-background/70 !border-primary/30 hover:border-primary/50 focus:border-primary/60 rounded-lg cursor-pointer'>
                   <SelectValue placeholder='Select chain' />
                 </SelectTrigger>
               </FormControl>

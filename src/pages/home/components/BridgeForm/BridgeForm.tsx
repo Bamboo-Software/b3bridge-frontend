@@ -38,7 +38,6 @@ function BridgeForm() {
   const [receiverValid, setReceiverValid] = useState<boolean | null>(null);
   const [connectWalletModalOpen, setConnectWalletModalOpen] = useState(false);
   const [quoteModalOpen, setQuoteModalOpen] = useState(false);
-  const [isSwapped, setIsSwapped] = useState(false);
   const [toAmount, setToAmount] = useState('');
   // --- Form ---
   const form = useForm<BridgeFormValues>({
@@ -201,7 +200,7 @@ function BridgeForm() {
     !(selectedFromChain?.source === ChainTokenSource.Stargate && !watchedQuote);
     
   const isSufficientBalance =
-    parseFloat(userSourceBalance) > parseFloat(watchedAmount);
+    parseFloat(userSourceBalance) >= parseFloat(watchedAmount);
   const isBridgeEnabled =
     isConnected &&
     isFullField &&
@@ -223,7 +222,6 @@ function BridgeForm() {
     []
   );
   const handleSwap = () => {
-    setIsSwapped((prev) => !prev);
     const fromChain = form.getValues('fromChain');
     const toChain = form.getValues('toChain');
     const fromWallet = form.getValues('fromWalletAddress');
@@ -265,7 +263,7 @@ function BridgeForm() {
             watchedFromWallet={watchedFromWallet}
             handleOpenConnectModal={handleOpenConnectModal}
           />
-          <SwapButton isSwapped={isSwapped} handleSwap={handleSwap} />
+          <SwapButton  handleSwap={handleSwap} />
           <BridgeDestinationSection
             form={form}
             isConnected={isConnected}
