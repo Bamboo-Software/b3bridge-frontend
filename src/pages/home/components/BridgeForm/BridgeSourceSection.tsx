@@ -78,11 +78,11 @@ function BridgeSourceSection({
               onValueChange={(value: string) => {
                 if (!value) return;
                 const selected =
-                  chainList.find((chain) => chain.id === Number(value)) || null;
+                  chainList.find((chain) => chain.chainKey === value) || null;
                 form.setValue('fromChain', selected, {shouldValidate: true});
                 form.setValue('token', null, {shouldValidate: true});
               }}
-              value={form.getValues('fromChain')?.id?.toString() || ''}
+              value={form.getValues('fromChain')?.chainKey?.toString() || ''}
             >
               <FormControl>
                 <SelectTrigger className='w-full min-h-[44px] text-base font-medium bg-background/70 !border-primary/30 hover:border-primary/50 focus:border-primary/60 rounded-lg cursor-pointer'>
@@ -102,7 +102,7 @@ function BridgeSourceSection({
                         chain.id !== form.getValues('toChain')?.id
                     )
                     .map((chain) => (
-                      <SelectItem key={chain.id} value={chain.id.toString()}>
+                      <SelectItem key={chain.chainKey} value={chain?.chainKey?.toString()||''}>
                         <div className='flex items-center gap-2'>
                           <Image
                             alt='Chain logo'

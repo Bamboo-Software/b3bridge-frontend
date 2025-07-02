@@ -60,12 +60,13 @@ export const useChainList = (): UseChainListResult => {
         })
       }
 
-      const chainMap = new Map<number, IChainInfo>()
+      const chainMap = new Map<string, IChainInfo>();
+
       for (const chain of evmLocalChains) {
-        chainMap.set(chain.id, chain)
+        chainMap.set(`${chain.id}_${chain.name}`, chain);
       }
       for (const chain of remoteChains) {
-        chainMap.set(chain.id, chain)
+        chainMap.set(`${chain.id}_${chain.name}`, chain);
       }
       setData(Array.from(chainMap.values()))
     } catch (err) {
@@ -79,7 +80,6 @@ export const useChainList = (): UseChainListResult => {
   useEffect(() => {
     if (apiError) setError(apiError as Error)
   }, [apiError])
-
   return {
     data,
     loading,

@@ -107,13 +107,13 @@ function BridgeDestinationSection({
                 if (!value) return;
                 form.setValue(
                   'toChain',
-                  chainList?.find((chain) => chain.id === Number(value)) || null,
+                  chainList?.find((chain) => chain.chainKey === (value)) || null,
                   {
                     shouldValidate: true
                   }
                 );
               }}
-              value={form.getValues('toChain')?.id?.toString() || ''}
+              value={form.getValues('toChain')?.chainKey?.toString() || ''}
             >
               <FormControl>
                 <SelectTrigger className='w-full min-h-[44px] text-base font-medium bg-background/70 !border-primary/30 hover:border-primary/50 focus:border-primary/60 rounded-lg cursor-pointer'>
@@ -129,11 +129,11 @@ function BridgeDestinationSection({
                   chainList
                     .filter(
                       (chain) =>
-                        !form.getValues('fromChain')?.id ||
-                        chain.id !== form.getValues('fromChain')?.id
+                        !form.getValues('fromChain')?.chainKey ||
+                        chain.chainKey !== form.getValues('fromChain')?.chainKey
                     )
                     .map((chain) => (
-                      <SelectItem key={chain.id} value={chain.id.toString()}>
+                      <SelectItem key={chain?.chainKey} value={chain?.chainKey?.toString() || chain.id.toString()}>
                         <div className='flex items-center gap-2'>
                           <Image
                             alt='Chain logo'
