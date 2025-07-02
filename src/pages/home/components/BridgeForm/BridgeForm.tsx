@@ -75,7 +75,6 @@ function BridgeForm() {
     selectedFromChain,
     selectedToChain
   );
-
   // --- Balances ---
   const { balance: userSourceBalance, loading: userSourceBalanceLoading } =
     useUserTokenBalance(address, watchedTokenAddress, selectedFromChain?.id);
@@ -200,17 +199,7 @@ function BridgeForm() {
     !!watchedToken &&
     !!watchedAmount &&
     !(selectedFromChain?.source === ChainTokenSource.Stargate && !watchedQuote);
-    console.log(form.formState.errors,'form.formState.errors');
-  console.log(
-    !Object.keys(form.formState.errors).length ,
-    form.formState.isValid ,
-    !form.formState.isSubmitting ,
-    !!selectedFromChain ,
-    !!selectedToChain ,
-    !!watchedToken ,
-    !!watchedAmount ,
-    !(selectedFromChain?.source === ChainTokenSource.Stargate && !watchedQuote)
-  );
+    
   const isSufficientBalance =
     parseFloat(userSourceBalance) > parseFloat(watchedAmount);
   const isBridgeEnabled =

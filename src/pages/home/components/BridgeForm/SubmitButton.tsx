@@ -29,11 +29,6 @@ function SubmitButton({
   isFullField,
   isSufficientBalance,
 }: SubmitButtonProps) {
-  console.log({
-    isFullField,
-isDestinationTokenValid,
-isSufficientBalance,
-  });
   return (
     <div className='pt-4'>
       {!isConnected ? (

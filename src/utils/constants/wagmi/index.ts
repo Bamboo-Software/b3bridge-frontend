@@ -18,7 +18,7 @@ const allChains: Chain[] = Object.values(viemChains).filter(
 );
 
 export const selectedChains = allChains.filter((chain) =>
-  isProd ? !chain.testnet : !chain.testnet
+  isProd ? !chain.testnet : chain.testnet
 ) as [Chain, ...Chain[]]
 export const wagmiConfig = createConfig({
   chains: selectedChains,

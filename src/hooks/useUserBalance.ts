@@ -17,7 +17,6 @@ export function useUserTokenBalance(
   useEffect(() => {
     const fetchBalance = async () => {
       setError(null)
-   
       if (!userAddress || !tokenAddress || !chainId) {
         setBalance('0')
         return
@@ -36,7 +35,6 @@ export function useUserTokenBalance(
             chainId,
             args: [userAddress],
           }) as bigint
-
 
         const data = await getTokenData(chainId, tokenAddress as Address)
 
