@@ -47,7 +47,7 @@ export function WalletConnectModal({ open, onClose }: WalletConnectModalProps) {
                 disabled={isPending}
                 variant="outline"
                 className={cn(
-                  "w-full flex items-center gap-3 justify-start px-4 py-3 border-primary/20 hover:bg-primary/10 transition",
+                  "w-full flex items-center gap-3 justify-start px-4 py-3 border-primary/20 hover:bg-primary/10 transition cursor-pointer ",
                 )}
               >
                 {wallet?.logo ? (
@@ -66,7 +66,7 @@ export function WalletConnectModal({ open, onClose }: WalletConnectModalProps) {
           <Button
             onClick={onClose}
             variant="ghost"
-            className="w-full"
+            className="w-full bg-gradient-to-r from-primary via-cyan-400 to-purple-500 hover:opacity-90 transition-all duration-300 shadow-md hover:shadow-lg cursor-pointer text-black hover:text-black"
             type="button"
           >
             Cancel
