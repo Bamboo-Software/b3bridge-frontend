@@ -54,7 +54,7 @@ export function ConnectButton({ className }: { className?: string }) {
   const handleDisconnect = () => {
     disconnect();
     setIsDropdownOpen(false);
-    location.reload();
+    // location.reload();
   };
 
   const toggleDropdown = () => {

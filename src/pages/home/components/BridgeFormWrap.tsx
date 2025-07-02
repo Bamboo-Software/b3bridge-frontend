@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import BridgeForm from "./BridgeForm/BridgeForm";
 
 export interface BridgeFormData {
@@ -28,18 +28,21 @@ const BridgeFormWrap = () => {
   // };
 
   return (
-    <Card className="max-w-8xl mx-auto shadow-lg border-primary/10">
-      <CardHeader className="bg-gradient-to-r from-primary/5 via-cyan-400/5 to-purple-500/5">
-        <CardTitle className="text-center text-2xl font-bold bg-gradient-to-r from-primary via-cyan-400 to-purple-500 bg-clip-text text-transparent">
-          B3Bridge - Cross-Chain Token Bridge
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-6">
-        <BridgeForm 
-          // onSubmit={handleBridgeSubmit} 
-        />
-      </CardContent>
-    </Card>
+    <>
+    <BridgeForm
+      // onSubmit={handleBridgeSubmit}
+    />
+    
+    </>
+    // <Card className="max-w-8xl mx-auto shadow-lg border-primary/10">
+    //   <CardHeader className="bg-gradient-to-r from-primary/5 via-cyan-400/5 to-purple-500/5">
+    //     <CardTitle className="text-center text-2xl font-bold bg-gradient-to-r from-primary via-cyan-400 to-purple-500 bg-clip-text text-transparent">
+    //       B3Bridge - Cross-Chain Token Bridge
+    //     </CardTitle>
+    //   </CardHeader>
+    //   <CardContent className="p-6">
+    //   </CardContent>
+    // </Card>
   );
 };
 
