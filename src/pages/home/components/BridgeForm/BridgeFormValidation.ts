@@ -30,6 +30,8 @@ export const bridgeFormSchema = z.object({
       (val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0,
       "Amount must be a positive number"
     ),
+
+  quote: z.any().optional(), // Thêm dòng này
 });
 
 export type BridgeFormValues = z.infer<typeof bridgeFormSchema>;

@@ -3,6 +3,8 @@ import seiABI from "./seiABI.json";
 import ethereumABI from "./ethereumABI.json";
 import etherLogo from "@/assets/icons/ether.svg";
 import seiLogo from "@/assets/icons/sei.svg";
+import { appConfig } from '../app';
+import { mainnet, sei, seiTestnet, sepolia, type Chain } from 'viem/chains';
 
 export const baseUrl =
   import.meta.env.VITE_API_URL || "";
@@ -42,6 +44,9 @@ export const chainImages = {
   [ChainId.Ethereum] : etherLogo,
   [ChainId.SEI]: seiLogo,
 }
+
+const isProd = appConfig?.isProd
+export const configChains = (isProd ? [mainnet, sei] : [sepolia, seiTestnet]) as [Chain, ...Chain[]]
 
 
 

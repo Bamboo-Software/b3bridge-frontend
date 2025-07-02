@@ -1,12 +1,25 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { http, createConfig } from '@wagmi/core'
-import { mainnet, sepolia, sei, seiTestnet, type Chain } from '@wagmi/core/chains'
 import { appConfig } from '../app'
 import type { WalletConfig } from '@/utils/interfaces/wallet'
 import metamaskLogo from '@/assets/icons/metamask-logo.png'
 import okxLogo from '@/assets/icons/okx-logo.svg'
-const isProd = appConfig?.isProd
-export const selectedChains = (isProd ? [mainnet, sei] : [sepolia, seiTestnet]) as [Chain, ...Chain[]]
+import * as viemChains from 'viem/chains'
+import type { Chain } from 'viem'
 
+const isProd = appConfig?.isProd
+
+const allChains: Chain[] = Object.values(viemChains).filter(
+  (c): c is any =>
+    typeof c === 'object' &&
+    c !== null &&
+    'id' in c &&
+    'rpcUrls' in c
+);
+
+export const selectedChains = allChains.filter((chain) =>
+  isProd ? !chain.testnet : !chain.testnet
+) as [Chain, ...Chain[]]
 export const wagmiConfig = createConfig({
   chains: selectedChains,
   transports: Object.fromEntries(

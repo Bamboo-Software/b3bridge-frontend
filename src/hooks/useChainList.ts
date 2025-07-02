@@ -1,10 +1,9 @@
-import { selectedChains as wagmiChains } from '@/utils/constants/wagmi'
 import { ChainTokenSource, ChainType } from '@/utils/enums/chain'
 import type { IChainInfo, IStargateChain } from '@/utils/interfaces/chain'
 import { stargateApi } from '@/services/stargate'
 import {getChainImage } from '@/utils/blockchain/chain'
 import { useEffect, useState } from 'react'
-
+import { configChains } from '@/utils/constants/chain'
 interface UseChainListResult {
   data: IChainInfo[] | null
   loading: boolean
@@ -23,7 +22,7 @@ export const useChainList = (): UseChainListResult => {
     setError(null)
 
     try {
-      const evmLocalChains: IChainInfo[] = wagmiChains
+      const evmLocalChains: IChainInfo[] = configChains
         .filter(chain => chain.id !== undefined && chain.name !== undefined)
         .map(chain => ({
           id: chain.id,

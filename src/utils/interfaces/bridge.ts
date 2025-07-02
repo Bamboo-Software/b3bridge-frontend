@@ -1,4 +1,5 @@
 import type { IChainInfo } from './chain';
+import type { IQuote } from './quote';
 import type { ITokenInfo } from './token';
 
 export interface IBridgeParams {
@@ -8,4 +9,5 @@ export interface IBridgeParams {
   toToken: ITokenInfo;
   amount: string;
   receiver: string;
+  quote?: IQuote
 };

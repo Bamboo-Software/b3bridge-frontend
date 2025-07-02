@@ -42,6 +42,7 @@ export function useTokenList(chain?: IChainInfo, sourceChainKey?:string, sourceT
         chainId: chain.id as ChainId,
         tokenAddress: token.address as Address,
       }) || '',
+      priceUsd: token.price.usd
     })) as ITokenInfo[]
   }, [stargateTokens, chain?.id])
 

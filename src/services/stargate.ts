@@ -21,5 +21,12 @@ export const stargateApi = createApi({
         params,
       }),
     }),
+    getQuotes: builder.query({
+      query: (params) => ({
+        url: `/v1/quotes`,
+        method: "GET",
+        params,
+      }),
+    }),
   }),
 });

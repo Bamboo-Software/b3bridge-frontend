@@ -6,19 +6,19 @@ export interface ITokenInfo {
   symbol: string
   decimals: number
   logo: string
-  "chainKey": string
-
+  chainKey: string
+  priceUsd?: string
 }
 
 export interface ITokenStargateInfo {
-  "isBridgeable": boolean,
-  "chainKey": string,
-  "address": string,
-  "decimals": number,
-  "symbol": string,
-  "name": string,
-  "price": {
-    "usd": number
+  isBridgeable: boolean,
+  chainKey: string,
+  address: string,
+  decimals: number,
+  symbol: string,
+  name: string,
+  price: {
+    usd: number
   }
 }
 
