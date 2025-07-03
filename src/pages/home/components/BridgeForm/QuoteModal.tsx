@@ -106,7 +106,7 @@ export function QuoteModal({
                       <div className='flex items-center gap-2 mt-1'>
                         <span className='font-semibold text-lg'>
                           {formatNumber(
-                            Number(quote.dstAmountMin) /
+                            Number(quote.dstAmount) /
                               10 ** (dstTokenInfo?.decimals || 18)
                           )}
                         </span>

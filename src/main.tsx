@@ -22,7 +22,7 @@ createRoot(document.getElementById('root')!).render(
             <WagmiProvider>
               <Suspense fallback={<LoadingPage/>}>
                 <App />
-                <Toaster />
+                <Toaster richColors/>
               </Suspense>
             </WagmiProvider>
           </ThemeProvider>

@@ -65,7 +65,6 @@ function BridgeForm() {
     useTokenList(selectedFromChain);
   // --- Token & Wallet Watchers ---
   const watchedToken = form.watch('token');
-  const watchedTokenAddress = watchedToken?.address as Address;
   const watchedFromWallet = form.watch('fromWalletAddress');
   const watchedToWallet = form.watch('toWalletAddress');
   const watchedAmount = form.watch('amount');
@@ -78,11 +77,11 @@ function BridgeForm() {
   );
   // --- Balances ---
   const { balance: userSourceBalance, loading: userSourceBalanceLoading } =
-    useUserTokenBalance(address, watchedTokenAddress, selectedFromChain?.id);
+    useUserTokenBalance(address, watchedToken, selectedFromChain?.id);
   const { balance: userDesBalance, loading: userDesBalanceLoading } =
     useUserTokenBalance(
       watchedToWallet as Address,
-      destinationToken?.address,
+      destinationToken,
       selectedToChain?.id
     );
 
@@ -149,8 +148,8 @@ function BridgeForm() {
   }, [JSON.stringify(quotes), watchedQuote]);
 
   useEffect(() => {
-    if (watchedQuote && watchedQuote.dstAmountMin) {
-      setToAmount(watchedQuote.dstAmountMin);
+    if (watchedQuote && watchedQuote.dstAmount) {
+      setToAmount(watchedQuote.dstAmount);
     } else {
       setToAmount('');
     }
@@ -292,7 +291,7 @@ function BridgeForm() {
             setQuoteModalOpen={setQuoteModalOpen}
             receiveAmount={
               formatTokenAmount(
-                watchedQuote?.dstAmountMin,
+                watchedQuote?.dstAmount,
                 destinationToken
               )?.toString() || ''
             }

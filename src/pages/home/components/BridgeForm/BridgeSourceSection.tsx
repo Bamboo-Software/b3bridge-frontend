@@ -136,7 +136,7 @@ function BridgeSourceSection({
                       value = value.replace(/(\..*)\./g, '$1');
                       if (value.includes('.')) {
                         const [intPart, decPart] = value.split('.');
-                        value = intPart + '.' + decPart.slice(0, 6);
+                        value = intPart + '.' + decPart.slice(0, 5);
                       }
                       field.onChange(value);
                     }}

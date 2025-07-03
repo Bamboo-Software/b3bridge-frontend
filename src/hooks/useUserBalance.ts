@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react'
 import { wagmiConfig } from '@/utils/constants/wagmi'
 import { erc20Abi, formatUnits, type Address } from 'viem'
-import type { ChainId } from '@/utils/enums/chain'
 import { ethers } from 'ethers'
-import { getTokenData } from '@/utils/blockchain/token'
 import { getBalance, readContract } from '@wagmi/core'
+import type { ITokenInfo } from '@/utils/interfaces/token'
 export function useUserTokenBalance(
   userAddress?: Address,
-  tokenAddress?: Address,
-  chainId?: ChainId,
+  token?: ITokenInfo,
+  chainId?: number
 ) {
   const [balance, setBalance] = useState<string>('0')
   const [loading, setLoading] = useState(false)
@@ -17,15 +16,15 @@ export function useUserTokenBalance(
   useEffect(() => {
     const fetchBalance = async () => {
       setError(null)
-      if (!userAddress || !tokenAddress || !chainId) {
+      if (!userAddress || !token || !chainId) {
         setBalance('0')
         return
       }
 
       setLoading(true)
       try {
+        const tokenAddress = token.address
         const isNative = tokenAddress === ethers.ZeroAddress
-
         const rawBalance = isNative
           ? (await getBalance(wagmiConfig, { address: userAddress, chainId })).value
           : await readContract(wagmiConfig, {
@@ -36,13 +35,7 @@ export function useUserTokenBalance(
             args: [userAddress],
           }) as bigint
 
-        const data = await getTokenData(chainId, tokenAddress as Address)
-
-        if (!data || !data.decimals) {
-          throw new Error('Failed to fetch token data')
-        }
-
-        const formatted = formatUnits(rawBalance, data.decimals)
+          const formatted = formatUnits(rawBalance, token.decimals)
         setBalance(formatted)
       } catch (err) {
         setError(err as Error)
@@ -53,7 +46,7 @@ export function useUserTokenBalance(
     }
 
     fetchBalance()
-  }, [userAddress, tokenAddress, chainId])
+  }, [userAddress, token, chainId])
 
   return { balance, loading, error }
 }

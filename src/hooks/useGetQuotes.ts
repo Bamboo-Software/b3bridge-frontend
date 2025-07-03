@@ -37,19 +37,20 @@ export function useGetQuotes({
     destAmount &&
     srcChain.source === ChainTokenSource.Stargate;
   const { data, isLoading: loading, error } = useGetQuotesQuery(
-    isValid
-      ? {
-          srcToken: srcToken?.address,
-          dstToken: desToken?.address,
-          srcAddress,
-          dstAddress: destAddress,
-          srcChainKey: srcChain?.chainKey,
-          dstChainKey: destChain?.chainKey,
-          srcAmount: (Number(srcAmount) || 0) * 10 ** (srcToken?.decimals || 0),
-          dstAmountMin: (Number(srcAmount) || 0) * 10 ** (desToken?.decimals || 0),
-        }
-      : { skip: true }
-  );
+  isValid
+    ? {
+        srcToken: srcToken?.address,
+        dstToken: desToken?.address,
+        srcAddress,
+        dstAddress: destAddress,
+        srcChainKey: srcChain?.chainKey,
+        dstChainKey: destChain?.chainKey,
+        srcAmount: (Number(srcAmount) || 0) * 10 ** (srcToken?.decimals || 0),
+        dstAmountMin:
+          ((Number(srcAmount) || 0) * 0.9 * 10 ** (desToken?.decimals || 0)), 
+      }
+    : { skip: true }
+);
 
   if (!isValid) {
     return {
