@@ -1,7 +1,7 @@
-import { ChainTokenSource, ChainType } from '@/utils/enums/chain'
+import { ChainId, ChainTokenSource, ChainType } from '@/utils/enums/chain'
 import type { IChainInfo, IStargateChain } from '@/utils/interfaces/chain'
 import { stargateApi } from '@/services/stargate'
-import {getChainImage } from '@/utils/blockchain/chain'
+import {getChainImage, getChainNameByChainId } from '@/utils/blockchain/chain'
 import { useEffect, useState } from 'react'
 import { configChains } from '@/utils/constants/chain'
 interface UseChainListResult {
@@ -26,8 +26,8 @@ export const useChainList = (): UseChainListResult => {
         .filter(chain => chain.id !== undefined && chain.name !== undefined)
         .map(chain => ({
           id: chain.id,
-          chainKey: chain.name || '',
-          name: chain.name || '',
+          chainKey: getChainNameByChainId(chain.id as ChainId) || '',
+          name: getChainNameByChainId(chain.id as ChainId) || '',
           logo: getChainImage({chainId: chain.id, source: ChainTokenSource.Local}),
           chainType: ChainType.EVM,
           rpcUrls: {
@@ -62,12 +62,14 @@ export const useChainList = (): UseChainListResult => {
 
       const chainMap = new Map<string, IChainInfo>();
 
-      for (const chain of evmLocalChains) {
-        chainMap.set(`${chain.id}_${chain.name}`, chain);
-      }
+     
       for (const chain of remoteChains) {
-        chainMap.set(`${chain.id}_${chain.name}`, chain);
+        chainMap.set(`${chain.id}_${chain.chainKey}`, chain);
       }
+       for (const chain of evmLocalChains) {
+        chainMap.set(`${chain.id}_${chain.chainKey}`, chain);
+      }
+      
       setData(Array.from(chainMap.values()))
     } catch (err) {
       setError(err as Error)

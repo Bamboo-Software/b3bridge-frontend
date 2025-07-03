@@ -57,7 +57,7 @@ export function QuoteModal({
 }: QuoteModalProps) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className='max-w-xl w-full bg-background border border-primary/20 rounded-xl shadow-lg'>
+      <DialogContent className=' max-h-[90vh] overflow-y-auto !w-md bg-background border border-primary/20 rounded-xl shadow-lg'>
         <DialogHeader>
           <DialogTitle className='text-2xl font-bold text-center text-primary'>
             Select Quote
@@ -98,85 +98,87 @@ export function QuoteModal({
                       </span>
                     )}
                   </div>
-                  <div className=' flex justify-between'>
-                    <div>
-                      {/* Destination amount & token */}
-                      <div className='mb-3'>
-                        <div className='text-base font-semibold text-primary'>
-                          Destination Amount
-                        </div>
-                        <div className='flex items-center gap-2 mt-1'>
-                          <span className='font-semibold text-lg'>
-                            {formatNumber(
-                              Number(quote.dstAmount) /
-                                10 ** (dstTokenInfo?.decimals || 18)
-                            )}
-                          </span>
-                          <span className='font-medium text-base flex gap-2 items-center'>
-                            <Image
-                              alt='Token logo'
-                              fallbackSrc={'/images/default-coin-logo.jpg'}
-                              src={dstTokenInfo?.logo || ''}
-                              className='w-5 h-5 rounded-xl'
-                            />
+                  <div className='flex justify-between'>
+                    <div className='mb-3'>
+                      <div className='text-base font-semibold text-primary'>
+                        Destination Amount
+                      </div>
+                      <div className='flex items-center gap-2 mt-1'>
+                        <span className='font-semibold text-lg'>
+                          {formatNumber(
+                            Number(quote.dstAmountMin) /
+                              10 ** (dstTokenInfo?.decimals || 18)
+                          )}
+                        </span>
+                        <span className='font-medium text-base flex gap-2 items-center'>
+                          <Image
+                            alt='Token logo'
+                            fallbackSrc={'/images/default-coin-logo.jpg'}
+                            src={dstTokenInfo?.logo || ''}
+                            className='w-5 h-5 rounded-xl'
+                          />
+                          <span className='mt-0.5'>
                             {dstTokenInfo?.symbol ||
                               dstTokenInfo?.symbol ||
                               quote.dstToken}
                           </span>
-                        </div>
-                      </div>
-                      {/* Duration */}
-                      <div className='mb-3'>
-                        <div className='text-base font-semibold text-primary'>
-                          Estimated Duration
-                        </div>
-                        <div className='font-medium mt-1'>
-                          {quote.duration?.estimated}s
-                        </div>
+                        </span>
                       </div>
                     </div>
-                    {/* Fees */}
-                    <div>
-                      <div className='text-base font-semibold text-primary mb-1'>
-                        Fees
+                    {/* Duration */}
+                    <div className='mb-3'>
+                      <div className='text-base font-semibold text-primary'>
+                        Estimated Duration
                       </div>
-                      <div className='space-y-1'>
-                        {quote.fees && quote.fees.length > 0 ? (
-                          quote.fees.map((fee, i) => {
-                            const feeToken = getTokenInfo(
-                              tokenList,
-                              fee.token,
-                              destinationToken
-                            );
-                            return (
-                              <div
-                                key={i}
-                                className='flex items-center gap-2 text-sm'
-                              >
-                                <span className='capitalize font-medium'>
-                                  {fee.type}:
-                                </span>
-                                <div className='flex gap-1'>
-                                  <span>
-                                    {formatNumber(
-                                      Number(fee.amount) /
-                                        10 ** (feeToken?.decimals || 18)
-                                    )}
-                                  </span>
-                                  <span>{feeToken?.symbol || fee.token}</span>
-                                </div>
-                                <span className='text-xs text-muted-foreground'>
-                                  {formatUsd(fee.amount, feeToken)}
-                                </span>
-                              </div>
-                            );
-                          })
-                        ) : (
-                          <span className='text-sm'>N/A</span>
-                        )}
+                      <div className='font-medium mt-1'>
+                        {quote.duration?.estimated}s
                       </div>
                     </div>
 
+                  </div>
+                  {/* Fees */}
+                  <div>
+                    <div className='text-base font-semibold text-primary mb-1'>
+                      Fees
+                    </div>
+                    <div className='space-y-1'>
+                      {quote.fees && quote.fees.length > 0 ? (
+                        quote.fees.map((fee, i) => {
+                          const feeToken = getTokenInfo(
+                            tokenList,
+                            fee.token,
+                            destinationToken
+                          );
+                          return (
+                            <div
+                              key={i}
+                              className='flex items-center gap-2 text-sm'
+                            >
+                              <span className='text-primary text-base leading-none'>
+                                •
+                              </span>
+                              <span className='capitalize font-medium'>
+                                {fee.type}:
+                              </span>
+                              <div className='flex gap-1'>
+                                <span>
+                                  {formatNumber(
+                                    Number(fee.amount) /
+                                      10 ** (feeToken?.decimals || 18)
+                                  )}
+                                </span>
+                                <span>{feeToken?.symbol || fee.token}</span>
+                              </div>
+                              <span className='text-xs text-muted-foreground'>
+                                {formatUsd(fee.amount, feeToken)}
+                              </span>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <span className='text-sm'>N/A</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

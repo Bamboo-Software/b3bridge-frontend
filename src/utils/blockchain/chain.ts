@@ -1,6 +1,6 @@
 import { EVM_CHAIN_IDS ,  blockChainConfig, chainImages, } from '../constants/chain';
 import { wagmiConfig } from '../constants/wagmi';
-import {  ChainId, ChainTokenSource, CryptoCurrencyEnum, type SUPPORTED_CHAINS_EVM } from '../enums/chain';
+import {  BlockchainNameEnum, ChainId, ChainTokenSource, CryptoCurrencyEnum, type SUPPORTED_CHAINS_EVM } from '../enums/chain';
 
 export function getChainDataLocal(chainId: SUPPORTED_CHAINS_EVM) {
   let chain = null
@@ -95,4 +95,18 @@ export function getCrossChainTokenAddress(
   if(!fromChainId || !toChainId || !fromTokenAddress) return undefined
   const tokenName = getTokenNameByChainIdAndTokenAddress(fromChainId, fromTokenAddress);
   return getTokenAddressByChainIdAndTokenName(toChainId, tokenName);
+}
+
+
+
+
+export function getChainNameByChainId(chainId: ChainId): BlockchainNameEnum | undefined {
+  switch (chainId) {
+    case ChainId.SEI:
+      return BlockchainNameEnum.sei;
+    case ChainId.Ethereum:
+      return BlockchainNameEnum.ethereum;
+    default:
+      return undefined;
+  }
 }

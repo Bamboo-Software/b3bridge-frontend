@@ -1,12 +1,5 @@
 import { FormControl, FormField, FormItem } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from '@/components/ui/image';
@@ -19,11 +12,12 @@ import { Button } from '@/components/ui/button';
 import { memo } from 'react';
 import { ChainTokenSource } from '@/utils/enums/chain';
 import type { ITokenInfo } from '@/utils/interfaces/token';
+import FilterSelect from '@/components/ui/filter-select';
 
 interface ToSectionProps {
   form: UseFormReturn<BridgeFormValues>;
   isConnected: boolean;
-  chainList?: IChainInfo[];
+  chainList: IChainInfo[];
   chainListLoading: boolean;
   useCustomAddress: boolean;
   setUseCustomAddress: (value: boolean) => void;
@@ -32,10 +26,10 @@ interface ToSectionProps {
   userDesBalanceLoading: boolean;
   watchedFromWallet: string;
   handleOpenConnectModal: () => void;
-  destinationToken?: ITokenInfo
-  selectedFromChain?: IChainInfo
-  toAmount: string
-  watchedAmount: string
+  destinationToken?: ITokenInfo;
+  selectedFromChain?: IChainInfo;
+  toAmount: string;
+  watchedAmount: string;
 }
 
 function BridgeDestinationSection({
@@ -53,7 +47,7 @@ function BridgeDestinationSection({
   destinationToken,
   selectedFromChain,
   toAmount,
-  watchedAmount
+  watchedAmount,
 }: ToSectionProps) {
   return (
     <div className='rounded-2xl border border-primary/20 bg-primary/5 p-4 shadow-sm space-y-5'>
@@ -97,62 +91,53 @@ function BridgeDestinationSection({
           />
         </div>
       </div>
+
       <FormField
         control={form.control}
         name='toChain'
         render={() => (
-          <FormItem>
-            <Select
-              onValueChange={(value: string) => {
-                if (!value) return;
-                form.setValue(
-                  'toChain',
-                  chainList?.find((chain) => chain.chainKey === (value)) || null,
-                  {
-                    shouldValidate: true
-                  }
-                );
-              }}
-              value={form.getValues('toChain')?.chainKey?.toString() || ''}
-            >
-              <FormControl>
-                <SelectTrigger className='w-full min-h-[44px] text-base font-medium bg-background/70 !border-primary/30 hover:border-primary/50 focus:border-primary/60 rounded-lg cursor-pointer'>
-                  <SelectValue placeholder='Select chain ' />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {chainListLoading ? (
-                  <div className='p-2 text-sm text-muted-foreground italic'>
-                    <Skeleton className='w-24 h-5' />
-                  </div>
-                ) : chainList?.length ? (
-                  chainList
-                    .filter(
-                      (chain) =>
-                        !form.getValues('fromChain')?.chainKey ||
-                        chain.chainKey !== form.getValues('fromChain')?.chainKey
-                    )
-                    .map((chain) => (
-                      <SelectItem key={chain?.chainKey} value={chain?.chainKey?.toString() || chain.id.toString()}>
-                        <div className='flex items-center gap-2'>
-                          <Image
-                            alt='Chain logo'
-                            fallbackSrc={'/images/default-coin-logo.jpg'}
-                            src={chain.logo || ''}
-                            className='w-5 h-5 rounded-xl'
-                          />
-                          <span>{chain.name}</span>
-                        </div>
-                      </SelectItem>
-                    ))
-                ) : (
-                  <div className='p-2 text-sm text-red-500'>
-                    No chains available
-                  </div>
-                )}
-              </SelectContent>
-            </Select>
-          </FormItem>
+          <FilterSelect
+            dropdownClassName='w-[400px]'
+            showAll={false}
+            data={chainList.filter(
+              (chain) =>
+                (
+                  !form.getValues('fromChain')?.chainKey ||
+                  chain.chainKey !== form.getValues('fromChain')?.chainKey
+                ) &&
+                (
+                  !form.getValues('fromChain')?.source ||
+                  chain.source === form.getValues('fromChain')?.source
+                )
+            )}
+            value={form.getValues('toChain')?.chainKey?.toString() || null}
+            onChange={(selected) => {
+              form.setValue('toChain', selected, { shouldValidate: true });
+            }}
+            getLabel={(chain) => (
+              <div className='flex items-center gap-2'>
+                <Image
+                  alt='Chain logo'
+                  fallbackSrc='/images/default-coin-logo.jpg'
+                  src={chain.logo || ''}
+                  className='w-5 h-5 rounded-xl'
+                />
+                <span>{chain.name?.toUpperCase()}</span>
+              </div>
+            )}
+            getValue={(chain) => chain.chainKey?.toString() || ''}
+            placeholder='Select chain'
+            allLabel='All Chains'
+            disabled={chainList.length === 0}
+            loading={chainListLoading}
+            filterOption={(chain, search) =>
+              !!chain.name?.toLowerCase().includes(search.toLowerCase()) ||
+              !!chain.chainKey
+                ?.toString()
+                .toLowerCase()
+                .includes(search.toLowerCase())
+            }
+          />
         )}
       />
       <div className='w-full'>
@@ -224,9 +209,9 @@ function BridgeDestinationSection({
                         'border-destructive focus-visible:ring-destructive/40'
                     )}
                     onBlur={(e) => {
-                      form.setValue('toWalletAddress', e.target.value,  {
-                    shouldValidate: true
-                  });
+                      form.setValue('toWalletAddress', e.target.value, {
+                        shouldValidate: true,
+                      });
                     }}
                     onChange={(e) => {
                       field.onChange(e);

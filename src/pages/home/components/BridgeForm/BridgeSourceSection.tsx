@@ -1,12 +1,5 @@
 import { FormControl, FormField, FormItem } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from '@/components/ui/image';
@@ -15,7 +8,7 @@ import type { ITokenInfo } from '@/utils/interfaces/token';
 import type { IChainInfo } from '@/utils/interfaces/chain';
 import type { UseFormReturn } from 'react-hook-form';
 import type { BridgeFormValues } from './BridgeFormValidation';
-import { memo } from 'react';
+import FilterSelect from '@/components/ui/filter-select';
 
 interface FromSectionProps {
   form: UseFormReturn<BridgeFormValues>;
@@ -73,55 +66,43 @@ function BridgeSourceSection({
         control={form.control}
         name='fromChain'
         render={() => (
-          <FormItem>
-            <Select
-              onValueChange={(value: string) => {
-                if (!value) return;
-                const selected =
-                  chainList.find((chain) => chain.chainKey === value) || null;
-                form.setValue('fromChain', selected, {shouldValidate: true});
-                form.setValue('token', null, {shouldValidate: true});
-              }}
-              value={form.getValues('fromChain')?.chainKey?.toString() || ''}
-            >
-              <FormControl>
-                <SelectTrigger className='w-full min-h-[44px] text-base font-medium bg-background/70 !border-primary/30 hover:border-primary/50 focus:border-primary/60 rounded-lg cursor-pointer'>
-                  <SelectValue placeholder='Select chain' />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {chainListLoading ? (
-                  <div className='p-2 text-sm text-muted-foreground italic'>
-                    <Skeleton className='w-24 h-5' />
-                  </div>
-                ) : chainList?.length ? (
-                  chainList
-                    .filter(
-                      (chain) =>
-                        !form.getValues('toChain')?.id ||
-                        chain.id !== form.getValues('toChain')?.id
-                    )
-                    .map((chain) => (
-                      <SelectItem key={chain.chainKey} value={chain?.chainKey?.toString()||''}>
-                        <div className='flex items-center gap-2'>
-                          <Image
-                            alt='Chain logo'
-                            fallbackSrc={'/images/default-coin-logo.jpg'}
-                            src={chain.logo || ''}
-                            className='w-5 h-5 rounded-xl'
-                          />
-                          <span>{chain.name}</span>
-                        </div>
-                      </SelectItem>
-                    ))
-                ) : (
-                  <div className='p-2 text-sm text-red-500'>
-                    No chains available
-                  </div>
-                )}
-              </SelectContent>
-            </Select>
-          </FormItem>
+          <FilterSelect
+            dropdownClassName='w-[400px]'
+            showAll={false}
+            data={chainList.filter(
+              (chain) =>
+                !form.getValues('toChain')?.chainKey ||
+                chain.chainKey !== form.getValues('toChain')?.chainKey
+            )}
+            value={form.getValues('fromChain')?.chainKey?.toString() || null}
+            onChange={(selected) => {
+              form.setValue('fromChain', selected, { shouldValidate: true });
+              form.setValue('token', null, { shouldValidate: true });
+            }}
+            getLabel={(chain) => (
+              <div className='flex items-center gap-2'>
+                <Image
+                  alt='Chain logo'
+                  fallbackSrc='/images/default-coin-logo.jpg'
+                  src={chain.logo || ''}
+                  className='w-5 h-5 rounded-xl'
+                />
+                <span>{chain.name?.toUpperCase()}</span>
+              </div>
+            )}
+            getValue={(chain) => chain.chainKey?.toString() || ''}
+            placeholder='Select chain'
+            allLabel='All Chains'
+            disabled={chainList.length === 0}
+            loading={chainListLoading}
+            filterOption={(chain, search) =>
+              !!chain.name?.toLowerCase().includes(search.toLowerCase()) ||
+              !!chain.chainKey
+                ?.toString()
+                .toLowerCase()
+                .includes(search.toLowerCase())
+            }
+          />
         )}
       />
 
@@ -141,14 +122,14 @@ function BridgeSourceSection({
                     inputMode='decimal'
                     autoComplete='off'
                     className={`
-            text-[2.2rem] md:text-5xl font-extrabold
-            py-4 md:py-6 px-2
-            border-none shadow-none !bg-transparent
-            focus:ring-0 focus-visible:ring-0
-            h-[56px] md:h-[72px] leading-tight
-            rounded-xl
-            transition-all
-          `}
+                      text-[2.2rem] md:text-5xl font-extrabold
+                      py-4 md:py-6 px-2
+                      border-none shadow-none !bg-transparent
+                      focus:ring-0 focus-visible:ring-0
+                      h-[56px] md:h-[72px] leading-tight
+                      rounded-xl
+                      transition-all
+                    `}
                     style={{ fontVariantNumeric: 'tabular-nums' }}
                     onChange={(e) => {
                       let value = e.target.value.replace(/[^0-9.]/g, '');
@@ -166,58 +147,44 @@ function BridgeSourceSection({
           />
 
           {/* Token Select */}
-          <FormField
-            control={form.control}
-            name='token'
-            render={() => (
-              <FormItem>
-                <Select
-                  onValueChange={(value) => {
-                    const selected =
-                      tokenList.find((token) => token.address === value) ||
-                      null;
-                    form.setValue('token', selected, {shouldValidate: true});
+          <div className='w-fit'>
+            <FormField
+              control={form.control}
+              name='token'
+              render={() => (
+                <FilterSelect
+                dropdownClassName='w-[350px]'
+                  data={tokenList}
+                  value={`${form.getValues('token')?.symbol} ${form.getValues('token')?.address}`}
+                  onChange={(selected) => {
+                    form.setValue('token', selected, { shouldValidate: true });
                   }}
-                  value={form.getValues('token')?.address || ''}
-                >
-                  <FormControl>
-                    <SelectTrigger className='h-[36px] me-2 text-base font-medium bg-background/70 !border-primary/30 hover:border-primary/50 focus:border-primary/60 rounded-lg cursor-pointer'>
-                      <SelectValue placeholder='Token' />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {!form.getValues('fromChain') ? (
-                      <div className='p-2 text-sm text-muted-foreground italic'>
-                        Please select a chain first
-                      </div>
-                    ) : tokenListLoading ? (
-                      <div className='p-2 text-sm text-muted-foreground italic'>
-                        <Skeleton className='w-20 h-5' />
-                      </div>
-                    ) : tokenList.length > 0 ? (
-                      tokenList.map((token) => (
-                        <SelectItem key={token.address} value={token.address}>
-                          <div className='flex items-center gap-2'>
-                            <Image
-                              alt='Token logo'
-                              fallbackSrc={'/images/default-coin-logo.jpg'}
-                              src={token.logo}
-                              className='w-5 h-5 rounded-xl'
-                            />
-                            <span>{token.symbol}</span>
-                          </div>
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <div className='p-2 text-sm text-red-500'>
-                        No tokens found
-                      </div>
-                    )}
-                  </SelectContent>
-                </Select>
-              </FormItem>
-            )}
-          />
+                  getLabel={(token) => (
+                    <div className='flex items-center gap-2'>
+                      <Image
+                        alt='Token logo'
+                        fallbackSrc={'/images/default-coin-logo.jpg'}
+                        src={token.logo}
+                        className='w-5 h-5 rounded-xl'
+                      />
+                      <span>{token.symbol}</span>
+                    </div>
+                  )}
+                  getValue={(token) => `${token.symbol} ${token.address}`}
+                  placeholder='Token'
+                  allLabel='All Tokens'
+                  showAll={false}
+                  disabled={tokenList.length === 0}
+                  loading={tokenListLoading}
+                  filterOption={(token, search) => {
+                      return (token.symbol.toLowerCase().includes(search.toLowerCase()) ||
+                      token.address.toLowerCase().includes(search.toLowerCase()))
+                    }
+                  }
+                />
+              )}
+            />
+          </div>
         </div>
       </div>
 
@@ -247,4 +214,4 @@ function BridgeSourceSection({
   );
 }
 
-export default memo(BridgeSourceSection);
+export default BridgeSourceSection

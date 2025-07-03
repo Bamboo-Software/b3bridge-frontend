@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -27,6 +29,7 @@ import { useBridgeTokens } from '@/hooks/bridge/useBridgeTokens';
 import type { ITokenInfo } from '@/utils/interfaces/token';
 import BridgeSourceSection from './BridgeSourceSection';
 import { formatTokenAmount } from '@/utils';
+import { toast } from 'sonner';
 
 const validateReceiver = (value: string) =>
   value ? /^0x[a-fA-F0-9]{40}$/.test(value) : null;
@@ -60,7 +63,6 @@ function BridgeForm() {
   const selectedToChain = form.watch('toChain');
   const { data: tokenList, loading: tokenListLoading } =
     useTokenList(selectedFromChain);
-
   // --- Token & Wallet Watchers ---
   const watchedToken = form.watch('token');
   const watchedTokenAddress = watchedToken?.address as Address;
@@ -154,28 +156,26 @@ function BridgeForm() {
     }
   }, [watchedQuote]);
 
-  const feeToken = useMemo(() => {
-    if (!watchedQuote || !watchedQuote.fees || watchedQuote.fees.length === 0)
-      return undefined;
+  const totalFeeStargateUsd = useMemo(() => {
+  if (!watchedQuote || !watchedQuote.fees || watchedQuote.fees.length === 0) return 0;
 
-    const feeTokenAddress = watchedQuote.fees[0].token?.toLowerCase();
+  return watchedQuote.fees.reduce((total: number, fee: IQuoteFee) => {
+    const feeTokenAddress = fee.token?.toLowerCase();
     const token =
       tokenList.find((t) => t.address?.toLowerCase() === feeTokenAddress) ||
       (destinationToken?.address?.toLowerCase() === feeTokenAddress
         ? destinationToken
         : undefined);
 
-    return token;
-  }, [watchedQuote, tokenList, destinationToken]);
+    if (!token || !token.priceUsd) return total;
 
-  const totalFeeStargate = useMemo(() => {
-    if (!watchedQuote || !watchedQuote.fees || !feeToken) return 0;
-    const decimals = feeToken.decimals || 18;
-    return watchedQuote.fees.reduce((total: number, fee: IQuoteFee) => {
-      const amount = Number(fee.amount) / 10 ** decimals;
-      return total + amount;
-    }, 0);
-  }, [watchedQuote, feeToken]);
+    const decimals = token.decimals || 18;
+    const amount = Number(fee.amount) / 10 ** decimals;
+    const feeUsd = amount * Number(token.priceUsd);
+
+    return total + feeUsd;
+  }, 0);
+}, [watchedQuote, tokenList, destinationToken]);
 
   const isTransactionInfoLoading = useMemo(
     () => quotesLoading,
@@ -236,10 +236,17 @@ function BridgeForm() {
   const { switchChainAsync } = useSwitchChain();
 
   const onSubmit: SubmitHandler<BridgeFormValues> = async () => {
-    if (selectedFromChain?.id) {
-      await switchChainAsync({ chainId: selectedFromChain?.id });
+    try{
+      if (selectedFromChain?.id) {
+        await switchChainAsync({ chainId: selectedFromChain?.id });
+      }
+      await bridge();
+    }catch(e:any){
+       toast.error("Something went wrong. Please try again.", {
+        duration: Infinity,
+        closeButton: true,
+      });
     }
-    await bridge();
   };
 
   // --- Render ---
@@ -290,11 +297,11 @@ function BridgeForm() {
               )?.toString() || ''
             }
             estTime={watchedQuote?.duration?.estimated}
-            feeToken={feeToken}
-            totalFee={totalFeeStargate}
+            totalFeeStargateUsd={totalFeeStargateUsd}
             route={watchedQuote?.route}
             enable={isBridgeEnabled}
             isTransactionInfoLoading={isTransactionInfoLoading}
+            destinationToken={destinationToken}
           />
           <SubmitButton
             isFullField={isFullField}

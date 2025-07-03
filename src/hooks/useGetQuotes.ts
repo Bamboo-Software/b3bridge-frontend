@@ -36,7 +36,6 @@ export function useGetQuotes({
     srcAmount &&
     destAmount &&
     srcChain.source === ChainTokenSource.Stargate;
-
   const { data, isLoading: loading, error } = useGetQuotesQuery(
     isValid
       ? {
