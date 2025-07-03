@@ -1,11 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { http, createConfig } from '@wagmi/core'
+import { http, createConfig, webSocket } from '@wagmi/core'
 import { appConfig } from '../app'
 import type { WalletConfig } from '@/utils/interfaces/wallet'
 import metamaskLogo from '@/assets/icons/metamask-logo.png'
 import okxLogo from '@/assets/icons/okx-logo.svg'
 import * as viemChains from 'viem/chains'
 import type { Chain } from 'viem'
+import { CHAIN_ENV_KEYS } from '../chain'
+import { fallback } from 'wagmi'
 
 const isProd = appConfig?.isProd
 
@@ -23,10 +25,24 @@ export const selectedChains = allChains.filter((chain) =>
 export const wagmiConfig = createConfig({
   chains: selectedChains,
   transports: Object.fromEntries(
-    selectedChains.map((chain) => [chain.id, http()])
-  ) as Record<number, ReturnType<typeof http>>,
-})
+    selectedChains
+      .map((chain) => {
+        const envKey = CHAIN_ENV_KEYS[chain.id];
 
+        const wsUrl = import.meta.env[`VITE_${envKey}_CHAIN_WS_URL`];
+        const httpUrl = import.meta.env[`VITE_${envKey}_CHAIN_RPC_URL`];
+
+        const providers = [];
+        if (wsUrl) providers.push(webSocket(wsUrl));
+        if (httpUrl) providers.push(http(httpUrl));
+
+        if (providers.length === 0) return null;
+
+        return [chain.id, fallback(providers)];
+      })
+      .filter(Boolean) as [number, ReturnType<typeof fallback>][]
+  ),
+});
 
 export const walletConfig: WalletConfig[] = [
   {

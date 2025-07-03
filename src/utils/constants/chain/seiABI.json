@@ -94,6 +94,12 @@
                 "internalType": "uint256",
                 "name": "amount",
                 "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amountAfterFee",
+                "type": "uint256"
             }
         ],
         "name": "BurnTokenCCIP",
@@ -199,16 +205,66 @@
         "inputs": [
             {
                 "indexed": true,
-                "internalType": "bytes32",
-                "name": "messageId",
-                "type": "bytes32"
+                "internalType": "address",
+                "name": "sender",
+                "type": "address"
             },
             {
-                "indexed": true,
-                "internalType": "uint64",
-                "name": "sourceChainSelector",
-                "type": "uint64"
+                "indexed": false,
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
             },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "totalFee",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "ownerFee",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "validatorFee",
+                "type": "uint256"
+            }
+        ],
+        "name": "FeeCollected",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "validator",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "FeeDistributed",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
             {
                 "indexed": false,
                 "internalType": "address",
@@ -515,6 +571,40 @@
             {
                 "internalType": "uint256",
                 "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "token",
+                "type": "address"
+            }
+        ],
+        "name": "getValidatorFees",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "totalFee",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address[]",
+                "name": "validatorsList",
+                "type": "address[]"
+            },
+            {
+                "internalType": "uint256[]",
+                "name": "fees",
+                "type": "uint256[]"
+            },
+            {
+                "internalType": "uint256",
+                "name": "contractBalance",
                 "type": "uint256"
             }
         ],
@@ -878,6 +968,49 @@
         "name": "updateSourceBridge",
         "outputs": [],
         "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "validatorFeeERC20",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "validatorFeeNative",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
         "type": "function"
     },
     {

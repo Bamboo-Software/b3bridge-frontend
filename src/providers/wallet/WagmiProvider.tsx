@@ -9,7 +9,6 @@ interface WagmiProviderProps {
 
 const queryClient = new QueryClient();
 
-
 export function WagmiProvider({ children }: WagmiProviderProps) {
   return (
     <WagmiProviderCore config={wagmiConfig}>

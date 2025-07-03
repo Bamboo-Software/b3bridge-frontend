@@ -1,7 +1,6 @@
 import { FormControl, FormField, FormItem } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { Skeleton } from '@/components/ui/skeleton';
 import Image from '@/components/ui/image';
 import { CheckCircle2, XCircle } from 'lucide-react';
 import { cn, formatTokenAmount, shortenAddress } from '@/utils';
@@ -13,6 +12,8 @@ import { memo } from 'react';
 import { ChainTokenSource } from '@/utils/enums/chain';
 import type { ITokenInfo } from '@/utils/interfaces/token';
 import FilterSelect from '@/components/ui/filter-select';
+import { useDestinationToken } from '@/hooks/useDestinationToken';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ToSectionProps {
   form: UseFormReturn<BridgeFormValues>;
@@ -49,6 +50,11 @@ function BridgeDestinationSection({
   toAmount,
   watchedAmount,
 }: ToSectionProps) {
+  const { isLoading } = useDestinationToken(
+    form.getValues('token'),
+    selectedFromChain,
+    form.getValues('toChain')
+  );
   return (
     <div className='rounded-2xl border border-primary/20 bg-primary/5 p-4 shadow-sm space-y-5'>
       <div
@@ -60,7 +66,7 @@ function BridgeDestinationSection({
             <Button
               type='button'
               disabled
-              className='font-medium text-primary bg-primary/10 px-2 py-1 rounded'
+              className="text-primary cursor-pointer font-medium py-1 px-2 rounded bg-primary/10 hover:bg-primary/20 transition"
             >
               {useCustomAddress
                 ? 'Custom Wallet'
@@ -79,7 +85,7 @@ function BridgeDestinationSection({
               onClick={handleOpenConnectModal}
               className='text-primary cursor-pointer font-medium rounded bg-primary/10 px-2 py-1 hover:bg-primary/20 transition'
             >
-              Please connect wallet
+              Connect Wallet
             </Button>
           )}
         </div>
@@ -149,13 +155,21 @@ function BridgeDestinationSection({
               <FormItem className='flex-1'>
                 <FormControl>
                   <Input
-                    value={
-                      destinationToken
-                        ? selectedFromChain?.source ===
-                          ChainTokenSource.Stargate
-                          ? formatTokenAmount(toAmount, destinationToken) || 0
-                          : watchedAmount
-                        : 0
+                    //  value={
+                    //   isLoading
+                    //     ? '0'
+                    //     : destinationToken
+                    //       ? selectedFromChain?.source === ChainTokenSource.Stargate
+                    //         ? formatTokenAmount(toAmount, destinationToken)
+                    //         : watchedAmount
+                    //       : '0'
+                    // }
+                   value={
+                      isLoading
+                        ? watchedAmount || '0'
+                        : selectedFromChain?.source === ChainTokenSource.Stargate
+                          ? formatTokenAmount(toAmount, destinationToken) || '0'
+                          : watchedAmount || '0'
                     }
                     placeholder='0.0'
                     inputMode='decimal'
@@ -180,16 +194,30 @@ function BridgeDestinationSection({
           />
         </div>
         <div className='flex justify-start mt-5'>
-          <div className='text-xs text-muted-foreground px-2'>
+           <div className='text-xs text-muted-foreground px-2'>
             Balance:{' '}
             {userDesBalanceLoading ? (
-              <Skeleton className='inline-block w-16 h-4 align-middle' />
-            ) : (
+                // <span className='font-semibold text-foreground'>0</span>
+                <Skeleton className='inline-block w-24 h-4 align-middle' />
+                // <></>
+              )
+              :
+                (
               <span className='font-semibold text-foreground'>
-                {userDesBalance}
+                {userDesBalance || '0'}
               </span>
             )}
           </div>
+          {/* <div className='text-xs text-muted-foreground px-2'>
+            Balance:{' '}
+            {!destinationToken ? null : userDesBalanceLoading ? (
+              <Skeleton className='inline-block w-24 h-4 align-middle' />
+            ) : (
+              <span className='font-semibold text-foreground'>
+                {userDesBalance || '0'} {destinationToken.symbol}
+              </span>
+            )}
+          </div> */}
         </div>
       </div>
       {useCustomAddress ? (

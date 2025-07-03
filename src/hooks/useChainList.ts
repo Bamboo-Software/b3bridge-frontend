@@ -22,29 +22,31 @@ export const useChainList = (): UseChainListResult => {
     setError(null)
 
     try {
+      console.log("🚀 ~ useEffect ~ configChains:", configChains)
       const evmLocalChains: IChainInfo[] = configChains
-        .filter(chain => chain.id !== undefined && chain.name !== undefined)
-        .map(chain => ({
-          id: chain.id,
-          chainKey: getChainNameByChainId(chain.id as ChainId) || '',
-          name: getChainNameByChainId(chain.id as ChainId) || '',
-          logo: getChainImage({chainId: chain.id, source: ChainTokenSource.Local}),
-          chainType: ChainType.EVM,
-          rpcUrls: {
-            default: {
-              http: chain.rpcUrls?.default?.http?.slice() || [],
-            },
+      .filter(chain => chain.id !== undefined && chain.name !== undefined)
+      .map(chain => ({
+        id: chain.id,
+        chainKey: getChainNameByChainId(chain.id as ChainId) || '',
+        name: getChainNameByChainId(chain.id as ChainId) || '',
+        logo: getChainImage({chainId: chain.id, source: ChainTokenSource.Local}),
+        chainType: ChainType.EVM,
+        rpcUrls: {
+          default: {
+            http: chain.rpcUrls?.default?.http?.slice() || [],
           },
-          nativeCurrency: chain.nativeCurrency,
-          blockExplorers: {
-            default: {
-              name: chain.blockExplorers?.default?.name || '',
-              url: chain.blockExplorers?.default?.url || '',
-              apiUrl: chain.blockExplorers?.default?.apiUrl,
-            },
+        },
+        nativeCurrency: chain.nativeCurrency,
+        blockExplorers: {
+          default: {
+            name: chain.blockExplorers?.default?.name || '',
+            url: chain.blockExplorers?.default?.url || '',
+            apiUrl: chain.blockExplorers?.default?.apiUrl,
           },
-          source: ChainTokenSource.Local
-        }))
+        },
+        source: ChainTokenSource.Local
+      }))
+      console.log("🚀 ~ useEffect ~ evmLocalChains:", evmLocalChains)
 
       let remoteChains: IChainInfo[] = []
       if (Array.isArray(apiChains?.chains)) {
@@ -59,6 +61,7 @@ export const useChainList = (): UseChainListResult => {
           }
         })
       }
+      console.log("🚀 ~ useEffect ~ remoteChains:", remoteChains)
 
       const chainMap = new Map<string, IChainInfo>();
 

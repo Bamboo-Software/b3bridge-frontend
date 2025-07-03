@@ -158,7 +158,7 @@ const PageLayout = () => {
       {/* Main content */}
       <main 
         className={cn(
-          "flex-1 overflow-y-auto pb-4 transition-all duration-300 mt-16",
+          "flex-1 overflow-y-auto transition-all duration-300 mt-16",
         )}
       >
         <Outlet />

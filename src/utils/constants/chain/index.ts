@@ -1,10 +1,10 @@
 import { ChainId } from '@/utils/enums/chain';
-import seiABI from "./seiABI.json";
-import ethereumABI from "./ethereumABI.json";
 import etherLogo from "@/assets/icons/ether.svg";
 import seiLogo from "@/assets/icons/sei.svg";
 import { appConfig } from '../app';
 import { mainnet, sei, seiTestnet, sepolia, type Chain } from 'viem/chains';
+import ethereumABI from "./ethereumABI.json";
+import seiABI from "./seiABI.json";
 
 export const baseUrl =
   import.meta.env.VITE_API_URL || "";
@@ -27,6 +27,10 @@ export const seiEthAddress = import.meta.env.VITE_SEI_ETH_ADDRESS || "";
 export const seiUsdcAddress = import.meta.env.VITE_SEI_USDC_ADDRESS || "";
 export const seiBridgeAddress = import.meta.env.VITE_SEI_BRIDGE_ADDRESS || "";
 export const seiBridgeAbi = import.meta.env.VITE_SEI_BRIDGE_ABI || seiABI;
+export const chainSelectors: Record<number, string> = {
+  [sepolia.id]: ethereumChainSelector,
+  [seiTestnet.id]: seiChainSelector,
+};
 
 
 export const blockChainConfig = {
@@ -46,7 +50,9 @@ export const chainImages = {
 }
 
 const isProd = appConfig?.isProd
+console.log("🚀 ~ isProd:", isProd)
 export const configChains = (isProd ? [mainnet, sei] : [sepolia, seiTestnet]) as [Chain, ...Chain[]]
+console.log("🚀 ~ configChains:", configChains)
 
 
 
@@ -54,3 +60,8 @@ export const EVM_CHAIN_IDS = new Set<number| string>([
   ChainId.Ethereum,
   ChainId.SEI,
 ]);
+
+export const CHAIN_ENV_KEYS: Record<number, string> = {
+  [sepolia.id]: 'ETH',
+  [seiTestnet.id]: 'SEI',
+};

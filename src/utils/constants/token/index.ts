@@ -16,3 +16,35 @@ export const SUPPORTED_TOKENS_BY_CHAIN: Record<ChainId, CryptoCurrencyEnum[]> = 
   [ChainId.Ethereum]: [CryptoCurrencyEnum.ETH, CryptoCurrencyEnum.USDC],
   [ChainId.SEI]: [CryptoCurrencyEnum.ETH, CryptoCurrencyEnum.USDC]
 };
+
+export interface TokenMeta {
+  address: string;
+  isOrigin: boolean;
+  // isNative: boolean;
+}
+export const tokenMetaByChainAndSymbol: Record<ChainId, Partial<Record<CryptoCurrencyEnum, TokenMeta>>> = {
+  [ChainId.Ethereum]: {
+    [CryptoCurrencyEnum.ETH]: {
+      address: blockChainConfig.ethereumEthAddress.toLowerCase(),
+      isOrigin: true,
+      // isNative: true,
+    },
+    [CryptoCurrencyEnum.USDC]: {
+      address: blockChainConfig.ethereumUsdcAddress.toLowerCase(),
+      isOrigin: true,
+      // isNative: false,
+    },
+  },
+  [ChainId.SEI]: {
+    [CryptoCurrencyEnum.wETH]: {
+      address: blockChainConfig.seiEthAddress.toLowerCase(),
+      isOrigin: false,
+      // isNative: false,
+    },
+    [CryptoCurrencyEnum.wUSDC]: {
+      address: blockChainConfig.seiUsdcAddress.toLowerCase(),
+      isOrigin: false,
+      // isNative: false,
+    },
+  }
+};

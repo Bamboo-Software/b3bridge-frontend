@@ -20,20 +20,21 @@ export function useUserTokenBalance(
         setBalance('0')
         return
       }
-
       setLoading(true)
       try {
         const tokenAddress = token.address
+        console.log("🚀 ~ fetchBalance ~ tokenAddress:", tokenAddress)
         const isNative = tokenAddress === ethers.ZeroAddress
         const rawBalance = isNative
-          ? (await getBalance(wagmiConfig, { address: userAddress, chainId })).value
-          : await readContract(wagmiConfig, {
-            address: tokenAddress,
-            abi: erc20Abi,
-            functionName: 'balanceOf',
-            chainId,
-            args: [userAddress],
-          }) as bigint
+        ? (await getBalance(wagmiConfig, { address: userAddress, chainId })).value
+        : await readContract(wagmiConfig, {
+          address: tokenAddress,
+          abi: erc20Abi,
+          functionName: 'balanceOf',
+          chainId,
+          args: [userAddress],
+        }) as bigint
+        console.log("🚀 ~ fetchBalance ~ rawBalance:", rawBalance)
 
           const formatted = formatUnits(rawBalance, token.decimals)
         setBalance(formatted)

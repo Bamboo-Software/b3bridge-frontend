@@ -5,7 +5,7 @@ import type { Address } from 'viem'
 import { ChainTokenSource, type ChainId } from '@/utils/enums/chain'
 import type { ITokenInfo, ITokenStargateInfo } from '@/utils/interfaces/token'
 import type { IChainInfo } from '@/utils/interfaces/chain'
-import { SUPPORTED_TOKENS_BY_CHAIN } from '@/utils/constants/token'
+import { SUPPORTED_TOKENS_BY_CHAIN, tokenMetaByChainAndSymbol } from '@/utils/constants/token'
 import { stargateApi } from '@/services/stargate'
 export function useTokenList(chain?: IChainInfo, sourceChainKey?:string, sourceTokenAddress?: Address) {
   const [tokenDataList, setTokenDataList] = useState<ITokenInfo[]>([])
@@ -22,8 +22,10 @@ export function useTokenList(chain?: IChainInfo, sourceChainKey?:string, sourceT
       srcToken: sourceTokenAddress
     })
   })
+  
 
   const type = chain?.source
+
 
   const stargateMappedTokens = useMemo(() => {
     if (!Array.isArray(stargateTokens?.tokens) || !chain?.id) return []
@@ -50,38 +52,48 @@ export function useTokenList(chain?: IChainInfo, sourceChainKey?:string, sourceT
     let cancelled = false
 
     const fetchLocal = async () => {
-      setError(null)
-      if (!chain?.id || isNaN(Number(chain.id))) {
-        setTokenDataList([])
-        return
-      }
-      const selectedChainId = Number(chain.id) as ChainId
-      const symbols = SUPPORTED_TOKENS_BY_CHAIN[selectedChainId] ?? []
-      setLoading(true)
-      try {
-        const results = await Promise.all(
-          symbols.map(async (symbol) => {
-            const tokenAddress = getTokenAddressByChainIdAndTokenName(selectedChainId, symbol)
-            if (!tokenAddress) return null
-            const data = await getTokenData(selectedChainId, tokenAddress as Address)
-            return {
-              ...data,
-              symbol,
-              address: tokenAddress as Address,
-              chainId: selectedChainId,
-            } as ITokenInfo
-          })
-        )
-        if (!cancelled) setTokenDataList(results.filter(Boolean) as ITokenInfo[])
-      } catch (err) {
-        if (!cancelled) {
-          setError(err as Error)
-          setTokenDataList([])
-        }
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
+  setError(null);
+  if (!chain?.id || isNaN(Number(chain.id))) {
+    setTokenDataList([]);
+    return;
+  }
+
+  const selectedChainId = Number(chain.id) as ChainId;
+  const symbols = SUPPORTED_TOKENS_BY_CHAIN[selectedChainId] ?? [];
+
+  setLoading(true);
+  try {
+    const results = await Promise.all(
+      symbols.map(async (symbol) => {
+        const tokenAddress = getTokenAddressByChainIdAndTokenName(selectedChainId, symbol);
+        if (!tokenAddress) return null;
+
+        const data = await getTokenData(selectedChainId, tokenAddress as Address);
+
+        // Lấy meta từ cấu hình sẵn
+        const meta = tokenMetaByChainAndSymbol[selectedChainId]?.[symbol];
+
+        return {
+          ...data,
+          symbol,
+          address: tokenAddress as Address,
+          chainId: selectedChainId,
+          isOrigin: meta?.isOrigin ?? false,
+          // isNative: meta?.isNative ?? false,
+        } as ITokenInfo & { isOrigin: boolean; isNative: boolean };
+      })
+    );
+
+    if (!cancelled) setTokenDataList(results.filter(Boolean) as ITokenInfo[]);
+  } catch (err) {
+    if (!cancelled) {
+      setError(err as Error);
+      setTokenDataList([]);
     }
+  } finally {
+    if (!cancelled) setLoading(false);
+  }
+};
 
     if (!chain) {
       setTokenDataList([])
