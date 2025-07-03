@@ -10,6 +10,7 @@ import type { UseFormReturn } from 'react-hook-form';
 import type { BridgeFormValues } from './BridgeFormValidation';
 import FilterSelect from '@/components/ui/filter-select';
 
+
 interface FromSectionProps {
   form: UseFormReturn<BridgeFormValues>;
   isConnected: boolean;
@@ -37,6 +38,18 @@ function BridgeSourceSection({
   watchedFromWallet,
   handleOpenConnectModal,
 }: FromSectionProps) {
+//   const selectedFromChain = form.watch('fromChain');
+// const watchedTokenAddress = form.watch('token')?.address;
+
+// const tokenName = useMemo(() => {
+//   if (selectedFromChain?.id && watchedTokenAddress) {
+//     return getTokenNameByChainIdAndTokenAddress(
+//       selectedFromChain.id,
+//       watchedTokenAddress
+//     );
+//   }
+//   return null;
+// }, [selectedFromChain?.id, watchedTokenAddress]);
   return (
     <div className='rounded-2xl border border-primary/20 bg-primary/5 p-4 shadow-sm flex flex-col gap-5 h-fit'>
       <div className='flex items-center justify-between gap-2 rounded-xl bg-muted/30'>
@@ -55,7 +68,7 @@ function BridgeSourceSection({
               onClick={handleOpenConnectModal}
               className='text-primary cursor-pointer font-medium py-1 px-2 rounded bg-primary/10 hover:bg-primary/20 transition'
             >
-              Please connect wallet
+              Connect wallet
             </Button>
           )}
         </div>

@@ -8,6 +8,7 @@ export interface ITokenInfo {
   logo: string
   chainKey: string
   priceUsd?: string
+  isOrigin?: boolean,
 }
 
 export interface ITokenStargateInfo {

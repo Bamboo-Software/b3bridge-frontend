@@ -15,9 +15,12 @@ export enum BlockchainNameEnum {
 export enum CryptoCurrencyEnum {
   ETH = "ETH",
   USDC = "USDC",
+  wETH = "wETH",
+  wUSDC = "wUSDC",
 }
 
-export type SUPPORTED_CHAINS_EVM =  ChainId.Ethereum | ChainId.SEI; 
+
+export type SUPPORTED_CHAINS_EVM =  ChainId.Ethereum | ChainId.SEI;
 
 
 export enum ChainType {

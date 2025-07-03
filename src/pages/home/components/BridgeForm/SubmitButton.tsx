@@ -16,6 +16,7 @@ interface SubmitButtonProps {
     token?: ITokenInfo;
   }>;
   isFullField?: boolean;
+  userDesBalance?: string;
   isSufficientBalance?: boolean;
   handleOpenConnectModal: () => void;
 }
@@ -23,12 +24,14 @@ interface SubmitButtonProps {
 function SubmitButton({
   isConnected,
   isBridgeEnabled,
-  isDestinationTokenValid,
+  // isDestinationTokenValid,
   formState,
+  userDesBalance,
   handleOpenConnectModal,
   isFullField,
   isSufficientBalance,
 }: SubmitButtonProps) {
+
   return (
     <div className='pt-4'>
       {!isConnected ? (
@@ -46,7 +49,7 @@ function SubmitButton({
           disabled={
             !isBridgeEnabled ||
             !isFullField ||
-            !isDestinationTokenValid ||
+            !userDesBalance ||
             !isSufficientBalance
           }
         >
@@ -75,11 +78,17 @@ function SubmitButton({
             </span>
           ) : !isFullField ? (
             'Bridge'
-          ) : !isDestinationTokenValid ? (
-            'No valid destination token'
-          ) : !isSufficientBalance ? (
+              )
+                :
+                !userDesBalance ? (
+            'No valid destination balance'
+                )
+                  :
+                   !isSufficientBalance ? (
             'Insufficient balance'
-          ) : (
+                )
+                  :
+                  (
             'Bridge'
           )}
         </Button>

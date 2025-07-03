@@ -10,4 +10,13 @@ export interface IBridgeParams {
   amount: string;
   receiver: string;
   quote?: IQuote
+  tokenList?: ITokenInfo[]
 };
+export interface BridgeState {
+  isBridging: boolean;
+  error: string | null;
+  nativeLockHash?: `0x${string}`;
+  erc20LockHash?: `0x${string}`;
+  burnWrappedHash?: `0x${string}`;
+  burnHash?: `0x${string}`;
+}
