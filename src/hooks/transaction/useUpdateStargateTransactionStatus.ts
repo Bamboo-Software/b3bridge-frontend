@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
-import { useLocalStorage } from 'react-use';
 
 import { ChainTokenSource } from '@/utils/enums/chain';
 import { StargateTransactionStatus } from '@/utils/enums/transaction';
@@ -9,11 +8,13 @@ import { StargateRouteName } from '@/utils/enums/bridge';
 import type { ITransaction } from '@/utils/interfaces/transaction';
 import { useLazyGetByTxHashQuery } from '@/services/layerzero-scan';
 import { useLazyGetBusQueueQuery } from '@/services/stargate-transaction';
+import { useTransactionStore } from '../useTransactionStore';
 
 export function useStargateTransactionStatus(tx: ITransaction, enabled = true) {
   const [status, setStatus] = useState(tx.status);
   const { address } = useAccount();
-  const [allTx, setAllTx] = useLocalStorage<Record<string, ITransaction[]>>('transaction', {});
+  const allTx = useTransactionStore(state => state.allTx)
+  const setAllTx = useTransactionStore(state => state.setAllTx)
 
   const isDelivered = status === StargateTransactionStatus.DELIVERED;
   const [triggerGetBusQueue] = useLazyGetBusQueueQuery();
@@ -47,20 +48,21 @@ export function useStargateTransactionStatus(tx: ITransaction, enabled = true) {
             const res = await triggerGetBusQueue({ txHash: tx.txHash }).unwrap();
             const busId = res?.result?.busId;
             const newStatus = busId
-              ? StargateTransactionStatus.INQUEUE
-              : StargateTransactionStatus.INFLIGHT;
+              && StargateTransactionStatus.INQUEUE
 
-            setStatus(newStatus);
+            setStatus(newStatus || status);
             updateTxStatus(newStatus);
           }
 
-          if (status === StargateTransactionStatus.INFLIGHT) {
+          if (status === StargateTransactionStatus.INQUEUE) {
             const rawData = await triggerLayerZero({ txHash: tx.txHash }).unwrap();
             const newStatus = rawData?.data?.[0]?.status?.name;
-            if (newStatus === StargateTransactionStatus.DELIVERED) {
+            if(newStatus){
               setStatus(newStatus);
               updateTxStatus(newStatus);
-              clearInterval(interval);
+              if (newStatus === StargateTransactionStatus.DELIVERED) {
+                clearInterval(interval);
+              }
             }
           }
         } catch (_) {
@@ -74,10 +76,12 @@ export function useStargateTransactionStatus(tx: ITransaction, enabled = true) {
         try {
           const rawData = await triggerLayerZero({ txHash: tx.txHash }).unwrap();
           const newStatus = rawData?.data?.[0]?.status?.name;
-          if (newStatus === StargateTransactionStatus.DELIVERED) {
+          if(newStatus){
             setStatus(newStatus);
             updateTxStatus(newStatus);
-            clearInterval(interval);
+            if (newStatus === StargateTransactionStatus.DELIVERED) {
+              clearInterval(interval);
+            }
           }
         } catch (_) {
           // skip

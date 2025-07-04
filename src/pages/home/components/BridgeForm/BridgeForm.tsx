@@ -31,14 +31,19 @@ import BridgeSourceSection from './BridgeSourceSection';
 import { formatTokenAmount } from '@/utils';
 import { useGetFeeCCIP } from '@/hooks/bridge/useGetFeeCCIP';
 import { toast } from 'sonner';
-import { useLocalStorage } from 'react-use';
 import { LocalStorageKey } from '@/utils/enums/localStorage';
 import { TransactionModal } from '@/pages/common/TransactionModal';
+import { StargateTransactionStatus } from '@/utils/enums/transaction';
+import { useTransactionStore } from '@/hooks/useTransactionStore';
+import { useLocalStorage } from 'react-use';
 
 const validateReceiver = (value: string) =>
   value ? /^0x[a-fA-F0-9]{40}$/.test(value) : null;
 
 function BridgeForm() {
+  const allTx = useTransactionStore(state => state.allTx)
+  const setAllTx = useTransactionStore(state => state.setAllTx)
+  
   const [preferredRoute , setPreferredRoute] = useLocalStorage<string>(LocalStorageKey.PREFERRED_ROUTE, '');
    // --- State ---
   const { address, isConnected } = useAccount();
@@ -264,14 +269,12 @@ function BridgeForm() {
       await bridge();
       setOpenTransactionModal(true)
     }catch(e:any){
-      setOpenTransactionModal(true)
        toast.error("Something went wrong. Please try again.", {
         duration: Infinity,
         closeButton: true,
       });
     }
   };
-
 
   // --- Render ---
   return (

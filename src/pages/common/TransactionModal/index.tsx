@@ -1,11 +1,9 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useAccount } from "wagmi"
-import { useLocalStorage } from "react-use"
-import { LocalStorageKey } from "@/utils/enums/localStorage"
-import type { ITransaction } from '@/utils/interfaces/transaction'
 import { TransactionItem } from './components/TransactionItem'
 import { useTokenList } from '@/hooks/useTokenList'
 import { ChainTokenSource } from '@/utils/enums/chain'
+import { useTransactionStore } from '@/hooks/useTransactionStore'
 
 interface TransactionModalProps {
   open: boolean
@@ -14,7 +12,7 @@ interface TransactionModalProps {
 
 export function TransactionModal({ open, setOpen }: TransactionModalProps) {
   const { address } = useAccount()
-  const [allTx] = useLocalStorage<Record<string, ITransaction[]>>(LocalStorageKey.Transaction, {})
+  const allTx = useTransactionStore(state => state.allTx)
   const userTxs = address ? allTx?.[address] || [] : []
   const { data: tokenList, loading: tokenListLoading } = useTokenList(undefined, undefined, undefined, ChainTokenSource.Stargate)
   const isLoading = tokenListLoading

@@ -6,13 +6,14 @@ import { selectedChains } from '@/utils/constants/wagmi';
 import { toast } from 'sonner';
 import { getLayerZeroScanLink } from '@/utils/blockchain/explorer';
 import { formatTokenAmount, shortenAddress } from '@/utils';
-import { useLocalStorage } from 'react-use';
 import type { ITransaction } from '@/utils/interfaces/transaction';
 import { ChainTokenSource } from '@/utils/enums/chain';
 import { StargateTransactionStatus } from '@/utils/enums/transaction';
+import { useTransactionStore } from '../useTransactionStore';
 
 export const useStargateBridge = (params: IBridgeParams) => {
-  const [allTx, setAllTx] = useLocalStorage<Record<string, ITransaction[]>>('transaction', {});
+  const allTx = useTransactionStore(state => state.allTx)
+  const setAllTx = useTransactionStore(state => state.setAllTx)
   const { quote, fromChain, toChain, fromToken, toToken, amount, toAmount } = params;
   const selectedNetwork = selectedChains?.find(
     (chain) => chain.id === fromChain?.id
