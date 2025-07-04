@@ -47,10 +47,9 @@ export function useStargateTransactionStatus(tx: ITransaction, enabled = true) {
           if (status === StargateTransactionStatus.CREATED) {
             const res = await triggerGetBusQueue({ txHash: tx.txHash }).unwrap();
             const busId = res?.result?.busId;
-            const newStatus = busId
-              && StargateTransactionStatus.INQUEUE
+            const newStatus = busId? StargateTransactionStatus.INFLIGHT:  StargateTransactionStatus.INQUEUE
 
-            setStatus(newStatus || status);
+            setStatus(newStatus);
             updateTxStatus(newStatus);
           }
 
