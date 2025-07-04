@@ -7,7 +7,6 @@ import okxLogo from '@/assets/icons/okx-logo.svg'
 import * as viemChains from 'viem/chains'
 import type { Chain } from 'viem'
 import { CHAIN_ENV_KEYS } from '../chain'
-import { fallback } from 'wagmi'
 
 const isProd = appConfig?.isProd
 
@@ -22,26 +21,42 @@ const allChains: Chain[] = Object.values(viemChains).filter(
 export const selectedChains = allChains.filter((chain) =>
   isProd ? !chain.testnet : chain.testnet
 ) as [Chain, ...Chain[]]
+
+const transportsConfig: Record<number, ReturnType<typeof http> | ReturnType<typeof webSocket>> = {};
+
+selectedChains.forEach((chain) => {
+  const envKey = CHAIN_ENV_KEYS[chain.id];
+  let transport = null;
+
+  if (envKey) {
+    const wsUrl = import.meta.env[`VITE_${envKey}_CHAIN_WS_URL`];
+    const httpUrl = import.meta.env[`VITE_${envKey}_CHAIN_RPC_URL`];
+
+    if (wsUrl) {
+      transport = webSocket(wsUrl);
+    } else if (httpUrl) {
+      transport = http(httpUrl);
+    }
+  }
+
+  if (!transport) {
+    const defaultWsUrl = chain.rpcUrls?.default?.webSocket?.[0];
+    const defaultHttpUrl = chain.rpcUrls?.default?.http?.[0];
+
+    if (defaultWsUrl) {
+      transport = webSocket(defaultWsUrl);
+    } else if (defaultHttpUrl) {
+      transport = http(defaultHttpUrl);
+    }
+  }
+
+  if (transport) {
+    transportsConfig[chain.id] = transport;
+  }
+});
 export const wagmiConfig = createConfig({
   chains: selectedChains,
-  transports: Object.fromEntries(
-    selectedChains
-      .map((chain) => {
-        const envKey = CHAIN_ENV_KEYS[chain.id];
-
-        const wsUrl = import.meta.env[`VITE_${envKey}_CHAIN_WS_URL`];
-        const httpUrl = import.meta.env[`VITE_${envKey}_CHAIN_RPC_URL`];
-
-        const providers = [];
-        if (wsUrl) providers.push(webSocket(wsUrl));
-        if (httpUrl) providers.push(http(httpUrl));
-
-        if (providers.length === 0) return null;
-
-        return [chain.id, fallback(providers)];
-      })
-      .filter(Boolean) as [number, ReturnType<typeof fallback>][]
-  ),
+  transports: transportsConfig
 });
 
 export const walletConfig: WalletConfig[] = [

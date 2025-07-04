@@ -12,7 +12,6 @@ export async function getTokenSymbolAndDecimals(
   chainId: SUPPORTED_CHAINS_EVM
 ) {
   const native = getChainNameByChainId(chainId);
-  console.log("🚀 ~ native:", native)
   if (!tokenAddress || tokenAddress === zeroAddress) {
     if (native) {
       return native;

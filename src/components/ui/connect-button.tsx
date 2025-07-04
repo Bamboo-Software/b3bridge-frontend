@@ -1,9 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useAccount, useDisconnect } from 'wagmi';
 import { Button } from './button';
-import { WalletIcon, Copy, Check, ChevronDown, Unplug } from 'lucide-react';
+import { WalletIcon, Copy, Check, ChevronDown, Unplug, ListOrdered } from 'lucide-react';
 import { cn } from '@/utils';
 import { WalletConnectModal } from '@/pages/common/ConnectWalletModal';
+import { TransactionModal } from '@/pages/common/TransactionModal';
 
 // Custom hook useCopyToClipboard
 type CopiedValue = string | null;
@@ -40,6 +41,7 @@ export function ConnectButton({ className }: { className?: string }) {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [transactionModalOpen, setTransactionModalOpen] = useState(false);
 
   useEffect(() => {
     if (modalOpen && isConnected) {
@@ -129,6 +131,14 @@ export function ConnectButton({ className }: { className?: string }) {
                     <Unplug className="h-4 w-4"/>
                   <span>Disconnect</span> 
                 </Button>
+                <Button
+                  onClick={()=> setTransactionModalOpen(true)}
+                  variant="ghost"
+                  className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                >
+                    < ListOrdered className="h-4 w-4"/>
+                  <span>Your transactions</span> 
+                </Button>
               </div>
             </div>
           )}
@@ -146,6 +156,7 @@ export function ConnectButton({ className }: { className?: string }) {
           Connect Wallet
         </Button>
       )}
+      <TransactionModal open={transactionModalOpen} setOpen={setTransactionModalOpen}/>
     </div>
   );
 }

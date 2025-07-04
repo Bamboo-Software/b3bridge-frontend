@@ -31,18 +31,22 @@ import BridgeSourceSection from './BridgeSourceSection';
 import { formatTokenAmount } from '@/utils';
 import { useGetFeeCCIP } from '@/hooks/bridge/useGetFeeCCIP';
 import { toast } from 'sonner';
-import { appConfig } from '@/utils/constants/app';
+import { useLocalStorage } from 'react-use';
+import { LocalStorageKey } from '@/utils/enums/localStorage';
+import { TransactionModal } from '@/pages/common/TransactionModal';
 
 const validateReceiver = (value: string) =>
   value ? /^0x[a-fA-F0-9]{40}$/.test(value) : null;
 
 function BridgeForm() {
-  // --- State ---
+  const [preferredRoute , setPreferredRoute] = useLocalStorage<string>(LocalStorageKey.PREFERRED_ROUTE, '');
+   // --- State ---
   const { address, isConnected } = useAccount();
   const [useCustomAddress, setUseCustomAddress] = useState(false);
   const [receiverValid, setReceiverValid] = useState<boolean | null>(null);
   const [connectWalletModalOpen, setConnectWalletModalOpen] = useState(false);
   const [quoteModalOpen, setQuoteModalOpen] = useState(false);
+  const [openTransactionModal, setOpenTransactionModal] = useState(false);
   const [toAmount, setToAmount] = useState('');
   // --- Form ---
   const form = useForm<BridgeFormValues>({
@@ -80,7 +84,6 @@ function BridgeForm() {
   // --- Balances ---
   const { balance: userSourceBalance, loading: userSourceBalanceLoading } =
     useUserTokenBalance(address, watchedToken, selectedFromChain?.id);
-  console.log("🚀 ~ BridgeForm ~ userSourceBalance:", userSourceBalance)
   const { balance: userDesBalance, loading: userDesBalanceLoading } =
     useUserTokenBalance(
       watchedToWallet as Address,
@@ -92,7 +95,6 @@ function BridgeForm() {
   useEffect(() => {
     if (isConnected && address) {
       form.setValue('fromWalletAddress', address, { shouldValidate: true });
-      console.log(appConfig)
       if (!useCustomAddress) {
         form.setValue('toWalletAddress', address, { shouldValidate: true });
       } else {
@@ -139,8 +141,8 @@ function BridgeForm() {
   });
 
   useEffect(() => {
-    if (watchedQuote && watchedQuote.dstAmountMin) {
-      setToAmount(watchedQuote.dstAmountMin);
+    if (watchedQuote && watchedQuote.dstAmount) {
+      setToAmount(watchedQuote.dstAmount);
     } else {
        setToAmount("0")
     }
@@ -152,22 +154,14 @@ function BridgeForm() {
     if (hasQuotes) {
       const found = quotes.some((q) => isSameQuote(q, watchedQuote));
       if (!watchedQuote || !found) {
-        form.setValue('quote', quotes[0], { shouldValidate: true });
+        const matchedPreferredRouteName = quotes.find((q) => q.routeName === preferredRoute)
+        form.setValue('quote', matchedPreferredRouteName || quotes[0], { shouldValidate: true });
       }
     } else if (watchedQuote) {
       form.setValue('quote', null, { shouldValidate: true });
     }
-  }, [JSON.stringify(quotes), watchedQuote]);
-
-  useEffect(() => {
-  const hasQuotes = quotes && quotes.length > 0;
-  if (hasQuotes) {
-    const found = quotes.some((q) => isSameQuote(q, watchedQuote));
-    if (!watchedQuote || !found) {
-      form.setValue('quote', quotes[0], { shouldValidate: true });
-    }
-  }
-}, [quotes, watchedQuote]);
+  }, [JSON.stringify(quotes), watchedQuote, preferredRoute]);
+  
 
   const totalFeeStargateUsd = useMemo(() => {
   if (!watchedQuote || !watchedQuote.fees || watchedQuote.fees.length === 0) return 0;
@@ -218,6 +212,7 @@ function BridgeForm() {
   isConnected &&
   isFullField &&
   isSufficientBalance &&
+  !isTransactionInfoLoading&&
   !(selectedFromChain?.source === ChainTokenSource.Stargate && !watchedQuote);
   
   // --- Handlers Swap---
@@ -235,6 +230,7 @@ function BridgeForm() {
   // --- Handlers ---
   const bridge = useBridgeTokens({
     amount: watchedAmount,
+    toAmount: toAmount,
     fromChain: selectedFromChain,
     fromToken: watchedToken,
     receiver: watchedToWallet,
@@ -245,6 +241,7 @@ function BridgeForm() {
   });
   const {ccipFee}= useGetFeeCCIP({
     amount: watchedAmount,
+    toAmount: watchedAmount,
     fromChain: selectedFromChain,
     fromToken: watchedToken,
     receiver: watchedToWallet,
@@ -253,7 +250,6 @@ function BridgeForm() {
     quote: watchedQuote,
     tokenList:tokenList
   })
-  console.log("🚀 ~ BridgeForm ~ ccipFee:", ccipFee)
   const handleOpenConnectModal = useCallback(
     () => setConnectWalletModalOpen(true),
     []
@@ -266,13 +262,16 @@ function BridgeForm() {
         await switchChainAsync({ chainId: selectedFromChain?.id });
       }
       await bridge();
+      setOpenTransactionModal(true)
     }catch(e:any){
+      setOpenTransactionModal(true)
        toast.error("Something went wrong. Please try again.", {
         duration: Infinity,
         closeButton: true,
       });
     }
   };
+
 
   // --- Render ---
   return (
@@ -324,7 +323,7 @@ function BridgeForm() {
             }
             estTime={watchedQuote?.duration?.estimated}
             totalFeeStargateUsd={totalFeeStargateUsd}
-            route={watchedQuote?.route}
+            route={watchedQuote?.routeName?.toUpperCase()}
             enable={isBridgeEnabled}
             isTransactionInfoLoading={isTransactionInfoLoading}
             destinationToken={destinationToken}
@@ -349,6 +348,7 @@ function BridgeForm() {
         onSelect={(quote) => {
           form.setValue('quote', quote, { shouldValidate: true });
           setQuoteModalOpen(false);
+          setPreferredRoute(quote.routeName)
         }}
         open={quoteModalOpen}
         quotes={quotes}
@@ -357,6 +357,7 @@ function BridgeForm() {
         destinationToken={destinationToken}
         onClose={() => setQuoteModalOpen(false)}
       />
+      <TransactionModal open={openTransactionModal} setOpen={setOpenTransactionModal} />
     </>
   );
 }

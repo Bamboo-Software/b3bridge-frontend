@@ -1,0 +1,7 @@
+export enum StargateTransactionStatus {
+  CREATED="CREATED",
+  INQUEUE="INQUEUE",
+  INFLIGHT="INFLIGHT",
+  CONFIRMING="CONFIRMING",
+  DELIVERED="DELIVERED"
+}

@@ -10,6 +10,7 @@ export function isSameQuote(a?: IQuote | null, b?: IQuote | null): boolean {
     a.dstAmount === b.dstAmount &&
     a.srcAddress === b.srcAddress &&
     a.dstAddress === b.dstAddress &&
+    a.routeName === b.routeName &&
     a.duration?.estimated === b.duration?.estimated &&
     JSON.stringify(a.fees) === JSON.stringify(b.fees)
   );

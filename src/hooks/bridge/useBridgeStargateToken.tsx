@@ -5,10 +5,15 @@ import { StargateStepName } from '@/utils/enums/bridge';
 import { selectedChains } from '@/utils/constants/wagmi';
 import { toast } from 'sonner';
 import { getLayerZeroScanLink } from '@/utils/blockchain/explorer';
-import { shortenAddress } from '@/utils';
+import { formatTokenAmount, shortenAddress } from '@/utils';
+import { useLocalStorage } from 'react-use';
+import type { ITransaction } from '@/utils/interfaces/transaction';
+import { ChainTokenSource } from '@/utils/enums/chain';
+import { StargateTransactionStatus } from '@/utils/enums/transaction';
 
 export const useStargateBridge = (params: IBridgeParams) => {
-  const { quote, fromChain } = params;
+  const [allTx, setAllTx] = useLocalStorage<Record<string, ITransaction[]>>('transaction', {});
+  const { quote, fromChain, toChain, fromToken, toToken, amount, toAmount } = params;
   const selectedNetwork = selectedChains?.find(
     (chain) => chain.id === fromChain?.id
   );
@@ -17,6 +22,7 @@ export const useStargateBridge = (params: IBridgeParams) => {
     chainId: selectedNetwork?.id,
   });
   const bridge = async () => {
+    
     if (!walletClient) throw new Error('Wallet not connected');
     if (!quote || !quote.steps || !Array.isArray(quote.steps)) {
       throw new Error('Invalid quote steps');
@@ -25,7 +31,6 @@ export const useStargateBridge = (params: IBridgeParams) => {
     for (const step of quote.steps) {
       const tx = step.transaction;
       if (!tx) continue;
-      console.log(tx, 'tx.data approve');
 
       if (step.type === StargateStepName.APPROVE) {
         await walletClient.sendTransaction({
@@ -42,6 +47,26 @@ export const useStargateBridge = (params: IBridgeParams) => {
           chain: selectedNetwork,
           value,
           account: address,
+        });
+
+        const userAddr = address as string;
+        const newTx: ITransaction = {
+          userAddress: userAddr,
+          txHash: txHash,
+          status: StargateTransactionStatus.CREATED,
+          fromChain: fromChain,
+          toChain: toChain,
+          fromToken: fromToken,
+          toToken: toToken,
+          source: ChainTokenSource.Stargate,
+          quote,
+          fromAmount: amount,
+          toAmount: formatTokenAmount(toAmount, toToken),
+        };
+        const prev = allTx || {};
+        setAllTx({
+          ...prev,
+          [userAddr]: [newTx, ...(prev[userAddr] || [])],
         });
 
         toast.success(

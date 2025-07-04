@@ -1,10 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { stargateApi } from '@/services/stargate';
+import { stargateApi } from '@/services/stargate-bridge';
 import { ChainTokenSource } from '@/utils/enums/chain';
 import type { IChainInfo } from '@/utils/interfaces/chain';
 import type { ITokenInfo } from '@/utils/interfaces/token';
 import type { IQuote } from '@/utils/interfaces/quote';
 import { useMemo } from 'react';
+import { getStargateRouteNameFromUrl } from '@/utils/constants/stargate/route';
+import { StargateRouteName } from '@/utils/enums/bridge';
 
 export function useGetQuotes({
   srcToken,
@@ -41,6 +43,11 @@ export function useGetQuotes({
     [srcToken, desToken, srcAddress, destAddress, srcChain, destChain, srcAmount, destAmount]
   );
 
+  const amount = Number(srcAmount) || 0;
+  const decimals = desToken?.decimals || 0;
+
+  const dstAmountMin = Math.floor(amount * 0.9 * 10 ** decimals);
+
   const queryParams = useMemo(
     () =>
       isValid
@@ -52,7 +59,7 @@ export function useGetQuotes({
             srcChainKey: srcChain?.chainKey,
             dstChainKey: destChain?.chainKey,
             srcAmount: (Number(srcAmount) || 0) * 10 ** (srcToken?.decimals || 0),
-            dstAmountMin: (Number(srcAmount) || 0) * 10 ** (desToken?.decimals || 0),
+            dstAmountMin 
           }
         : null,
     [isValid, srcToken, desToken, srcAddress, destAddress, srcChain, destChain, srcAmount]
@@ -71,7 +78,12 @@ export function useGetQuotes({
   }
 
   return {
-    quotes: !error ? (data?.quotes as IQuote[]) || [] : [],
+    quotes: !error
+      ? ((data?.quotes as IQuote[]) || []).map((quote) => ({
+          ...quote,
+          routeName: getStargateRouteNameFromUrl(quote.route) || StargateRouteName.Taxi,
+        }))
+      : [],
     loading,
     error: error ? (error as any).message || 'Unknown error' : null,
   };

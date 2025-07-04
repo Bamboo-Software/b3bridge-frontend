@@ -50,9 +50,7 @@ export const chainImages = {
 }
 
 const isProd = appConfig?.isProd
-console.log("🚀 ~ isProd:", isProd)
 export const configChains = (isProd ? [mainnet, sei] : [sepolia, seiTestnet]) as [Chain, ...Chain[]]
-console.log("🚀 ~ configChains:", configChains)
 
 
 

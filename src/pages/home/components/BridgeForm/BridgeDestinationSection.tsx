@@ -55,6 +55,7 @@ function BridgeDestinationSection({
     selectedFromChain,
     form.getValues('toChain')
   );
+
   return (
     <div className='rounded-2xl border border-primary/20 bg-primary/5 p-4 shadow-sm space-y-5'>
       <div
@@ -155,15 +156,6 @@ function BridgeDestinationSection({
               <FormItem className='flex-1'>
                 <FormControl>
                   <Input
-                    //  value={
-                    //   isLoading
-                    //     ? '0'
-                    //     : destinationToken
-                    //       ? selectedFromChain?.source === ChainTokenSource.Stargate
-                    //         ? formatTokenAmount(toAmount, destinationToken)
-                    //         : watchedAmount
-                    //       : '0'
-                    // }
                    value={
                       isLoading
                         ? watchedAmount || '0'

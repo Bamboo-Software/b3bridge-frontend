@@ -1,6 +1,6 @@
 import { ChainId, ChainTokenSource, ChainType } from '@/utils/enums/chain'
 import type { IChainInfo, IStargateChain } from '@/utils/interfaces/chain'
-import { stargateApi } from '@/services/stargate'
+import { stargateApi } from '@/services/stargate-bridge'
 import {getChainImage, getChainNameByChainId } from '@/utils/blockchain/chain'
 import { useEffect, useState } from 'react'
 import { configChains } from '@/utils/constants/chain'
@@ -22,7 +22,6 @@ export const useChainList = (): UseChainListResult => {
     setError(null)
 
     try {
-      console.log("🚀 ~ useEffect ~ configChains:", configChains)
       const evmLocalChains: IChainInfo[] = configChains
       .filter(chain => chain.id !== undefined && chain.name !== undefined)
       .map(chain => ({
@@ -46,7 +45,6 @@ export const useChainList = (): UseChainListResult => {
         },
         source: ChainTokenSource.Local
       }))
-      console.log("🚀 ~ useEffect ~ evmLocalChains:", evmLocalChains)
 
       let remoteChains: IChainInfo[] = []
       if (Array.isArray(apiChains?.chains)) {
@@ -61,7 +59,6 @@ export const useChainList = (): UseChainListResult => {
           }
         })
       }
-      console.log("🚀 ~ useEffect ~ remoteChains:", remoteChains)
 
       const chainMap = new Map<string, IChainInfo>();
 

@@ -7,3 +7,9 @@ export enum BridgeActionType {
   BurnUnlock = 'burn-unlock',
   Unknown = 'unknown',
 }
+
+
+export enum StargateRouteName {
+  Bus = "bus",
+  Taxi = "taxi"
+}

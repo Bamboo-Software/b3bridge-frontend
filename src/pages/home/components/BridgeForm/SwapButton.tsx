@@ -6,7 +6,7 @@ interface SwapButtonProps {
 
 function SwapButton({ handleSwap }: SwapButtonProps) {
   return (
-    <div className='flex justify-center my-3 absolute top-[265px] left-[200px]'>
+    <div className='flex justify-center my-3 absolute top-[255px] left-[200px]'>
       <button
         type="button"
         onClick={handleSwap}

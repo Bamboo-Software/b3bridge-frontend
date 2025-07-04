@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type { StargateStepName } from '../enums/bridge';
+import type { StargateRouteName, StargateStepName } from '../enums/bridge';
 
 export interface IQuoteFee {
   token: string;
@@ -26,6 +26,7 @@ export interface IQuoteDuration {
 
 export interface IQuote {
   route: string;
+  routeName: StargateRouteName;
   error: any;
   srcAmount: string;
   dstAmount: string;

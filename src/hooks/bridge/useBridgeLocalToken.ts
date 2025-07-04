@@ -20,9 +20,7 @@ export const useLocalBridge = () => {
   const { data: walletClient } = useWalletClient();
   const { writeContractAsync } = useWriteContract();
   const { isLoading: isNativeLockPending } = useTransaction({ hash: state.nativeLockHash });
-  console.log("🚀 ~ useLocalBridge ~ isNativeLockPending:", isNativeLockPending)
   const { isLoading: isERC20LockPending } = useTransaction({ hash: state.erc20LockHash });
-  console.log("🚀 ~ useLocalBridge ~ isERC20LockPending:", isERC20LockPending)
   const approveToken = async (
     tokenAddress: `0x${string}`,
     spender: `0x${string}`,

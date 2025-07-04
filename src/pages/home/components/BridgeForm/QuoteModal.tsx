@@ -90,7 +90,7 @@ export function QuoteModal({
                   {/* Route name */}
                   <div className='flex items-center justify-between mb-4'>
                     <div className='font-semibold text-primary text-lg'>
-                      {quote.route}
+                      {quote.routeName.toUpperCase()}
                     </div>
                     {selectedQuote?.route === quote.route && (
                       <span className='text-xs px-2 py-0.5 rounded bg-primary text-white ml-2'>

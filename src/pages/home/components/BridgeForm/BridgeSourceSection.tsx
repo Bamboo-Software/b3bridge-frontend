@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from '@/components/ui/image';
-import { shortenAddress } from '@/utils';
+import { formatInputNumberDecimals, shortenAddress } from '@/utils';
 import type { ITokenInfo } from '@/utils/interfaces/token';
 import type { IChainInfo } from '@/utils/interfaces/chain';
 import type { UseFormReturn } from 'react-hook-form';
@@ -38,18 +38,6 @@ function BridgeSourceSection({
   watchedFromWallet,
   handleOpenConnectModal,
 }: FromSectionProps) {
-//   const selectedFromChain = form.watch('fromChain');
-// const watchedTokenAddress = form.watch('token')?.address;
-
-// const tokenName = useMemo(() => {
-//   if (selectedFromChain?.id && watchedTokenAddress) {
-//     return getTokenNameByChainIdAndTokenAddress(
-//       selectedFromChain.id,
-//       watchedTokenAddress
-//     );
-//   }
-//   return null;
-// }, [selectedFromChain?.id, watchedTokenAddress]);
   return (
     <div className='rounded-2xl border border-primary/20 bg-primary/5 p-4 shadow-sm flex flex-col gap-5 h-fit'>
       <div className='flex items-center justify-between gap-2 rounded-xl bg-muted/30'>
@@ -145,12 +133,7 @@ function BridgeSourceSection({
                     `}
                     style={{ fontVariantNumeric: 'tabular-nums' }}
                     onChange={(e) => {
-                      let value = e.target.value.replace(/[^0-9.]/g, '');
-                      value = value.replace(/(\..*)\./g, '$1');
-                      if (value.includes('.')) {
-                        const [intPart, decPart] = value.split('.');
-                        value = intPart + '.' + decPart.slice(0, 5);
-                      }
+                      const value = formatInputNumberDecimals(e.target.value)
                       field.onChange(value);
                     }}
                   />
@@ -216,7 +199,7 @@ function BridgeSourceSection({
         <Button
           type='button'
           className='text-xs font-semibold !px-3 !py-1 rounded-lg transition border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 hover:border-primary/50 active:bg-primary/30 shadow cursor-pointer'
-          onClick={() => form.setValue('amount', userSourceBalance ?? '')}
+          onClick={() => form.setValue('amount', formatInputNumberDecimals(userSourceBalance || ''))}
           tabIndex={-1}
           disabled={isMaxDisabled}
         >

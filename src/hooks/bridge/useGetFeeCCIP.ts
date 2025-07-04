@@ -36,7 +36,6 @@ export function useGetFeeCCIP(params: IBridgeParams) {
 
   return getBridgeActionType(enrichedFrom, enrichedTo);
 }, [fromToken, toToken, isReady]);
-  console.log("🚀 ~ actionType ~ actionType:", actionType)
 
   const isNative = fromToken?.address === ethers.ZeroAddress;
 
@@ -145,7 +144,6 @@ export function useGetFeeCCIP(params: IBridgeParams) {
     };
   }, [shouldRead, bridgeConfig]);
   
-  console.log("🚀 ~ useGetFeeCCIP ~ contractOptions:", contractOptions)
   const { data: ccipFee, isLoading } = useReadContract(contractOptions);
 
   return {

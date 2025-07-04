@@ -14,20 +14,23 @@ export function shortenAddress(address: string, chars = 4) {
   return `${address.slice(0, chars + 2)}...${address.slice(-chars)}`;
 }
 
-export function formatNumber(value: string | number) {
+export function formatNumber(value: string | number, minimumFractionDigits?: number , maximumFractionDigits?: number) {
   return value.toLocaleString('en', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 6,
+    minimumFractionDigits: minimumFractionDigits ||0,
+    maximumFractionDigits: maximumFractionDigits || 6,
   });
 }
 
-export const formatTokenAmount = (amount: string | undefined, token?: ITokenInfo): string => {
+export const formatTokenAmount = (amount: string | undefined, token?: ITokenInfo,
+  minimumFractionDigits?: number, 
+  maximumFractionDigits?: number, 
+): string => {
   if (!amount || !token) return '0';
   const decimals = token.decimals || 18;
   const parsedAmount = Number(amount);
   if (isNaN(parsedAmount)) return '0';
-  const formatted = (parsedAmount / 10 ** decimals).toFixed(6);
-  return formatted === '0.000000' ? '0' : formatted;
+  const formatted = formatNumber(parsedAmount / 10 ** decimals, minimumFractionDigits, maximumFractionDigits);
+  return formatted 
 };
 export function getIsOrigin(token: ITokenInfo): boolean {
   return (
@@ -85,3 +88,13 @@ export function getBridgeActionType(
 // }
 
 
+export const formatInputNumberDecimals = (value: string | number) => {
+  if(!value) return ""
+  const rawValue =String(value).replace(/[^0-9.]/g, '');
+  let formattedValue = rawValue.replace(/(\..*)\./g, '$1');
+  if (formattedValue.includes('.')) {
+    const [intPart, decPart] = formattedValue.split('.');
+    formattedValue = intPart + '.' + decPart.slice(0, 5);
+  }
+  return formattedValue
+}

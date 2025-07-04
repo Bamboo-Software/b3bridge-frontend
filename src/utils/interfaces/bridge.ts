@@ -8,6 +8,7 @@ export interface IBridgeParams {
   fromToken: ITokenInfo;
   toToken: ITokenInfo;
   amount: string;
+  toAmount: string;
   receiver: string;
   quote?: IQuote
   tokenList?: ITokenInfo[]
