@@ -3,8 +3,8 @@ import type { ITransaction } from '@/utils/interfaces/transaction'
 import type { ITokenInfo } from '@/utils/interfaces/token'
 import type { IQuoteFee } from '@/utils/interfaces/quote'
 import { formatTokenAmount } from '@/utils'
-import { useUpdateTransactionStatus } from './useUpdateTransactionStatus'
 import { getStatusColor, getStatusProgress } from '@/utils/transaction'
+import { useUpdateTransaction } from './useUpdateTransactionStatus'
 
 
 function findFeeToken(fee: IQuoteFee, tokenList: ITokenInfo[] = []): ITokenInfo | undefined {
@@ -15,10 +15,10 @@ function findFeeToken(fee: IQuoteFee, tokenList: ITokenInfo[] = []): ITokenInfo 
 }
 
 export function useTransactionInfo(tx: ITransaction, tokenList: ITokenInfo[] = []) {
-  const liveStatus = useUpdateTransactionStatus(tx)
+  const liveData = useUpdateTransaction(tx) as Partial<ITransaction>
 
-  const statusColor = getStatusColor(liveStatus)
-  const { percent, label, icon } = getStatusProgress(liveStatus)
+  const statusColor = getStatusColor(liveData.status || tx.status)
+  const { percent, label, icon } = getStatusProgress(liveData.status || tx.status)
 
   const fromToken = tx.fromToken
   const toToken = tx.toToken
@@ -42,7 +42,8 @@ export function useTransactionInfo(tx: ITransaction, tokenList: ITokenInfo[] = [
     fromAmountFormatted: tx.fromAmount ?? '',
     toAmountFormatted: tx.toAmount ?? '',
     fees,
-    isDelivered: liveStatus === StargateTransactionStatus.DELIVERED,
-    status: liveStatus,
+    isDelivered: liveData.status || tx.status === StargateTransactionStatus.DELIVERED,
+    status: liveData.status || tx.status,
+    ...liveData
   }
 }

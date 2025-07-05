@@ -1,5 +1,5 @@
 import { StargateTransactionStatus } from './enums/transaction'
-import { CheckCircle2, Clock, Loader2 } from 'lucide-react'
+import { BusFront, CheckCircle2, Clock, Loader2 } from 'lucide-react'
 
 export function getStatusColor(status: StargateTransactionStatus): string {
   switch (status) {
@@ -19,16 +19,47 @@ export function getStatusColor(status: StargateTransactionStatus): string {
 export function getStatusProgress(status: StargateTransactionStatus) {
   switch (status) {
     case StargateTransactionStatus.CREATED:
-      return { percent: 10, label: 'Created', icon: <Clock className="w-4 h-4 text-yellow-500" /> }
+      return {
+        percent: 10,
+        label: 'Created',
+        icon: <Clock className="w-4 h-4 text-yellow-500" />,
+      };
     case StargateTransactionStatus.INQUEUE:
-      return { percent: 25, label: 'In Queue', icon: <Clock className="w-4 h-4 text-yellow-500" /> }
+      return {
+        percent: 25,
+        label: 'In Queue',
+        icon: <Clock className="w-4 h-4 text-yellow-500" />,
+      };
+    case StargateTransactionStatus.BUS_DISTRIBUTE:
+      return {
+        percent: 35,
+        label: 'Bus Distribute',
+        icon: <BusFront className="w-4 h-4 text-indigo-500 animate-bounce" />, 
+      };
     case StargateTransactionStatus.INFLIGHT:
-      return { percent: 50, label: 'In Flight', icon: <Loader2 className="w-4 h-4 text-blue-500 animate-spin" /> }
+      return {
+        percent: 50,
+        label: 'In Flight',
+        icon: <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />,
+      };
     case StargateTransactionStatus.CONFIRMING:
-      return { percent: 75, label: 'Confirming', icon: <Loader2 className="w-4 h-4 text-blue-500 animate-spin" /> }
+      return {
+        percent: 75,
+        label: 'Confirming',
+        icon: <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />,
+      };
     case StargateTransactionStatus.DELIVERED:
-      return { percent: 100, label: 'Delivered', icon: <CheckCircle2 className="w-4 h-4 text-green-600" /> }
+      return {
+        percent: 100,
+        label: 'Delivered',
+        icon: <CheckCircle2 className="w-4 h-4 text-green-600" />,
+      };
     default:
-      return { percent: 0, label: 'Unknown', icon: <Clock className="w-4 h-4 text-gray-400" /> }
+      return {
+        percent: 0,
+        label: 'Unknown',
+        icon: <Clock className="w-4 h-4 text-gray-400" />,
+      };
   }
 }
+
