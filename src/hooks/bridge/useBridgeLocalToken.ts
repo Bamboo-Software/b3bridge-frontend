@@ -15,7 +15,7 @@ import type { IChainInfo } from '@/utils/interfaces/chain';
 import { useBridgeStore } from '@/stores/bridge/useBridgeLocalStore';
 import { useTransactionStore } from '../useTransactionStore';
 import { ChainTokenSource } from '@/utils/enums/chain';
-import { StargateTransactionStatus } from '@/utils/enums/transaction';
+import { CCIPTransactionStatus } from '@/utils/enums/transaction';
 // import type { WalletClient } from 'viem';
 export const useLocalBridge = () => {
   const {
@@ -66,7 +66,6 @@ const { isLoading: isTxPending } = useTransaction({ hash: currentTxHash });
           functionName: "approve",
           args: [spender, amountInUnits],
         });
-        console.log("🚀 ~ useLocalBridge ~ approveTx:", approveTx)
         await waitForTransactionReceipt(walletClient!, { hash: approveTx });
         setBridgeState({ isBridging: false });
       }
@@ -99,19 +98,6 @@ const { isLoading: isTxPending } = useTransaction({ hash: currentTxHash });
       if (isNative) {
         const amountNative = parseUnits(amount, decimals);
         setBridgeState({ isBridging: true, error: null });
-        console.log(`🚀 ~ useLocalBridge ~ {
-         address: blockChainConfig.ethereumBridgeAddress as,
-         abi: blockChainConfig.ethereumBridgeAbi,
-         functionName: "lockTokenVL",
-         args: [tokenAddress, amountNative, blockChainConfig.seiBridgeAddress, receiver],
-         value: amountNative,
-       }:`, {
-         address: blockChainConfig.ethereumBridgeAddress as `0x${string}`,
-         abi: blockChainConfig.ethereumBridgeAbi,
-         functionName: "lockTokenVL",
-         args: [tokenAddress, amountNative, blockChainConfig.seiBridgeAddress, receiver],
-         value: amountNative,
-       })
         const result = await writeContractAsync({
           address: blockChainConfig.ethereumBridgeAddress as `0x${string}`,
           abi: blockChainConfig.ethereumBridgeAbi,
@@ -126,9 +112,7 @@ const { isLoading: isTxPending } = useTransaction({ hash: currentTxHash });
         addTransaction(address!, {
           txHash:result,
           userAddress: address!,
-          type:"CCIP",
-          status:StargateTransactionStatus.CREATED,
-          // messageId:receipt.logs[8].topics[1],
+          status:CCIPTransactionStatus.VALIDATOR,
           fromChain,
           toChain,
           fromToken,
@@ -158,8 +142,7 @@ const { isLoading: isTxPending } = useTransaction({ hash: currentTxHash });
         addTransaction(address!, {
           txHash:result,
           userAddress: address!,
-          type:"CCIP",
-          status:StargateTransactionStatus.CREATED,
+          status:CCIPTransactionStatus.CCIP,
           messageId:receipt.logs[8].topics[1],
           fromChain,
           toChain,
@@ -199,35 +182,10 @@ const { isLoading: isTxPending } = useTransaction({ hash: currentTxHash });
         args: [toToken.address],
         chainId: toChain.id,
       });
-      console.log(`🚀 ~ useLocalBridge ~ {
-        address: blockChainConfig.ethereumBridgeAddress,
-        abi: blockChainConfig.ethereumBridgeAbi,
-        functionName: 'tokenAddressToId',
-        args: [toToken.address],
-        chainId: toChain.id,
-      }:`, {
-        address: blockChainConfig.ethereumBridgeAddress,
-        abi: blockChainConfig.ethereumBridgeAbi,
-        functionName: 'tokenAddressToId',
-        args: [toToken.address],
-        chainId: toChain.id,
-      })
-      console.log("🚀 ~ useLocalBridge ~ tokenId:", tokenId)
+     
 
       await approveToken(tokenAddress as `0x${string}`, blockChainConfig.seiBridgeAddress as `0x${string}`, amount, decimalsToken, address as `0x${string}`,walletClient);
-      console.log(`🚀 ~ useLocalBridge ~ {
-        address: blockChainConfig.seiBridgeAddress as,
-        abi: blockChainConfig.seiBridgeAbi,
-        functionName: "burnTokenCCIP",
-        args: [tokenId, amountTokenERC20],
-        value: ccipFee,
-      }:`, {
-        address: blockChainConfig.seiBridgeAddress as `0x${string}`,
-        abi: blockChainConfig.seiBridgeAbi,
-        functionName: "burnTokenCCIP",
-        args: [tokenId, amountTokenERC20],
-        value: ccipFee,
-      })
+     
       const result = await writeContractAsync({
         address: blockChainConfig.seiBridgeAddress as `0x${string}`,
         abi: blockChainConfig.seiBridgeAbi,
@@ -235,15 +193,13 @@ const { isLoading: isTxPending } = useTransaction({ hash: currentTxHash });
         args: [tokenId, amountTokenERC20],
         value: ccipFee,
       });
-      console.log("🚀 ~ useLocalBridge ~ result:", result)
-      await waitForTransactionReceipt(walletClient!, { hash: result });
+      const receipt= await waitForTransactionReceipt(walletClient!, { hash: result });
       setBridgeState({ currentTxHash: result, isBridging: false });
         addTransaction(address!, {
           txHash:result,
           userAddress: address!,
-          type:"CCIP",
-          status:StargateTransactionStatus.CREATED,
-          // messageId:receipt?.logs[8]?.topics[1],
+          status:CCIPTransactionStatus.CCIP,
+          messageId:receipt?.logs[12]?.topics[1],
           fromChain,
           toChain,
           fromToken,
@@ -274,7 +230,6 @@ const { isLoading: isTxPending } = useTransaction({ hash: currentTxHash });
     try {
       setBridgeState({ isBridging: true, error: null });
       const amountInUnits = parseUnits(amount, decimals || 18);
-      // await approveToken(tokenAddress as `0x${string}`, blockChainConfig.seiBridgeAddress as `0x${string}`, amount, decimals ?? 18, address as `0x${string}`);
       const result = await writeContractAsync({
         address: blockChainConfig.seiBridgeAddress as `0x${string}`,
         abi: blockChainConfig.seiBridgeAbi,
@@ -287,9 +242,7 @@ const { isLoading: isTxPending } = useTransaction({ hash: currentTxHash });
         addTransaction(address!, {
           txHash:result,
           userAddress: address!,
-          type:"CCIP",
-          status:StargateTransactionStatus.CREATED,
-          // messageId:receipt.logs[8].topics[1],
+          status:CCIPTransactionStatus.VALIDATOR,
           fromChain,
           toChain,
           fromToken,
@@ -330,7 +283,6 @@ const { isLoading: isTxPending } = useTransaction({ hash: currentTxHash });
         await handleBurnUnlockCCIP(amount,decimalsToken, toToken, toChain,fromToken,fromChain, tokenAddress, ccipFee!)
       }
       else if (actionType === BridgeActionType.BurnUnlock && isNativeBurnUnlock) {
-        console.log("handleBurnUnlockVL")
         await handleBurnUnlockVL(amount, decimals!,tokenAddress, receiver,toToken, toChain,fromToken,fromChain)
       }
       else {
@@ -347,7 +299,6 @@ const { isLoading: isTxPending } = useTransaction({ hash: currentTxHash });
 
  return {
   isBridging,
-  // error,
  currentTxHash,
   routerAddress,
   isPaused,

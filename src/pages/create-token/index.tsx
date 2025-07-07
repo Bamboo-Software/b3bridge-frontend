@@ -27,7 +27,7 @@ const CreateTokenPage: React.FC = () => {
   const [tokenType, setTokenType] = useState("OFT");
 
   return (
-    <Card className="max-w-[400px] max-h-[600px] overflow-scroll bg-[#1a1a2e] text-white border-none mx-auto">
+    <Card className="max-w-[500px] mx-auto bg-[#1a1a2e] text-white border-none ">
       <CardHeader>
         <CardTitle className="text-2xl">Create Token</CardTitle>
       </CardHeader>

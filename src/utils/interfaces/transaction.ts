@@ -1,5 +1,5 @@
 import type { ChainTokenSource } from '../enums/chain';
-import type {  StargateTransactionStatus } from '../enums/transaction';
+import type {  CCIPTransactionStatus, StargateTransactionStatus } from '../enums/transaction';
 import type { IChainInfo } from './chain';
 import type { IQuote } from './quote';
 import type { ITokenInfo } from './token';
@@ -7,8 +7,7 @@ import type { ITokenInfo } from './token';
 export interface ITransaction {
   userAddress: string;
   txHash: string;
-  type: 'STARGATE' | 'CCIP';
-  status: StargateTransactionStatus;
+  status: StargateTransactionStatus | CCIPTransactionStatus;
   fromChain: IChainInfo;
   toChain: IChainInfo;
   messageId?: string;

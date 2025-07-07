@@ -22,7 +22,7 @@ const CustomToastBridged = ({
     <div className="mt-4">
       <button
         onClick={() => toast.dismiss(t.id)}
-        className="w-full flex items-center justify-center gap-2 px-5 py-2.5 text-lg font-semibold bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-full shadow-lg hover:shadow-green-500/50 transition-all duration-300"
+        className="w-full flex items-center justify-center gap-2 px-5 py-2.5 text-lg font-semibold bg-gradient-to-r from-primary via-cyan-400 to-purple-500 text-white rounded-full shadow-lg hover:shadow-green-500/50 transition-all duration-300"
       >
         {buttonText}
       </button>

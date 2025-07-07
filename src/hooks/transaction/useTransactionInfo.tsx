@@ -17,8 +17,8 @@ function findFeeToken(fee: IQuoteFee, tokenList: ITokenInfo[] = []): ITokenInfo 
 export function useTransactionInfo(tx: ITransaction, tokenList: ITokenInfo[] = []) {
   const liveData = useUpdateTransaction(tx) as Partial<ITransaction>
 
-  const statusColor = getStatusColor(liveData.status || tx.status)
-  const { percent, label, icon } = getStatusProgress(liveData.status || tx.status)
+  const statusColor = getStatusColor(liveData?.status || tx?.status)
+  const { percent, label, icon } = getStatusProgress(liveData?.status || tx?.status)
 
   const fromToken = tx.fromToken
   const toToken = tx.toToken
@@ -42,8 +42,8 @@ export function useTransactionInfo(tx: ITransaction, tokenList: ITokenInfo[] = [
     fromAmountFormatted: tx.fromAmount ?? '',
     toAmountFormatted: tx.toAmount ?? '',
     fees,
-    isDelivered: liveData.status || tx.status === StargateTransactionStatus.DELIVERED,
-    status: liveData.status || tx.status,
+    isDelivered: liveData?.status || tx.status === StargateTransactionStatus.DELIVERED,
+    status: liveData?.status || tx.status,
     ...liveData
   }
 }

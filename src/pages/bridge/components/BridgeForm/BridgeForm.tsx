@@ -33,16 +33,15 @@ import { useGetFeeCCIP } from '@/hooks/bridge/useGetFeeCCIP';
 import { toast } from 'sonner';
 import { LocalStorageKey } from '@/utils/enums/localStorage';
 import { TransactionModal } from '@/pages/common/TransactionModal';
-import { StargateTransactionStatus } from '@/utils/enums/transaction';
+import { CCIPTransactionStatus, StargateTransactionStatus } from '@/utils/enums/transaction';
 import { useTransactionStore } from '@/hooks/useTransactionStore';
 import { useLocalStorage } from 'react-use';
+import { useBridgeStatusStore } from '@/stores/bridge/useBridgeStatusStore';
 
 const validateReceiver = (value: string) =>
   value ? /^0x[a-fA-F0-9]{40}$/.test(value) : null;
 
 function BridgeForm() {
-  const allTx = useTransactionStore(state => state.allTx)
-  const setAllTx = useTransactionStore(state => state.setAllTx)
   
   const [preferredRoute , setPreferredRoute] = useLocalStorage<string>(LocalStorageKey.PREFERRED_ROUTE, '');
    // --- State ---
@@ -53,6 +52,7 @@ function BridgeForm() {
   const [quoteModalOpen, setQuoteModalOpen] = useState(false);
   const [openTransactionModal, setOpenTransactionModal] = useState(false);
   const [toAmount, setToAmount] = useState('');
+
   // --- Form ---
   const  form = useForm<BridgeFormValues>({
     resolver: zodResolver(bridgeFormSchema),
@@ -276,6 +276,29 @@ function BridgeForm() {
       });
     }
   };
+  const shouldUpdate = useBridgeStatusStore((s) => s.shouldUpdateState);
+  const clearUpdateFlag = useBridgeStatusStore((s) => s.clearUpdateFlag);
+
+  const allTx = useTransactionStore((s) => s.allTx);
+  const setAllTx = useTransactionStore((s) => s.setAllTx);
+
+  useEffect(() => {
+    if (!shouldUpdate || !address) return;
+
+    const userTxs = allTx?.[address] || [];
+    const updatedTxs = userTxs.map((tx) => {
+      if (
+        tx.source === ChainTokenSource.Local &&
+        tx.status !== CCIPTransactionStatus.TARGET
+      ) {
+        return { ...tx, status: CCIPTransactionStatus.TARGET };
+      }
+      return tx;
+    });
+
+    setAllTx({ ...allTx, [address]: updatedTxs });
+    clearUpdateFlag();
+  }, [shouldUpdate, address, allTx, setAllTx, clearUpdateFlag]);
 
   // --- Render ---
   return (
@@ -363,7 +386,7 @@ function BridgeForm() {
         destinationToken={destinationToken}
         onClose={() => setQuoteModalOpen(false)}
       />
-      <TransactionModal open={openTransactionModal} setOpen={setOpenTransactionModal} />
+      <TransactionModal open={openTransactionModal} setOpen={setOpenTransactionModal}/>
     </>
   );
 }

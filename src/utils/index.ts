@@ -4,6 +4,7 @@ import type { ITokenInfo } from './interfaces/token';
 import { BridgeActionType } from '@/utils/enums/bridge';
 import { tokenMetaByChainAndSymbol } from "./constants/token";
 import type { CryptoCurrencyEnum } from "./enums/chain";
+import { selectedChains } from "./constants/wagmi";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -52,42 +53,15 @@ export function getBridgeActionType(
 
   return BridgeActionType.Unknown;
 }
-// export function getBridgeActionType(
-//   fromToken: ITokenInfo,
-//   toToken: ITokenInfo,
-//   originTokenList: ITokenInfo[]
-// ): BridgeActionType {
-//   if (
-//     !fromToken ||
-//     !toToken ||
-//     !originTokenList?.length ||
-//     !fromToken.address ||
-//     !toToken.address ||
-//     !fromToken.chainId ||
-//     !toToken.chainId
-//   ) {
-//     return BridgeActionType.Unknown;
-//   }
 
-//   const isFromNative = originTokenList.some(
-//     (token) =>
-//       token.address.toLowerCase() === fromToken.address.toLowerCase() &&
-//       token.chainId === fromToken.chainId
-//   );
-
-//   const isToNative = originTokenList.some(
-//     (token) =>
-//       token.address.toLowerCase() === toToken.address.toLowerCase() &&
-//       token.chainId === toToken.chainId
-//   );
-
-//   if (isFromNative && !isToNative) return BridgeActionType.LockMint;
-//   if (isToNative && !isFromNative) return BridgeActionType.BurnUnlock;
-
-//   return BridgeActionType.Unknown;
-// }
-
-
+export function getTxExplorerLink(txHash: string, chainId: number): string {
+  const chain = selectedChains.find((c) => c.id === chainId);
+  const baseUrl = chain?.blockExplorers?.default?.url;
+  return baseUrl ? `${baseUrl}/tx/${txHash}` : '';
+}
+export function getCCIPExplorerLink(messageId: string): string {
+  return `${import.meta.env.VITE_CCIP_EXPLORER}/${messageId}`;
+}
 export const formatInputNumberDecimals = (value: string | number) => {
   if(!value) return ""
   const rawValue =String(value).replace(/[^0-9.]/g, '');
