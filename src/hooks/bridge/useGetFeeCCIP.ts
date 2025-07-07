@@ -18,40 +18,31 @@ export function useGetFeeCCIP(params: IBridgeParams) {
   const [tokenIdError, setTokenIdError] = useState<string | null>(null);
   const [isFetchingTokenId, setIsFetchingTokenId] = useState(false);
 
-  // Check if all required params are present
-  const isReady =
-    !!fromToken &&
-    !!toToken &&
-    !!tokenList?.length &&
-    !!fromChain?.id &&
-    !!toChain?.id &&
-    !!amount?.trim() &&
-    !!receiver;
-
-  const actionType = useMemo(() => {
-  if (!isReady) return BridgeActionType.Unknown;
-
-  const enrichedFrom = { ...fromToken, isOrigin: getIsOrigin(fromToken) };
-  const enrichedTo = { ...toToken, isOrigin: getIsOrigin(toToken) };
-
-  return getBridgeActionType(enrichedFrom, enrichedTo);
-}, [fromToken, toToken, isReady]);
+  const isReady = !!fromToken && !!toToken && !!tokenList?.length && !!fromChain?.id && !!toChain?.id && !!amount?.trim() && !!receiver;
 
   const isNative = fromToken?.address === ethers.ZeroAddress;
 
   const parsedAmount = useMemo(() => {
-    if (!amount || !fromToken?.decimals) return 0n;
+    if (!amount || !fromToken?.decimals) return BigInt(0);
     return parseUnits(amount, fromToken.decimals);
   }, [amount, fromToken?.decimals]);
 
+  const actionType = useMemo(() => {
+    if (!isReady) return BridgeActionType.Unknown;
+    const enrichedFrom = { ...fromToken, isOrigin: getIsOrigin(fromToken) };
+    const enrichedTo = { ...toToken, isOrigin: getIsOrigin(toToken) };
+    return getBridgeActionType(enrichedFrom, enrichedTo);
+  }, [fromToken, toToken, isReady]);
+
+  // Fetch tokenId for BurnUnlock
   useEffect(() => {
     if (
       !isReady ||
-      actionType !== BridgeActionType.BurnUnlock ||
       isNative ||
-      !fromToken ||
-      !fromToken.address ||
-      !fromChain?.id
+      actionType !== BridgeActionType.BurnUnlock ||
+      !fromToken?.address ||
+      !toToken?.address ||
+      !toChain?.id
     ) {
       setSeiTokenId(null);
       setTokenIdError(null);
@@ -80,7 +71,7 @@ export function useGetFeeCCIP(params: IBridgeParams) {
     };
 
     fetchTokenId();
-  }, [isReady,fromToken, actionType, fromToken?.address, fromChain?.id,toToken?.address,toChain?.id, isNative]);
+  }, [isReady, isNative, actionType, fromToken?.address, toToken?.address, toChain?.id]);
 
   const bridgeConfig = useMemo(() => {
     if (!isReady || isNative) return null;
@@ -116,34 +107,32 @@ export function useGetFeeCCIP(params: IBridgeParams) {
   }, [
     isReady,
     isNative,
-    seiTokenId,
-    parsedAmount,
-    receiver,
     actionType,
+    parsedAmount,
+    seiTokenId,
+    receiver,
     toChain?.id,
     fromToken?.address,
     fromChain?.id,
   ]);
 
   const shouldRead =
-    isReady &&
     !isNative &&
+    isReady &&
     !!bridgeConfig?.address &&
     !!bridgeConfig?.args &&
-    (actionType === BridgeActionType.BurnUnlock || isAddress(receiver)) &&
     !isFetchingTokenId &&
-    !tokenIdError;
+    !tokenIdError &&
+    (actionType === BridgeActionType.BurnUnlock || isAddress(receiver));
 
   const contractOptions = useMemo(() => {
     if (!shouldRead || !bridgeConfig) return undefined;
     return {
-      address: bridgeConfig.address,
-      abi: bridgeConfig.abi,
-      functionName: bridgeConfig.functionName,
-      args: bridgeConfig.args,
+      ...bridgeConfig,
+      chainId: fromChain?.id,
     };
-  }, [shouldRead, bridgeConfig]);
-  
+  }, [shouldRead, bridgeConfig, fromChain?.id]);
+
   const { data: ccipFee, isLoading } = useReadContract(contractOptions);
 
   return {

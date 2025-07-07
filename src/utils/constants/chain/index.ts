@@ -4,6 +4,7 @@ import seiLogo from "@/assets/icons/sei.svg";
 import { appConfig } from '../app';
 import { mainnet, sei, seiTestnet, sepolia, type Chain } from 'viem/chains';
 import ethereumABI from "./ethereumABI.json";
+import routerCCIP from "./routerCCIP.json";
 import seiABI from "./seiABI.json";
 
 export const baseUrl =
@@ -20,25 +21,34 @@ export const ethereumBridgeAddress =
   import.meta.env.VITE_ETHEREUM_BRIDGE_ADDRESS || "";
 export const ethereumBridgeAbi =
   import.meta.env.VITE_ETHEREUM_BRIDGE_ABI || ethereumABI;
+export const ethereumRouterAddress =
+  import.meta.env.VITE_ETHEREUM_CHAIN_ROUTER || ethereumABI;
 
 // SEI Chain
 export const seiChainSelector = import.meta.env.VITE_SEI_CHAIN_SELECTOR || "";
 export const seiEthAddress = import.meta.env.VITE_SEI_ETH_ADDRESS || "";
 export const seiUsdcAddress = import.meta.env.VITE_SEI_USDC_ADDRESS || "";
 export const seiBridgeAddress = import.meta.env.VITE_SEI_BRIDGE_ADDRESS || "";
+export const seiRouterAddress = import.meta.env.VITE_SEI_CHAIN_ROUTER || "";
 export const seiBridgeAbi = import.meta.env.VITE_SEI_BRIDGE_ABI || seiABI;
 export const chainSelectors: Record<number, string> = {
   [sepolia.id]: ethereumChainSelector,
   [seiTestnet.id]: seiChainSelector,
 };
 
+// router CCIP
+export const routerCCIPAbi =
+  import.meta.env.VITE_ETHEREUM_BRIDGE_ABI || routerCCIP;
 
 export const blockChainConfig = {
   ethereumEthAddress,
   ethereumUsdcAddress,
+  ethereumRouterAddress,
   ethereumBridgeAddress,
+  seiRouterAddress,
   ethereumBridgeAbi,
   seiEthAddress,
+  routerCCIPAbi,
   seiUsdcAddress,
   seiBridgeAddress,
   seiBridgeAbi

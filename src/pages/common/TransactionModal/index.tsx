@@ -4,6 +4,7 @@ import { TransactionItem } from './components/TransactionItem'
 import { useTokenList } from '@/hooks/useTokenList'
 import { ChainTokenSource } from '@/utils/enums/chain'
 import { useTransactionStore } from '@/hooks/useTransactionStore'
+// import { useBridgeStore } from "@/stores/bridge/useBridgeLocalStore"
 
 interface TransactionModalProps {
   open: boolean
@@ -16,6 +17,8 @@ export function TransactionModal({ open, setOpen }: TransactionModalProps) {
   const userTxs = address ? allTx?.[address] || [] : []
   const { data: tokenList, loading: tokenListLoading } = useTokenList(undefined, undefined, undefined, ChainTokenSource.Stargate)
   const isLoading = tokenListLoading
+  // const currentTxHash = useBridgeStore((state) => state.currentTxHash);
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="!w-3xl !max-w-3xl max-h-[90vh] overflow-y-auto">

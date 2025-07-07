@@ -66,14 +66,14 @@ export function useTokenList(
     let cancelled = false
 
     const fetchLocal = async () => {
-      setError(null)
-      if (!chain?.id || isNaN(Number(chain.id)) || !effectiveSource) {
-        setTokenDataList([])
-        return
-      }
-
-      const selectedChainId = Number(chain.id) as ChainId
-      const symbols = SUPPORTED_TOKENS_BY_CHAIN[selectedChainId] ?? []
+  setError(null);
+  if (!chain?.id || isNaN(Number(chain.id))) {
+    setTokenDataList([]);
+    return;
+  }
+  
+  const selectedChainId = Number(chain.id) as ChainId;
+  const symbols = SUPPORTED_TOKENS_BY_CHAIN[selectedChainId] ?? [];
 
       setLoading(true)
       try {
@@ -93,15 +93,16 @@ export function useTokenList(
             const meta =
               tokenMetaByChainAndSymbol[selectedChainId]?.[symbol]
 
-            return {
-              ...data,
-              symbol,
-              address: tokenAddress as Address,
-              chainId: selectedChainId,
-              isOrigin: meta?.isOrigin ?? false,
-            } as ITokenInfo & { isOrigin: boolean; isNative: boolean }
-          })
-        )
+        return {
+          ...data,
+          symbol,
+          address: tokenAddress as Address,
+          chainId: selectedChainId,
+          isOrigin: meta?.isOrigin ?? false,
+          // isNative: meta?.isNative ?? false,
+        } as ITokenInfo & { isOrigin: boolean; };
+      })
+    );
 
         if (!cancelled) setTokenDataList(results.filter(Boolean) as ITokenInfo[])
       } catch (err) {

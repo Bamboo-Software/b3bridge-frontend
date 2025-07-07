@@ -10,6 +10,7 @@ export interface IBridgeParams {
   amount: string;
   toAmount: string;
   receiver: string;
+  ccipFee?: bigint;
   quote?: IQuote
   tokenList?: ITokenInfo[]
 };

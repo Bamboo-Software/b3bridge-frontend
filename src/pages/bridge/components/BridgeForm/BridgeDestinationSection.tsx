@@ -196,7 +196,7 @@ function BridgeDestinationSection({
               :
                 (
               <span className='font-semibold text-foreground'>
-                {userDesBalance || '0'}
+                {userDesBalance}
               </span>
             )}
           </div>

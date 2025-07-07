@@ -7,9 +7,11 @@ import {
 import Image from '@/components/ui/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatNumber } from '@/utils';
+import type { IChainInfo } from '@/utils/interfaces/chain';
 import type { ITokenInfo } from '@/utils/interfaces/token';
 import { Pencil1Icon } from '@radix-ui/react-icons';
 import { Clock, Receipt } from 'lucide-react';
+import { formatEther } from 'viem';
 
 interface TransactionAccordionProps {
   receiveAmount?: string;
@@ -18,27 +20,31 @@ interface TransactionAccordionProps {
   slippage?: string;
   isTransactionInfoLoading?: boolean;
   enable?: boolean;
-  totalFeeStargateUsd?:string
+  totalFeeStargateUsd?: string;
+  ccipFee: bigint;
+  selectedFromChain: IChainInfo;
   setQuoteModalOpen: (value:boolean)=> void
   destinationToken?:ITokenInfo
 }
 
 export default function TransactionAccordion({
-  receiveAmount = '—',
-  route = '—',
-  estTime = '—',
+  receiveAmount = '',
+  route = '',
+  estTime = '',
   isTransactionInfoLoading = false,
   enable = false,
   totalFeeStargateUsd,
+  ccipFee,
   setQuoteModalOpen,
-  destinationToken
+  destinationToken,
+  selectedFromChain
 }: TransactionAccordionProps) {
   const hasAllInfo =
-    receiveAmount !== '—' &&
-    receiveAmount  &&
-    estTime !== '—' &&
-    estTime &&
-    totalFeeStargateUsd;
+    receiveAmount !== '—' ||
+    receiveAmount ||
+    estTime !== '—' ||
+    estTime ||
+    totalFeeStargateUsd || ccipFee;
   return (
     <>
       {enable &&
@@ -71,13 +77,23 @@ export default function TransactionAccordion({
                     <span className="text-muted-foreground select-none">|</span>
                     <div className="flex items-center gap-1" title="Total Fee">
                       <Receipt className="w-4 h-4 text-primary" />
-                      <span>${formatNumber(Number(totalFeeStargateUsd))}</span>
+                      <span>
+                      {ccipFee && ccipFee !== BigInt(0)
+                        ? `${formatNumber(Number(formatEther(ccipFee)))}  ${selectedFromChain.name ?selectedFromChain.name  : ''}`
+                        : `$${formatNumber(Number(totalFeeStargateUsd ?? 0))}`}
+                    </span>
                     </div>
-                    <span className="text-muted-foreground select-none">|</span>
-                    <div className="flex items-center gap-1" title="Estimated Time">
-                      <Clock className="w-4 h-4 text-primary" />
-                      <span>{estTime}s</span>
-                    </div>
+                      {ccipFee && ccipFee === BigInt(0) && (
+                        <>
+                        <span className="text-muted-foreground select-none">|</span>
+                        <div className="flex items-center gap-1" title="Estimated Time">
+                          <Clock className="w-4 h-4 text-primary" />
+                          <span>{estTime}s</span>
+                        </div>
+                        </>
+
+                      )
+                      }
                   </div>
                 )}
                 </div>
@@ -104,21 +120,29 @@ export default function TransactionAccordion({
                         <div className='flex justify-between'>
                           <span>Route</span>
                           <div onClick={() => setQuoteModalOpen(true)} className='flex items-center gap-1'>
-                            <span>{route}</span>  
+                            <span>{route}</span>
                             <Pencil1Icon className='cursor-pointer'/>
                           </div>
                         </div>
+                        )}
+                      {ccipFee && ccipFee === BigInt(0) && (
+                        <div className='flex justify-between'>
+                          <span>Est. Time</span>
+                          <span>{estTime}s</span>
+                        </div>
                       )}
-                      
-                      <div className='flex justify-between'>
-                        <span>Est. Time</span>
-                        <span>{estTime}s</span>
-                      </div>
                       <div className='flex justify-between'>
                         <span>Total Fee</span>
                         <div className='flex gap-2'>
-                          {totalFeeStargateUsd && <span> ${formatNumber(Number(totalFeeStargateUsd)) }</span>}
-                          
+                            {totalFeeStargateUsd
+                              ? <span> ${formatNumber(Number(totalFeeStargateUsd))}</span> : 
+                              <span>
+                                {ccipFee != null
+                                  ? `${formatNumber(formatEther(ccipFee))}`
+                                  : receiveAmount}{" "}
+                                {selectedFromChain.name ?selectedFromChain.name  : ''}
+                              </span>
+                          }
                         </div>
                       </div>
                     </div>

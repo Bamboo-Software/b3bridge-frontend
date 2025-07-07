@@ -1,36 +1,56 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getBridgeActionType, getIsOrigin } from '@/utils';
 import { wagmiConfig } from '@/utils/constants/wagmi';
-import type { BridgeState, IBridgeParams } from '@/utils/interfaces/bridge';
+import type {  IBridgeParams } from '@/utils/interfaces/bridge';
 import { ethers } from 'ethers';
-import {  useState } from 'react';
+
 import { readContract } from '@wagmi/core'
 import { erc20Abi, formatUnits, parseUnits } from 'viem';
 import { waitForTransactionReceipt } from 'viem/actions';
-import { useAccount, useTransaction, useWalletClient, useWriteContract } from 'wagmi';
+import { useAccount, useReadContract, useTransaction, useWalletClient, useWriteContract } from 'wagmi';
 import { BridgeActionType } from '@/utils/enums/bridge';
 import { blockChainConfig, chainSelectors } from '@/utils/constants/chain';
+import type { ITokenInfo } from '@/utils/interfaces/token';
+import type { IChainInfo } from '@/utils/interfaces/chain';
+import { useBridgeStore } from '@/stores/bridge/useBridgeLocalStore';
+import { useTransactionStore } from '../useTransactionStore';
+import { ChainTokenSource } from '@/utils/enums/chain';
+import { StargateTransactionStatus } from '@/utils/enums/transaction';
 // import type { WalletClient } from 'viem';
 export const useLocalBridge = () => {
-  const [state, setState] = useState<BridgeState>({
-    isBridging: false,
-    error: null,
-  });
+  const {
+    isBridging,
+    setBridgeState,
+    currentTxHash
+  } = useBridgeStore();
   const { address } = useAccount();
+  const { addTransaction } = useTransactionStore.getState();
   const { data: walletClient } = useWalletClient();
   const { writeContractAsync } = useWriteContract();
-  const { isLoading: isNativeLockPending } = useTransaction({ hash: state.nativeLockHash });
-  const { isLoading: isERC20LockPending } = useTransaction({ hash: state.erc20LockHash });
+const { isLoading: isTxPending } = useTransaction({ hash: currentTxHash });
+  const { data: routerAddress } = useReadContract({
+    address: blockChainConfig.ethereumBridgeAddress,
+    abi: blockChainConfig.ethereumBridgeAbi,
+    functionName: "getRouter",
+  });
+
+  const { data: isPaused } = useReadContract({
+    address: blockChainConfig.ethereumBridgeAddress,
+    abi: blockChainConfig.ethereumBridgeAbi,
+    functionName: "paused",
+  });
+
   const approveToken = async (
     tokenAddress: `0x${string}`,
     spender: `0x${string}`,
     amountRaw: string,
     decimals: number,
     owner: `0x${string}`,
+    walletClient?: any,
     force: boolean = true
   ): Promise<void> => {
-      try {
-      setState((prev) => ({ ...prev, isBridging: true, error: null }));
+    try {
+      setBridgeState({ isBridging: true, error: null });
       const amountInUnits = parseUnits(amountRaw, decimals);
       const currentAllowance: bigint = await readContract(wagmiConfig, {
         address: tokenAddress,
@@ -46,16 +66,15 @@ export const useLocalBridge = () => {
           functionName: "approve",
           args: [spender, amountInUnits],
         });
+        console.log("🚀 ~ useLocalBridge ~ approveTx:", approveTx)
         await waitForTransactionReceipt(walletClient!, { hash: approveTx });
-        setState((prev) => ({ ...prev, isBridging: false, error: null }));
-      } else {
-        setState((prev) => ({ ...prev, isBridging: false }));
+        setBridgeState({ isBridging: false });
       }
-      } catch (err: any) {
-        setState({ isBridging: false, error: err.message || "Unknown error" });
-        if (err.code === 4001 || err.message?.toLowerCase().includes("user rejected")) {
-          throw new Error("Transaction rejected by user");
-        }
+    } catch (err: any) {
+      setBridgeState({ isBridging: false, error: err.message || 'Unknown error' });
+      if (err.code === 4001 || err.message?.toLowerCase().includes("user rejected")) {
+        throw new Error("Transaction rejected by user");
+      }
       throw err;
     }
   };
@@ -65,86 +84,274 @@ export const useLocalBridge = () => {
     amount: string,
     toChainSelector: string,
     decimals: number,
+    decimalsToken: number,
     tokenAddress: string,
     receiver: string,
     ccipFee: bigint,
-    isNative:boolean
+    isNative: boolean,
+    fromChain: IChainInfo,
+    toChain: IChainInfo,
+    fromToken: ITokenInfo,
+    toToken: ITokenInfo,
   ): Promise<void> => {
     try {
       if (!writeContractAsync) throw new Error("Contract write not available");
       if (isNative) {
-        const amountBridge = parseUnits(amount, decimals);
-        const valueBridge = parseUnits(amount, decimals);
-        setState((prev) => ({ ...prev, isBridging: true, error: null }));
+        const amountNative = parseUnits(amount, decimals);
+        setBridgeState({ isBridging: true, error: null });
+        console.log(`🚀 ~ useLocalBridge ~ {
+         address: blockChainConfig.ethereumBridgeAddress as,
+         abi: blockChainConfig.ethereumBridgeAbi,
+         functionName: "lockTokenVL",
+         args: [tokenAddress, amountNative, blockChainConfig.seiBridgeAddress, receiver],
+         value: amountNative,
+       }:`, {
+         address: blockChainConfig.ethereumBridgeAddress as `0x${string}`,
+         abi: blockChainConfig.ethereumBridgeAbi,
+         functionName: "lockTokenVL",
+         args: [tokenAddress, amountNative, blockChainConfig.seiBridgeAddress, receiver],
+         value: amountNative,
+       })
         const result = await writeContractAsync({
-          address:  blockChainConfig.ethereumBridgeAddress as `0x${string}`,
-          abi: blockChainConfig.ethereumBridgeAbi,
-          functionName: "lockTokenVL",
-          args: [ tokenAddress, amountBridge, blockChainConfig.seiBridgeAddress, receiver],
-          value: valueBridge,
-        });
-        setState((prev) => ({ ...prev, nativeLockHash: result, isBridging: false, error: null }));
-      }
-        else {
-        const amountInUnits = parseUnits(amount, decimals);
-        try {
-          await approveToken(tokenAddress as `0x${string}`, blockChainConfig.seiBridgeAddress as `0x${string}`, amount,decimals,address as `0x${string}`);
-        } catch (err: any) {
-          const errorMessage = err.message === "Transaction rejected by user" ? "Giao dịch đã bị hủy bởi người dùng" : "Phê duyệt token thất bại";
-          throw new Error(errorMessage);
-        }
-        setState((prev) => ({ ...prev, isBridging: true, error: null }));
-        const formatted = formatUnits(ccipFee, 18);
-          const result = await writeContractAsync({
           address: blockChainConfig.ethereumBridgeAddress as `0x${string}`,
           abi: blockChainConfig.ethereumBridgeAbi,
-          functionName: "lockTokenCCIP",
-          args: [tokenAddress as `0x${string}`, BigInt(toChainSelector), blockChainConfig.seiBridgeAddress as `0x${string}`, receiver, amountInUnits, 0],
-          value: parseUnits(formatted, 18),
+          functionName: "lockTokenVL",
+          args: [tokenAddress, amountNative, blockChainConfig.seiBridgeAddress, receiver],
+          value: amountNative,
         });
-          setState((prev) => ({ ...prev, erc20LockHash: result, isBridging: false, error: null }))
+         await waitForTransactionReceipt(walletClient!, {
+          hash: result,
+        })
+        setBridgeState({ currentTxHash: result, isBridging: false });
+        addTransaction(address!, {
+          txHash:result,
+          userAddress: address!,
+          type:"CCIP",
+          status:StargateTransactionStatus.CREATED,
+          // messageId:receipt.logs[8].topics[1],
+          fromChain,
+          toChain,
+          fromToken,
+          toToken,
+          fromAmount: amount,
+          toAmount: amount,
+          source: ChainTokenSource.Local,
+          quote: undefined,
+          createdAt: Date.now(),
+        });
+      }
+      else {
+        const amountTokenERC20 = parseUnits(amount, decimalsToken);
+        await approveToken(tokenAddress as `0x${string}`, blockChainConfig.ethereumBridgeAddress, amount, decimalsToken, address as `0x${string}`, walletClient);
+        const fee = parseUnits(formatUnits(ccipFee, decimals), decimals);
+        const result = await writeContractAsync({
+          address: blockChainConfig.ethereumBridgeAddress,
+          abi: blockChainConfig.ethereumBridgeAbi,
+          functionName: 'lockTokenCCIP',
+          args: [tokenAddress, BigInt(toChainSelector), blockChainConfig.seiBridgeAddress, receiver, amountTokenERC20, 0],
+          value: fee,
+        });
+        const receipt = await waitForTransactionReceipt(walletClient!, {
+          hash: result,
+        })
+        setBridgeState({ currentTxHash: result, isBridging: false });
+        addTransaction(address!, {
+          txHash:result,
+          userAddress: address!,
+          type:"CCIP",
+          status:StargateTransactionStatus.CREATED,
+          messageId:receipt.logs[8].topics[1],
+          fromChain,
+          toChain,
+          fromToken,
+          toToken,
+          fromAmount: amount,
+          toAmount: amount,
+          source: ChainTokenSource.Local,
+          quote: undefined,
+          createdAt: Date.now(),
+        });
       }
     } catch (err) {
-      console.error("❌ ~ handleLockMint error:", err);
-      setState((prev) => ({
-        ...prev,
-        error: err instanceof Error ? err.message : "Bridge failed",
-        isBridging: false,
-        isNativeLockPending: false,
-        isERC20LockPending: false,
-      }));
+      setBridgeState({ isBridging: false, error: err instanceof Error ? err.message : 'Bridge failed' });
+      throw err;
+    }
+  }
+
+  const handleBurnUnlockCCIP = async (
+    amount: string,
+    decimalsToken: number,
+    toToken: ITokenInfo,
+    toChain: IChainInfo,
+    fromToken: ITokenInfo,
+    fromChain: IChainInfo,
+    tokenAddress: string,
+    ccipFee: bigint,
+    
+  ): Promise<void> => {
+    try {
+      setBridgeState({ isBridging: true, error: null });
+      const amountTokenERC20 = parseUnits(amount, decimalsToken);
+      const tokenId = await readContract(wagmiConfig, {
+        address: blockChainConfig.ethereumBridgeAddress,
+        abi: blockChainConfig.ethereumBridgeAbi,
+        functionName: 'tokenAddressToId',
+        args: [toToken.address],
+        chainId: toChain.id,
+      });
+      console.log(`🚀 ~ useLocalBridge ~ {
+        address: blockChainConfig.ethereumBridgeAddress,
+        abi: blockChainConfig.ethereumBridgeAbi,
+        functionName: 'tokenAddressToId',
+        args: [toToken.address],
+        chainId: toChain.id,
+      }:`, {
+        address: blockChainConfig.ethereumBridgeAddress,
+        abi: blockChainConfig.ethereumBridgeAbi,
+        functionName: 'tokenAddressToId',
+        args: [toToken.address],
+        chainId: toChain.id,
+      })
+      console.log("🚀 ~ useLocalBridge ~ tokenId:", tokenId)
+
+      await approveToken(tokenAddress as `0x${string}`, blockChainConfig.seiBridgeAddress as `0x${string}`, amount, decimalsToken, address as `0x${string}`,walletClient);
+      console.log(`🚀 ~ useLocalBridge ~ {
+        address: blockChainConfig.seiBridgeAddress as,
+        abi: blockChainConfig.seiBridgeAbi,
+        functionName: "burnTokenCCIP",
+        args: [tokenId, amountTokenERC20],
+        value: ccipFee,
+      }:`, {
+        address: blockChainConfig.seiBridgeAddress as `0x${string}`,
+        abi: blockChainConfig.seiBridgeAbi,
+        functionName: "burnTokenCCIP",
+        args: [tokenId, amountTokenERC20],
+        value: ccipFee,
+      })
+      const result = await writeContractAsync({
+        address: blockChainConfig.seiBridgeAddress as `0x${string}`,
+        abi: blockChainConfig.seiBridgeAbi,
+        functionName: "burnTokenCCIP",
+        args: [tokenId, amountTokenERC20],
+        value: ccipFee,
+      });
+      console.log("🚀 ~ useLocalBridge ~ result:", result)
+      await waitForTransactionReceipt(walletClient!, { hash: result });
+      setBridgeState({ currentTxHash: result, isBridging: false });
+        addTransaction(address!, {
+          txHash:result,
+          userAddress: address!,
+          type:"CCIP",
+          status:StargateTransactionStatus.CREATED,
+          // messageId:receipt?.logs[8]?.topics[1],
+          fromChain,
+          toChain,
+          fromToken,
+          toToken,
+          fromAmount: amount,
+          toAmount: amount,
+          source: ChainTokenSource.Local,
+          quote: undefined,
+          createdAt: Date.now(),
+        });
+      setBridgeState({ currentTxHash: result, isBridging: false });
+    } catch (err) {
+      console.error("❌ ~ handleBurnUnlock error:", err);
+       setBridgeState({ isBridging: false, error: err instanceof Error ? err.message : 'Bridge failed' });
+      throw err;
+    }
+  }
+  const handleBurnUnlockVL = async (
+    amount: string,
+    decimals: number,
+    tokenAddress: string,
+    receiver: string,
+      toToken: ITokenInfo,
+    toChain: IChainInfo,
+    fromToken: ITokenInfo,
+    fromChain: IChainInfo,
+  ): Promise<void> => {
+    try {
+      setBridgeState({ isBridging: true, error: null });
+      const amountInUnits = parseUnits(amount, decimals || 18);
+      // await approveToken(tokenAddress as `0x${string}`, blockChainConfig.seiBridgeAddress as `0x${string}`, amount, decimals ?? 18, address as `0x${string}`);
+      const result = await writeContractAsync({
+        address: blockChainConfig.seiBridgeAddress as `0x${string}`,
+        abi: blockChainConfig.seiBridgeAbi,
+        functionName: "burnTokenVL",
+        args: [amountInUnits, tokenAddress as `0x${string}`, receiver],
+        value: amountInUnits
+      });
+      await waitForTransactionReceipt(walletClient!, { hash: result });
+      setBridgeState({ currentTxHash: result, isBridging: false });
+        addTransaction(address!, {
+          txHash:result,
+          userAddress: address!,
+          type:"CCIP",
+          status:StargateTransactionStatus.CREATED,
+          // messageId:receipt.logs[8].topics[1],
+          fromChain,
+          toChain,
+          fromToken,
+          toToken,
+          fromAmount: amount,
+          toAmount: amount,
+          source: ChainTokenSource.Local,
+          quote: undefined,
+          createdAt: Date.now(),
+        });
+    } catch (err) {
+      console.error("❌ ~ handleBurnUnlock error:", err);
+       setBridgeState({ isBridging: false, error: err instanceof Error ? err.message : 'Bridge failed' });
       throw err;
     }
 
   }
   const handleBridge = async (params: IBridgeParams): Promise<void> => {
     try {
-       setState((prev) => ({ ...prev, isBridging: true, error: null }));
-      const { fromToken, toToken,fromChain,amount,receiver } = params;
-       const enrichedFrom = { ...fromToken, isOrigin: getIsOrigin(fromToken) };
-        const enrichedTo = { ...toToken, isOrigin: getIsOrigin(toToken) };
-        const actionType = getBridgeActionType(enrichedFrom, enrichedTo);
+      setBridgeState({ isBridging: true, error: null });
+      const { fromToken, toToken, fromChain, amount, receiver, ccipFee, toChain } = params;
+
+
+      const enrichedFrom = { ...fromToken, isOrigin: getIsOrigin(fromToken) };
+      const enrichedTo = { ...toToken, isOrigin: getIsOrigin(toToken) };
+
+      const actionType = getBridgeActionType(enrichedFrom, enrichedTo);
+
       const isNative = fromToken.address === ethers.ZeroAddress
-      const toChainSelector = chainSelectors[fromChain.id]
-      const decimals = fromToken.decimals
+
+      const isNativeBurnUnlock = toToken.address === ethers.ZeroAddress
+
+      const toChainSelector = chainSelectors[toChain.id]
+      const decimals = fromChain.nativeCurrency?.decimals
+      const decimalsToken = fromToken.decimals
       const tokenAddress = fromToken.address;
-      if (actionType === BridgeActionType.LockMint) {
-       await handleLockMint(amount,toChainSelector,decimals,tokenAddress,receiver,BigInt(0),isNative)
+      if (actionType === BridgeActionType.BurnUnlock && !isNativeBurnUnlock) {
+        await handleBurnUnlockCCIP(amount,decimalsToken, toToken, toChain,fromToken,fromChain, tokenAddress, ccipFee!)
       }
-      setState((prev) => ({ ...prev, isBridging: false, error: null }));
+      else if (actionType === BridgeActionType.BurnUnlock && isNativeBurnUnlock) {
+        console.log("handleBurnUnlockVL")
+        await handleBurnUnlockVL(amount, decimals!,tokenAddress, receiver,toToken, toChain,fromToken,fromChain)
+      }
+      else {
+        await handleLockMint(amount, toChainSelector, decimals!, decimalsToken, tokenAddress, receiver, ccipFee!, isNative,fromChain,toChain,fromToken,toToken)
+      }
+      setBridgeState({ isBridging: false, error: null });
     } catch (err) {
-    console.error("~ handleBridge error:", err);
-    setState((prev) => ({
-      ...prev,
-      error: err instanceof Error ? err.message : "Bridge failed",
-      isBridging: false,
-      isNativeLockPending: false,
-      isERC20LockPending: false,
-    }));
-    throw err;
-  }
+      console.error("~ handleBridge error:", err);
+      setBridgeState({ isBridging: false, error: err instanceof Error ? err.message : 'Bridge failed' });
+      throw err;
+    }
 
   };
 
-  return handleBridge;
+ return {
+  isBridging,
+  // error,
+ currentTxHash,
+  routerAddress,
+  isPaused,
+ isTxPending,
+  handleBridge,
 };
+}

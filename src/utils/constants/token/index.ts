@@ -27,24 +27,20 @@ export const tokenMetaByChainAndSymbol: Record<ChainId, Partial<Record<CryptoCur
     [CryptoCurrencyEnum.ETH]: {
       address: blockChainConfig.ethereumEthAddress.toLowerCase(),
       isOrigin: true,
-      // isNative: true,
     },
     [CryptoCurrencyEnum.USDC]: {
       address: blockChainConfig.ethereumUsdcAddress.toLowerCase(),
       isOrigin: true,
-      // isNative: false,
     },
   },
   [ChainId.SEI]: {
-    [CryptoCurrencyEnum.wETH]: {
+    [CryptoCurrencyEnum.ETH]: {
       address: blockChainConfig.seiEthAddress.toLowerCase(),
       isOrigin: false,
-      // isNative: false,
     },
-    [CryptoCurrencyEnum.wUSDC]: {
+    [CryptoCurrencyEnum.USDC]: {
       address: blockChainConfig.seiUsdcAddress.toLowerCase(),
       isOrigin: false,
-      // isNative: false,
     },
   }
 };

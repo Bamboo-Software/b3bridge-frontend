@@ -5,7 +5,7 @@ import type { IBridgeParams } from '@/utils/interfaces/bridge';
 
 export const useBridgeTokens = (params: IBridgeParams) => {
   const { fromChain } = params || {};
-  const localBridge = useLocalBridge();
+  const { handleBridge } = useLocalBridge();
   const stargateBridge = useStargateBridge(params);
 
   if (!params || !fromChain || !fromChain.source) {
@@ -15,7 +15,7 @@ export const useBridgeTokens = (params: IBridgeParams) => {
   const bridge =
     fromChain.source === ChainTokenSource.Stargate
       ? () => stargateBridge()
-      : () => localBridge(params);
+      : () => handleBridge(params);
 
   return bridge;
 };
