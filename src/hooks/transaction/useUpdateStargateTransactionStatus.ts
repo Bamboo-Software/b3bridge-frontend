@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
 
 import { ChainTokenSource } from '@/utils/enums/chain';
-import { StargateTransactionStatus } from '@/utils/enums/transaction';
+import { CCIPTransactionStatus, StargateTransactionStatus } from '@/utils/enums/transaction';
 import { StargateRouteName } from '@/utils/enums/bridge';
 import type { ITransaction } from '@/utils/interfaces/transaction';
 import { useLazyGetByTxHashQuery } from '@/services/layerzero-scan';
@@ -11,7 +11,7 @@ import { useLazyGetBusQueueQuery } from '@/services/stargate-transaction';
 import { useTransactionStore } from '../useTransactionStore';
 
 export function useStargateTransaction(tx: ITransaction, enabled = true) {
-  const [status, setStatus] = useState<StargateTransactionStatus>(tx.status);
+  const [status, setStatus] = useState<StargateTransactionStatus | CCIPTransactionStatus>(tx.status);
   const [hash, setHash] = useState(tx.txHash);
   const { address } = useAccount();
   const allTx = useTransactionStore(state => state.allTx);

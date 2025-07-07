@@ -1,7 +1,12 @@
 import { Button } from '@/components/ui/button';
+import { useTransactionStore } from '@/hooks/useTransactionStore';
+import { ChainTokenSource } from '@/utils/enums/chain';
+import { CCIPTransactionStatus } from '@/utils/enums/transaction';
 import type { IChainInfo } from '@/utils/interfaces/chain';
 import type { ITokenInfo } from '@/utils/interfaces/token';
 import type { FormState } from 'react-hook-form';
+import { useAccount } from 'wagmi';
+
 
 interface SubmitButtonProps {
   isConnected: boolean;
@@ -31,7 +36,17 @@ function SubmitButton({
   isFullField,
   isSufficientBalance,
 }: SubmitButtonProps) {
-
+  const { address } = useAccount();
+const allTx = useTransactionStore((state) => state.allTx);
+const userTxs = address ? allTx?.[address] || [] : [];
+const MAX_PENDING_DURATION_MS = 1 * 60 * 1000;
+const now = Date.now();
+const currentPendingLocalTx = userTxs.find(
+  (tx) =>
+    tx.source === ChainTokenSource.Local &&
+    tx.status !== CCIPTransactionStatus.TARGET &&
+    now - (tx.createdAt ?? 0) < MAX_PENDING_DURATION_MS
+);
   return (
     <div className='pt-4'>
       {!isConnected ? (
@@ -50,10 +65,10 @@ function SubmitButton({
             !isBridgeEnabled ||
             !isFullField ||
             !userDesBalance ||
-            !isSufficientBalance
+            !isSufficientBalance || !!currentPendingLocalTx
           }
         >
-          {formState.isSubmitting ? (
+          {formState.isSubmitting || currentPendingLocalTx  ? (
             <span className='flex items-center justify-center gap-2'>
               <svg
                 className='animate-spin h-4 w-4'

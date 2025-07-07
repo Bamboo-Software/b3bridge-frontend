@@ -26,21 +26,20 @@ const Header = () => {
     return (
        <header 
               className={cn(
-                "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-                isScrolled ? 
-                  "bg-card/80 backdrop-blur-lg shadow-md border-b border-primary/10" : 
+                "fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b border-gray-200 dark:border-gray-700",
+                isScrolled ?
+                  "bg-card/80 backdrop-blur-lg shadow-md border-b border-primary/10" :
                   "bg-transparent"
               )}
             >
               {/* Gradient border at the bottom */}
               <div className={cn(
-                "absolute bottom-0 left-0 right-0 h-[1px] transition-opacity duration-300",
+                "absolute bottom-0 left-0 right-0 h-[1px] transition-opacity duration-300 ",
                 isScrolled ? "opacity-100" : "opacity-0"
               )}>
                 <div className="h-full w-full bg-gradient-to-r from-transparent via-primary to-transparent opacity-30"></div>
               </div>
-      
-              <div className="container mx-auto px-4">
+              <div className="max-w-[1872] mx-auto px-4">
                 <div className="flex items-center justify-between h-20 px-3 pt-1">
                   {/* Logo */}
                   <Link to={ROOT} className="flex items-center">
@@ -52,7 +51,6 @@ const Header = () => {
                     >
                       {/* Logo glow effect */}
                       <div className="absolute -inset-1 bg-primary/20 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                      
                       <h1 className="text-xl font-bold bg-gradient-to-r from-primary via-cyan-400 to-purple-500 bg-clip-text text-transparent relative z-10">
                         B3Bridge
                       </h1>

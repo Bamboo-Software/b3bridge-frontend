@@ -35,6 +35,7 @@ export function TransactionModal({ open, setOpen }: TransactionModalProps) {
           userTxs.length > 0 ? (
             userTxs.map((tx, idx) => (
               <TransactionItem
+               
                 key={tx.txHash + idx}
                 tx={tx}
                 tokenList={tokenList}
@@ -46,6 +47,7 @@ export function TransactionModal({ open, setOpen }: TransactionModalProps) {
         ) : (
           <div className="text-muted-foreground py-6">Please connect your wallet.</div>
         )}
+        
       </DialogContent>
     </Dialog>
   )
