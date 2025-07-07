@@ -6,3 +6,6 @@ export enum StargateTransactionStatus {
   CONFIRMING="CONFIRMING",
   DELIVERED="DELIVERED"
 }
+export enum CCIPTransactionStatus {
+  SUCCESS="SUCCESS",
+}

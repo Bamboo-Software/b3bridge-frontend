@@ -54,7 +54,7 @@ function BridgeForm() {
   const [openTransactionModal, setOpenTransactionModal] = useState(false);
   const [toAmount, setToAmount] = useState('');
   // --- Form ---
-  const form = useForm<BridgeFormValues>({
+  const  form = useForm<BridgeFormValues>({
     resolver: zodResolver(bridgeFormSchema),
     mode: 'onChange',
     defaultValues: {
@@ -233,17 +233,6 @@ function BridgeForm() {
     form.setValue('toWalletAddress', fromWallet, { shouldValidate: true });
   };
   // --- Handlers ---
-  const bridge = useBridgeTokens({
-    amount: watchedAmount,
-    toAmount: toAmount,
-    fromChain: selectedFromChain,
-    fromToken: watchedToken,
-    receiver: watchedToWallet,
-    toChain: selectedToChain,
-    toToken: destinationToken as ITokenInfo,
-    quote: watchedQuote,
-    tokenList:tokenList
-  });
   const {ccipFee}= useGetFeeCCIP({
     amount: watchedAmount,
     toAmount: watchedAmount,
@@ -255,6 +244,18 @@ function BridgeForm() {
     quote: watchedQuote,
     tokenList:tokenList
   })
+  const bridge  = useBridgeTokens({
+    amount: watchedAmount,
+    toAmount: toAmount,
+    fromChain: selectedFromChain,
+    fromToken: watchedToken,
+    receiver: watchedToWallet,
+    toChain: selectedToChain,
+    toToken: destinationToken as ITokenInfo,
+    quote: watchedQuote,
+    tokenList: tokenList,
+    ccipFee: ccipFee as bigint
+  });
   const handleOpenConnectModal = useCallback(
     () => setConnectWalletModalOpen(true),
     []
@@ -319,17 +320,19 @@ function BridgeForm() {
           <TransactionAccordion
             setQuoteModalOpen={setQuoteModalOpen}
             receiveAmount={
-              formatTokenAmount(
-                watchedQuote?.dstAmount,
-                destinationToken
-              )?.toString() || ''
-            }
+            (watchedQuote?.dstAmount && destinationToken
+              ? formatTokenAmount(watchedQuote.dstAmount, destinationToken)?.toString()
+              : debouncedAmount?.toString()
+            ) ?? ''
+          }
             estTime={watchedQuote?.duration?.estimated}
             totalFeeStargateUsd={totalFeeStargateUsd}
-            route={watchedQuote?.routeName?.toUpperCase()}
+            ccipFee={ccipFee as bigint}
+            route={watchedQuote?.route}
             enable={isBridgeEnabled}
             isTransactionInfoLoading={isTransactionInfoLoading}
             destinationToken={destinationToken}
+            selectedFromChain={selectedFromChain}
           />
           <SubmitButton
             isFullField={isFullField}

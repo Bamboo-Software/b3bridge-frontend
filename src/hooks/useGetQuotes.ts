@@ -59,7 +59,7 @@ export function useGetQuotes({
             srcChainKey: srcChain?.chainKey,
             dstChainKey: destChain?.chainKey,
             srcAmount: (Number(srcAmount) || 0) * 10 ** (srcToken?.decimals || 0),
-            dstAmountMin 
+            dstAmountMin
           }
         : null,
     [isValid, srcToken, desToken, srcAddress, destAddress, srcChain, destChain, srcAmount]

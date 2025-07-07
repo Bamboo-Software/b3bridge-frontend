@@ -34,7 +34,7 @@ export const formatTokenAmount = (amount: string | undefined, token?: ITokenInfo
 };
 export function getIsOrigin(token: ITokenInfo): boolean {
   return (
-    tokenMetaByChainAndSymbol[token.chainId]?.[token.symbol as CryptoCurrencyEnum]
+    tokenMetaByChainAndSymbol[token?.chainId]?.[token?.symbol as CryptoCurrencyEnum]
       ?.isOrigin ?? false
   );
 }

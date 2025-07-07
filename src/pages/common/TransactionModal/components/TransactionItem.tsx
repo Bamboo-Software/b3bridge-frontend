@@ -1,6 +1,6 @@
 import type { ITransaction } from '@/utils/interfaces/transaction';
 import { getLayerZeroScanLink } from '@/utils/blockchain/explorer';
-import { ArrowRightLeft } from 'lucide-react';
+import { ArrowRightLeft, Clock } from 'lucide-react';
 import Image from '@/components/ui/image';
 import type { ITokenInfo } from '@/utils/interfaces/token';
 import { useTransactionInfo } from '@/hooks/transaction/useTransactionInfo';
@@ -11,6 +11,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useLocalTransactionStatus } from '@/hooks/transaction/useUpdateLocalTransactionStatus';
+
 
 export function TransactionItem({
   tx,
@@ -18,7 +20,9 @@ export function TransactionItem({
 }: {
   tx: ITransaction;
   tokenList?: ITokenInfo[];
-}) {
+  }) {
+
+
   const {
     statusColor,
     progress,
@@ -28,31 +32,92 @@ export function TransactionItem({
     toAmountFormatted,
     fees,
   } = useTransactionInfo(tx, tokenList);
+  const elapsedTime = useLocalTransactionStatus(tx)
+   function getTxExplorerLink(txHash: string, chainId: number): string {
+  switch (chainId) {
+    case 11155111:
+      return `https://sepolia.etherscan.io/tx/${txHash}`;
+    case 1:
+      return `https://etherscan.io/tx/${txHash}`;
+    case 1328:
+      return `https://seitrace.com/tx/${txHash}`;
+    default:
+      return '';
+  }
+}
 
+ function getCCIPExplorerLink(messageId: string): string {
+  return `https://ccip.chain.link/msg/${messageId}`;
+}
   return (
     <div className='border rounded-xl p-4 mb-4 bg-background/80 shadow transition hover:shadow-lg flex flex-col gap-4'>
-      {/* Progress */}
-        <div className='flex flex-col gap-1'>
-          <div className='flex items-center justify-between mb-1'>
-            <div className='flex items-center gap-2'>
-              {progress.icon}
-              <span className={`font-semibold text-sm ${statusColor}`}>
-                {progress.label}
+      {/* Progress && Elapsed Time */}
+        {elapsedTime ? (
+            <div className="flex justify-between items-center px-1 py-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="inline-flex items-center gap-1 bg-muted/50 text-foreground text-xs font-semibold px-2 py-1 rounded-md shadow-sm cursor-default hover:bg-muted transition-colors">
+                    <Clock className="w-4 h-4 text-primary" />
+                    <span>
+                      Running for: <span className="text-primary">{elapsedTime}</span>
+                    </span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent className='w-full bg-gradient-to-r from-primary via-cyan-400 to-purple-500 hover:opacity-90 transition-all duration-300 shadow-md hover:shadow-lg text-white py-2 rounded-lg'>
+                  <span className="text-xs font-semibold">
+                    Started at: {new Date(tx.createdAt ?? Date.now()).toLocaleString()}
+                  </span>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          ) : (
+          <div className='flex flex-col gap-1'>
+            <div className='flex items-center justify-between mb-1'>
+              <div className='flex items-center gap-2'>
+                {progress.icon}
+                <span className={`font-semibold text-sm ${statusColor}`}>
+                  {progress.label}
+                </span>
+              </div>
+              <span className='text-xs text-muted-foreground'>
+                {progress.percent}%
               </span>
             </div>
-            <span className='text-xs text-muted-foreground'>
-              {progress.percent}%
-            </span>
+            <div className='w-full h-2 bg-muted rounded-full overflow-hidden'>
+              <div
+                className={`h-2 rounded-full transition-all duration-500 ${
+                  progress.percent === 100 ? 'bg-green-500' : 'bg-primary'
+                }`}
+                style={{ width: `${progress.percent}%` }}
+              />
+            </div>
           </div>
-          <div className='w-full h-2 bg-muted rounded-full overflow-hidden'>
-            <div
-              className={`h-2 rounded-full transition-all duration-500 ${
-                progress.percent === 100 ? 'bg-green-500' : 'bg-primary'
-              }`}
-              style={{ width: `${progress.percent}%` }}
-            />
-          </div>
-        </div>
+      )}
+      <div className="flex gap-2 flex-wrap">
+      {/* View tx on Explorer */}
+      {tx.txHash && (
+        <a
+          href={getTxExplorerLink(tx.txHash, tx.fromChain.id)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-sm font-medium text-primary underline hover:text-primary/80 transition"
+        >
+          🧾 View Tx on {tx.fromChain.name} Explorer
+        </a>
+      )}
+
+      {/* View CCIP message */}
+      {tx.messageId && (
+        <a
+          href={getCCIPExplorerLink(tx.messageId)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-sm font-medium text-purple-500 underline hover:text-purple-400 transition"
+        >
+          🔗 View CCIP Message
+        </a>
+      )}
+    </div>
 
       {/* Transaction Box */}
       <div className='flex items-center justify-between gap-4 bg-muted/30 rounded-lg px-3 py-3 relative'>

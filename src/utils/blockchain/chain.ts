@@ -20,7 +20,7 @@ export function getChainImage({chainId, chainKey, source}: {
   source?: ChainTokenSource
 }) {
   if(source === ChainTokenSource.Stargate && chainKey) {
-    const baseURLImage = import.meta.env.VITE_STARGATE_BASE_IMAGE_URL 
+    const baseURLImage = import.meta.env.VITE_STARGATE_BASE_IMAGE_URL
     return `${baseURLImage}/networks/${chainKey}.svg`
   } else if(source === ChainTokenSource.Local &&  chainId) {
     const chain = getChainDataLocal(chainId)

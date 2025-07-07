@@ -1,0 +1,9 @@
+ [
+  {
+    "inputs": [{ "internalType": "bytes32", "name": "messageId", "type": "bytes32" }],
+    "name": "getMessageStatus",
+    "outputs": [{ "internalType": "enum Client.MessageStatus", "name": "", "type": "uint8" }],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]
