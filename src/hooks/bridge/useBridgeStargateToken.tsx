@@ -63,7 +63,6 @@ export const useStargateBridge = (params: IBridgeParams) => {
           quote,
           fromAmount: amount,
           toAmount: formatTokenAmount(toAmount, toToken),
-          type: 'STARGATE'
         };
         const prev = allTx || {};
         setAllTx({

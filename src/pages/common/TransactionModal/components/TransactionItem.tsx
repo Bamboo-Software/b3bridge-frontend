@@ -1,27 +1,32 @@
 import type { ITransaction } from '@/utils/interfaces/transaction';
 import { getLayerZeroScanLink } from '@/utils/blockchain/explorer';
-import { ArrowRightLeft, Clock } from 'lucide-react';
+import { AlertTriangle, ArrowRightLeft, ExternalLink } from 'lucide-react';
 import Image from '@/components/ui/image';
 import type { ITokenInfo } from '@/utils/interfaces/token';
 import { useTransactionInfo } from '@/hooks/transaction/useTransactionInfo';
-import { formatNumber, shortenAddress } from '@/utils';
+import { formatNumber, getCCIPExplorerLink, getTxExplorerLink, shortenAddress } from '@/utils';
 import {
   TooltipProvider,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useLocalTransactionStatus } from '@/hooks/transaction/useUpdateLocalTransactionStatus';
-import { ChainTokenSource } from '@/utils/enums/chain';
+// import { useLocalTransactionStatus } from '@/hooks/transaction/useUpdateLocalTransactionStatus';
+// import { ChainTokenSource } from '@/utils/enums/chain';
+import { Button } from '@/components/ui/button';
+import { CCIPTransactionStatus } from '@/utils/enums/transaction';
 
 
 export function TransactionItem({
   tx,
   tokenList = [],
+  
 }: {
-  tx: ITransaction;
+    tx: ITransaction;
+ 
   tokenList?: ITokenInfo[];
   }) {
+
 
 
   const {
@@ -33,45 +38,9 @@ export function TransactionItem({
     toAmountFormatted,
     fees,
   } = useTransactionInfo(tx, tokenList);
-  const elapsedTime = useLocalTransactionStatus(tx, tx?.source === ChainTokenSource.Local)
-   function getTxExplorerLink(txHash: string, chainId: number): string {
-  switch (chainId) {
-    case 11155111:
-      return `https://sepolia.etherscan.io/tx/${txHash}`;
-    case 1:
-      return `https://etherscan.io/tx/${txHash}`;
-    case 1328:
-      return `https://seitrace.com/tx/${txHash}`;
-    default:
-      return '';
-  }
-}
-
- function getCCIPExplorerLink(messageId: string): string {
-  return `https://ccip.chain.link/msg/${messageId}`;
-}
+ 
   return (
     <div className='border rounded-xl p-4 mb-4 bg-background/80 shadow transition hover:shadow-lg flex flex-col gap-4'>
-      {/* Progress && Elapsed Time */}
-        {elapsedTime ? (
-            <div className="flex justify-between items-center px-1 py-1">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="inline-flex items-center gap-1 bg-muted/50 text-foreground text-xs font-semibold px-2 py-1 rounded-md shadow-sm cursor-default hover:bg-muted transition-colors">
-                    <Clock className="w-4 h-4 text-primary" />
-                    <span>
-                      Running for: <span className="text-primary">{elapsedTime}</span>
-                    </span>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent className='w-full bg-gradient-to-r from-primary via-cyan-400 to-purple-500 hover:opacity-90 transition-all duration-300 shadow-md hover:shadow-lg text-white py-2 rounded-lg'>
-                  <span className="text-xs font-semibold">
-                    Started at: {new Date(tx.createdAt ?? Date.now()).toLocaleString()}
-                  </span>
-                </TooltipContent>
-              </Tooltip>
-            </div>
-          ) : (
           <div className='flex flex-col gap-1'>
             <div className='flex items-center justify-between mb-1'>
               <div className='flex items-center gap-2'>
@@ -93,33 +62,52 @@ export function TransactionItem({
               />
             </div>
           </div>
-      )}
-      <div className="flex gap-2 flex-wrap">
-      {/* View tx on Explorer */}
+      <div className="flex flex-wrap gap-2">
       {tx.txHash && (
-        <a
-          href={getTxExplorerLink(tx.txHash, tx.fromChain.id)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-sm font-medium text-primary underline hover:text-primary/80 transition"
+        <Button
+          asChild
+          variant="outline"
+          className="gap-1 text-primary hover:text-primary/90 border-primary hover:bg-primary/5"
         >
-          🧾 View Tx on {tx.fromChain.name} Explorer
-        </a>
+          <a
+            href={getTxExplorerLink(tx.txHash, tx.fromChain.id)}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <ExternalLink className="w-4 h-4" />
+            Tx on {tx.fromChain.name}
+          </a>
+        </Button>
       )}
 
-      {/* View CCIP message */}
       {tx.messageId && (
-        <a
-          href={getCCIPExplorerLink(tx.messageId)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-sm font-medium text-purple-500 underline hover:text-purple-400 transition"
+        <Button
+          asChild
+          variant="outline"
+          className="gap-1 text-purple-600 hover:text-purple-500 border-purple-500 hover:bg-purple-100"
         >
-          🔗 View CCIP Message
-        </a>
+          <a
+            href={getCCIPExplorerLink(tx.messageId)}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <ExternalLink className="w-4 h-4" />
+            CCIP Message
+          </a>
+        </Button>
       )}
     </div>
-
+    {tx.source === "Local" && tx.status !== CCIPTransactionStatus.TARGET && (
+      <div className="flex items-start gap-2 p-3 mt-2 rounded-md bg-yellow-50 border border-yellow-200 text-sm text-yellow-800">
+        <AlertTriangle className="w-4 h-4 mt-0.5 text-yellow-600" />
+        <div>
+          <p className="font-medium">Transaction in Progress</p>
+          <p>
+            This local transaction is still pending. Please don’t refresh or close this tab to avoid losing the transaction status.
+          </p>
+        </div>
+      </div>
+    )}
       {/* Transaction Box */}
       <div className='flex items-center justify-between gap-4 bg-muted/30 rounded-lg px-3 py-3 relative'>
         {/* From */}

@@ -7,5 +7,8 @@ export enum StargateTransactionStatus {
   DELIVERED="DELIVERED"
 }
 export enum CCIPTransactionStatus {
-  SUCCESS="SUCCESS",
+  SOURCE="SOURCE",
+  CCIP="CCIP",
+  VALIDATOR="VALIDATOR",
+  TARGET="TARGET",
 }
