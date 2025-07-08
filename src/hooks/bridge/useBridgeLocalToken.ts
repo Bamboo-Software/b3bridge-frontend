@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { getBridgeActionType, getIsOrigin } from '@/utils';
-import { wagmiConfig } from '@/utils/constants/wagmi';
 import type {  IBridgeParams } from '@/utils/interfaces/bridge';
 import { ethers } from 'ethers';
 
@@ -16,6 +15,7 @@ import { useBridgeStore } from '@/stores/bridge/useBridgeLocalStore';
 import { useTransactionStore } from '../useTransactionStore';
 import { ChainTokenSource } from '@/utils/enums/chain';
 import { StargateTransactionStatus } from '@/utils/enums/transaction';
+import { wagmiConfig } from '@/utils/constants/wallet/wagmi';
 // import type { WalletClient } from 'viem';
 export const useLocalBridge = () => {
   const {

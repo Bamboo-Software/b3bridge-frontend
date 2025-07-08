@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { WagmiProvider as WagmiProviderCore,} from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { wagmiConfig } from '@/utils/constants/wagmi';
+import { wagmiConfig } from '@/utils/constants/wallet/wagmi';
 
 interface WagmiProviderProps {
   children: ReactNode;

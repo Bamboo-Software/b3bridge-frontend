@@ -1,5 +1,5 @@
 import { EVM_CHAIN_IDS ,  blockChainConfig, chainImages, } from '../constants/chain';
-import { wagmiConfig } from '../constants/wagmi';
+import { wagmiConfig } from '../constants/wallet/wagmi';
 import {  BlockchainNameEnum, ChainId, ChainTokenSource, CryptoCurrencyEnum, type SUPPORTED_CHAINS_EVM } from '../enums/chain';
 
 export function getChainDataLocal(chainId: SUPPORTED_CHAINS_EVM) {

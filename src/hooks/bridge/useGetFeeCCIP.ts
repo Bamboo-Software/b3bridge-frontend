@@ -4,12 +4,12 @@ import { parseUnits } from 'viem';
 import { isAddress } from 'viem/utils';
 import { readContract } from 'wagmi/actions';
 import { blockChainConfig, chainSelectors } from '@/utils/constants/chain';
-import { wagmiConfig } from '@/utils/constants/wagmi';
 import { useReadContract } from 'wagmi';
 import { ethers } from 'ethers';
 import { getBridgeActionType, getIsOrigin } from '@/utils';
 import type { IBridgeParams } from '@/utils/interfaces/bridge';
 import { BridgeActionType } from '@/utils/enums/bridge';
+import { wagmiConfig } from '@/utils/constants/wallet/wagmi';
 
 export function useGetFeeCCIP(params: IBridgeParams) {
   const { fromToken, toToken, tokenList, toChain, fromChain, amount, receiver } = params;

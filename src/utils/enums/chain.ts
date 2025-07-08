@@ -22,7 +22,7 @@ export type SUPPORTED_CHAINS_EVM =  ChainId.Ethereum | ChainId.SEI;
 
 
 export enum ChainType {
-  EVM = 'EVM',
+  EVM = 'Evm',
   Solana = 'Solana',
 }
 

@@ -1,13 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { http, createConfig, webSocket } from '@wagmi/core'
-import { appConfig } from '../app'
-import type { WalletConfig } from '@/utils/interfaces/wallet'
-import metamaskLogo from '@/assets/icons/metamask-logo.png'
-import okxLogo from '@/assets/icons/okx-logo.svg'
+import { http, createConfig, webSocket } from 'wagmi'
 import * as viemChains from 'viem/chains'
 import type { Chain } from 'viem'
-import { CHAIN_ENV_KEYS } from '../chain'
-
+import { CHAIN_ENV_KEYS } from '../../chain'
+import { appConfig } from '../../app'
 const isProd = appConfig?.isProd
 
 const allChains: Chain[] = Object.values(viemChains).filter(
@@ -58,23 +54,3 @@ export const wagmiConfig = createConfig({
   transports: transportsConfig
 });
 
-export const walletConfig: WalletConfig[] = [
-  {
-    connectorId: "io.metamask",
-    name: "MetaMask",
-    logo: metamaskLogo,
-  },
-  {
-    connectorId: "com.okex.wallet",
-    name: "OKX",
-    logo: okxLogo,
-  }
-];
-
-export function getWalletLogoByName(name: string): string | undefined {
-  return walletConfig.find(w => w.name.toLowerCase() === name.toLowerCase())?.logo;
-}
-
-export function getWalletByConnectorId(connectorId: string): WalletConfig | undefined {
-  return walletConfig.find(w => w.connectorId === connectorId);
-}

@@ -22,3 +22,4 @@ export const useBridgeStore = create<BridgeLocalState>((set) => ({
   transaction: undefined,
   setBridgeState: (newState) => set((state) => ({ ...state, ...newState })),
 }));
+ 

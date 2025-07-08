@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { parseAbiItem } from "viem";
 import { watchContractEvent } from "@wagmi/core";
-import { wagmiConfig } from "@/utils/constants/wagmi";
 import { blockChainConfig } from "@/utils/constants/chain";
+import { wagmiConfig } from '@/utils/constants/wallet/wagmi';
 
 interface UseWatchUnlockTokenCCIPParams {
   chainId: number;

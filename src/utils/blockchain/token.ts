@@ -2,9 +2,9 @@ import { readContract } from '@wagmi/core'
 import { erc20Abi, zeroAddress, type Address } from 'viem'
 
 import { getChainNameByChainId, isEvmChain } from './chain'
-import { wagmiConfig } from '../constants/wagmi'
 import { BlockchainNameEnum, ChainTokenSource, type SUPPORTED_CHAINS_EVM } from '../enums/chain'
 import { TokenImages } from '../constants/token'
+import { wagmiConfig } from '../constants/wallet/wagmi'
 
 
 export async function getTokenSymbolAndDecimals(

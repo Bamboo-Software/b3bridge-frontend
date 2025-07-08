@@ -2,7 +2,6 @@ import type { IBridgeParams } from '@/utils/interfaces/bridge';
 import { useAccount, useWalletClient } from 'wagmi';
 import { type Address } from 'viem';
 import { StargateStepName } from '@/utils/enums/bridge';
-import { selectedChains } from '@/utils/constants/wagmi';
 import { toast } from 'sonner';
 import { getLayerZeroScanLink } from '@/utils/blockchain/explorer';
 import { formatTokenAmount, shortenAddress } from '@/utils';
@@ -10,6 +9,7 @@ import type { ITransaction } from '@/utils/interfaces/transaction';
 import { ChainTokenSource } from '@/utils/enums/chain';
 import { StargateTransactionStatus } from '@/utils/enums/transaction';
 import { useTransactionStore } from '../useTransactionStore';
+import { selectedChains } from '@/utils/constants/wallet/wagmi';
 
 export const useStargateBridge = (params: IBridgeParams) => {
   const allTx = useTransactionStore(state => state.allTx)
@@ -63,6 +63,7 @@ export const useStargateBridge = (params: IBridgeParams) => {
           quote,
           fromAmount: amount,
           toAmount: formatTokenAmount(toAmount, toToken),
+          type: 'STARGATE'
         };
         const prev = allTx || {};
         setAllTx({

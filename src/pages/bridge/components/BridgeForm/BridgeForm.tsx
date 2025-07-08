@@ -5,7 +5,6 @@ import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAccount, useSwitchChain } from 'wagmi';
 import { Form } from '@/components/ui/form';
-import { WalletConnectModal } from '@/pages/common/ConnectWalletModal';
 import { useTokenList } from '@/hooks/useTokenList';
 import { useChainList } from '@/hooks/useChainList';
 import { useUserTokenBalance } from '@/hooks/useUserBalance';
@@ -31,19 +30,15 @@ import BridgeSourceSection from './BridgeSourceSection';
 import { formatTokenAmount } from '@/utils';
 import { useGetFeeCCIP } from '@/hooks/bridge/useGetFeeCCIP';
 import { toast } from 'sonner';
-import { LocalStorageKey } from '@/utils/enums/localStorage';
 import { TransactionModal } from '@/pages/common/TransactionModal';
-import { StargateTransactionStatus } from '@/utils/enums/transaction';
-import { useTransactionStore } from '@/hooks/useTransactionStore';
 import { useLocalStorage } from 'react-use';
+import { WalletConnectModal } from '@/pages/common/ConnectWalletModal';
+import { LocalStorageKey } from '@/utils/enums/local-storage';
 
 const validateReceiver = (value: string) =>
   value ? /^0x[a-fA-F0-9]{40}$/.test(value) : null;
 
 function BridgeForm() {
-  const allTx = useTransactionStore(state => state.allTx)
-  const setAllTx = useTransactionStore(state => state.setAllTx)
-  
   const [preferredRoute , setPreferredRoute] = useLocalStorage<string>(LocalStorageKey.PREFERRED_ROUTE, '');
    // --- State ---
   const { address, isConnected } = useAccount();
@@ -276,6 +271,7 @@ function BridgeForm() {
       });
     }
   };
+  
 
   // --- Render ---
   return (

@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { ITransaction } from '@/utils/interfaces/transaction'
-import { LocalStorageKey } from '@/utils/enums/localStorage'
+import { LocalStorageKey } from '@/utils/enums/local-storage'
 
 interface TransactionStore {
   allTx: Record<string, ITransaction[]>

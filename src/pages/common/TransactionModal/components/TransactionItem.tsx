@@ -12,6 +12,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useLocalTransactionStatus } from '@/hooks/transaction/useUpdateLocalTransactionStatus';
+import { ChainTokenSource } from '@/utils/enums/chain';
 
 
 export function TransactionItem({
@@ -32,7 +33,7 @@ export function TransactionItem({
     toAmountFormatted,
     fees,
   } = useTransactionInfo(tx, tokenList);
-  const elapsedTime = useLocalTransactionStatus(tx)
+  const elapsedTime = useLocalTransactionStatus(tx, tx?.source === ChainTokenSource.Local)
    function getTxExplorerLink(txHash: string, chainId: number): string {
   switch (chainId) {
     case 11155111:

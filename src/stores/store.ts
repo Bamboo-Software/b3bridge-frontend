@@ -5,6 +5,8 @@ import { bridgeApi } from '../services/bridge';
 import { stargateApi } from '@/services/stargate-bridge';
 import { layerZeroScanApi } from '@/services/layerzero-scan';
 import { stargateTransactionApi } from '@/services/stargate-transaction';
+import { preSaleAuthApi } from '@/services/pre-sale/pre-sale-auth';
+import { preSaleTokenManagementApi } from '@/services/pre-sale/pre-sale-token';
 
 export const listenerMiddleware = createListenerMiddleware({
   onError: () => console.error('An error listener middleware occurred'),
@@ -17,6 +19,9 @@ const reducer = {
   [stargateApi.reducerPath]: stargateApi.reducer,
   [layerZeroScanApi.reducerPath]: layerZeroScanApi.reducer,
   [stargateTransactionApi.reducerPath]: stargateTransactionApi.reducer,
+  // pre-sale
+  [preSaleAuthApi.reducerPath]: preSaleAuthApi.reducer,
+  [preSaleTokenManagementApi.reducerPath]: preSaleTokenManagementApi.reducer,
 };
 
 export const store = configureStore({
@@ -27,7 +32,10 @@ export const store = configureStore({
       bridgeApi.middleware,
       stargateApi.middleware,
       layerZeroScanApi.middleware,
-      stargateTransactionApi.middleware
+      stargateTransactionApi.middleware,
+      // pre-sale
+      preSaleAuthApi.middleware,
+      preSaleTokenManagementApi.middleware,
     )
     .prepend(listenerMiddleware.middleware)
 });

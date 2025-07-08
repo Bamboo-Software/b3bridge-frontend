@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { wagmiConfig } from '@/utils/constants/wagmi'
 import { erc20Abi, formatUnits, type Address } from 'viem'
 import { ethers } from 'ethers'
 import { getBalance, readContract } from '@wagmi/core'
 import type { ITokenInfo } from '@/utils/interfaces/token'
+import { wagmiConfig } from '@/utils/constants/wallet/wagmi'
 export function useUserTokenBalance(
   userAddress?: Address,
   token?: ITokenInfo,

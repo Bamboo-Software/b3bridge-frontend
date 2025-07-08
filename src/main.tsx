@@ -10,6 +10,7 @@ import './index.css'
 import { store } from './stores/store';
 import { ThemeProvider } from './providers/theme/ThemeProvider';
 import { WagmiProvider } from './providers/wallet/WagmiProvider';
+import { SolanaProvider } from './providers/wallet/SolanaProvider';
 
 const App = lazy(() => import("./App"));
 
@@ -19,12 +20,14 @@ createRoot(document.getElementById('root')!).render(
       {/* <I18nProvider> */}
         <Provider store={store}>
           <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-            <WagmiProvider>
-              <Suspense fallback={<LoadingPage/>}>
-                <App />
-                <Toaster richColors/>
-              </Suspense>
-            </WagmiProvider>
+            <SolanaProvider>
+              <WagmiProvider>
+                <Suspense fallback={<LoadingPage/>}>
+                  <App />
+                  <Toaster richColors/>
+                </Suspense>
+              </WagmiProvider>
+            </SolanaProvider>
           </ThemeProvider>
         </Provider>
       {/* </I18nProvider> */}
