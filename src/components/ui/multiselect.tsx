@@ -141,7 +141,7 @@ export const MultiSelect = React.forwardRef<
         onOpenChange={setIsPopoverOpen}
         modal={modalPopover}
       >
-        <PopoverTrigger asChild={asChild}>
+        <PopoverTrigger asChild={asChild} className={className}>
           <Button
             ref={ref}
             {...props}
@@ -245,22 +245,26 @@ export const MultiSelect = React.forwardRef<
           </Button>
         </PopoverTrigger>
         <PopoverContent
-          className="w-auto p-0"
+          className={cn("p-0",className)}
           align="start"
           onEscapeKeyDown={() => setIsPopoverOpen(false)}
+          
         >
           <Command>
             <CommandInput
               placeholder="Search..."
               onKeyDown={handleInputKeyDown}
+           
             />
             <CommandList>
               <CommandEmpty>No results found.</CommandEmpty>
-              <CommandGroup>
+              <CommandGroup
+              >
                 <CommandItem
                   key="all"
                   onSelect={toggleAll}
                   className="cursor-pointer"
+                  
                 >
                   <div
                     className={cn(
@@ -281,6 +285,7 @@ export const MultiSelect = React.forwardRef<
                       key={option.value}
                       onSelect={() => toggleOption(option.value)}
                       className="cursor-pointer"
+                      
                     >
                       <div
                         className={cn(

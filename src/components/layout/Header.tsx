@@ -16,7 +16,6 @@ const Header = () => {
         const handleScroll = () => {
           setIsScrolled(window.scrollY > 10);
         };
-        
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
@@ -76,7 +75,6 @@ const Header = () => {
                     >
                       {/* Button hover effect */}
                       <span className="absolute inset-0 bg-primary/0 group-hover:bg-primary/10 transition-colors duration-300 rounded-full"></span>
-                      
                       {isMobileMenuOpen ? (
                         <XIcon className="h-5 w-5 relative z-10" />
                       ) : (
@@ -86,7 +84,6 @@ const Header = () => {
                   </div>
                 </div>
               </div>
-      
               {/* Mobile navigation */}
               {isMobileMenuOpen && (
                 <motion.div 
