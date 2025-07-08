@@ -4,7 +4,6 @@ import {
   ChevronLeft,
   HomeIcon,
   SquareArrowUpIcon,
-  Projector,
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -12,6 +11,7 @@ import { cn } from '@/utils';
 import { routesPaths } from '@/utils/constants/routes';
 import Image from '../ui/image';
 import LaunchPadLogo from "@/assets/icons/launch-pad-logo.svg"
+import CreateTokenLogo from "@/assets/icons/create-token-logo.svg"
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
   onCollapse?: (collapsed: boolean) => void;
 }
@@ -43,7 +43,7 @@ export function Sidebar({ className, onCollapse }: SidebarProps) {
     },
     {
       title: 'Create Token',
-      icon: <Projector className='h-4 w-4' />,
+      icon:<Image src={CreateTokenLogo} alt='CreateTokens' className='h-4 w-4' />,
       href: CREATE_TOKEN,
     },
     {
@@ -72,7 +72,7 @@ export function Sidebar({ className, onCollapse }: SidebarProps) {
         className
       )}
     >
-      <div className='flex-1 relative'>
+      <div className='flex-1 relative dark:bg-[#111417]'>
         <div
           className={`absolute transition-all duration-300 top-1/2 -translate-y-1/2 ${
             isCollapsed ? 'left-14' : 'left-60'
@@ -83,7 +83,7 @@ export function Sidebar({ className, onCollapse }: SidebarProps) {
             size='icon'
             className={cn(
               'size-8 rounded-full p-0 shadow-md',
-              'bg-gray-200 dark:bg-gray-800',
+              'bg-gray-200 bg-gradient-to-r from-[#2C8EFB] to-[#34D3FF] text-[#fff]',
               'text-gray-700 dark:text-gray-200',
               'hover:bg-gray-300 dark:hover:bg-gray-700'
             )}
