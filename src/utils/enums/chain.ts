@@ -1,9 +1,11 @@
-import { mainnet, sepolia, sei, seiTestnet } from '@wagmi/core/chains'
+import { mainnet, sepolia, sei, seiTestnet, bsc, bscTestnet, avalanche, avalancheFuji } from '@wagmi/core/chains'
 import { appConfig } from '../constants/app';
 
 export enum ChainId {
   Ethereum = (appConfig.isProd ? mainnet.id : sepolia.id),
   SEI = (appConfig.isProd ? sei.id : seiTestnet.id),
+  BSC = (appConfig.isProd ? bsc.id : bscTestnet.id),
+  AVALANCHE = (appConfig.isProd ? avalanche.id : avalancheFuji.id),
 }
 
 

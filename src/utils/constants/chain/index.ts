@@ -1,8 +1,10 @@
 import { ChainId } from '@/utils/enums/chain';
 import etherLogo from "@/assets/icons/ether.svg";
 import seiLogo from "@/assets/icons/sei.svg";
+import bscLogo from "@/assets/icons/bsc-logo.svg";
+import avalancheLogo from "@/assets/icons/avalanche-logo.svg";
 import { appConfig } from '../app';
-import { mainnet, sei, seiTestnet, sepolia, type Chain } from 'viem/chains';
+import { avalanche, avalancheFuji, bsc, bscTestnet, mainnet, sei, seiTestnet, sepolia, type Chain } from 'viem/chains';
 import ethereumABI from "./ethereumABI.json";
 import routerCCIP from "./routerCCIP.json";
 import seiABI from "./seiABI.json";
@@ -57,16 +59,22 @@ export const blockChainConfig = {
 export const chainImages = {
   [ChainId.Ethereum] : etherLogo,
   [ChainId.SEI]: seiLogo,
+  [ChainId.BSC]: bscLogo,
+  [ChainId.AVALANCHE]: avalancheLogo,
 }
 
 const isProd = appConfig?.isProd
 export const configChains = (isProd ? [mainnet, sei] : [sepolia, seiTestnet]) as [Chain, ...Chain[]]
+
+export const configLaunchPadsChains = (isProd ? [mainnet, avalanche, bsc] : [sepolia, avalancheFuji, bscTestnet]) as [Chain, ...Chain[]];
 
 
 
 export const EVM_CHAIN_IDS = new Set<number| string>([
   ChainId.Ethereum,
   ChainId.SEI,
+  ChainId.BSC,
+  ChainId.AVALANCHE,
 ]);
 
 export const CHAIN_ENV_KEYS: Record<number, string> = {

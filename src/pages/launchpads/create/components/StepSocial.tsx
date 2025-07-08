@@ -1,5 +1,4 @@
 import { useFormContext } from "react-hook-form";
-import type { LaunchpadForm } from '..';
 
 import DiscordIcon from "@/assets/icons/discord-icon.svg";
 import FBIcon from "@/assets/icons/facebook-icon.svg";
@@ -10,15 +9,16 @@ import TelegramIcon from "@/assets/icons/telegram-icon.svg";
 import XIcon from "@/assets/icons/x-icon.svg";
 import GlobeIcon from "@/assets/icons/website-icon.svg";
 import ImageIcon from "@/assets/icons/image.svg";
+import type { LaunchpadFormValues } from './launchpadFormValidation';
 
 export function Step2Social() {
-  const { register, formState: { errors } } = useFormContext<LaunchpadForm>();
+  const { register } = useFormContext<LaunchpadFormValues>();
 
   return (
     <div className="space-y-4 mb-6">
       <div className="flex gap-3">
         <div className="flex-1">
-          <label className="block mb-2 font-semibold text-foreground">Logo URL *</label>
+          <label className="block mb-2 font-semibold text-foreground">Logo URL <span className='text-red-500'>*</span></label>
           <div className="relative">
             <input
               {...register("logoUrl", { required: true })}
@@ -30,10 +30,9 @@ export function Step2Social() {
           <div className="text-xs text-primary mt-1">
             URL must end with support image extention PNG, JPG or GIF
           </div>
-          {errors.logoUrl && <div className="text-red-500 text-xs mt-1">Required</div>}
         </div>
         <div className="flex-1">
-          <label className="block mb-2 font-semibold text-foreground">Website *</label>
+          <label className="block mb-2 font-semibold text-foreground">Website <span className='text-red-500'>*</span></label>
           <div className="relative">
             <input
               {...register("website", { required: true })}
@@ -42,7 +41,6 @@ export function Step2Social() {
             />
             <img src={GlobeIcon} alt="website" className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 opacity-70" />
           </div>
-          {errors.website && <div className="text-red-500 text-xs mt-1">Required</div>}
         </div>
       </div>
       <div className="flex gap-3">

@@ -16,9 +16,15 @@ export function shortenAddress(address: string, chars = 4) {
   return `${address.slice(0, chars + 2)}...${address.slice(-chars)}`;
 }
 
-export function formatNumber(value: string | number, minimumFractionDigits?: number , maximumFractionDigits?: number) {
-  return value.toLocaleString('en', {
-    minimumFractionDigits: minimumFractionDigits ||0,
+export function formatNumber(
+  value: string | number,
+  minimumFractionDigits?: number,
+  maximumFractionDigits?: number
+) {
+  const num = typeof value === "string" ? Number(value) : value;
+  if (isNaN(num)) return value;
+  return num.toLocaleString("en", {
+    minimumFractionDigits: minimumFractionDigits || 0,
     maximumFractionDigits: maximumFractionDigits || 6,
   });
 }
@@ -32,7 +38,7 @@ export const formatTokenAmount = (amount: string | undefined, token?: ITokenInfo
   const parsedAmount = Number(amount);
   if (isNaN(parsedAmount)) return '0';
   const formatted = formatNumber(parsedAmount / 10 ** decimals, minimumFractionDigits, maximumFractionDigits);
-  return formatted 
+  return formatted.toString() 
 };
 export function getIsOrigin(token: ITokenInfo): boolean {
   return (
@@ -72,4 +78,12 @@ export const formatInputNumberDecimals = (value: string | number) => {
     formattedValue = intPart + '.' + decPart.slice(0, 5);
   }
   return formattedValue
+}
+
+export function shortenUrl(url: string, maxLength = 32): string {
+  if (!url) return "";
+  if (url.length <= maxLength) return url;
+  const prefix = url.slice(0, 18);
+  const suffix = url.slice(-8);
+  return `${prefix}...${suffix}`;
 }
