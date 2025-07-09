@@ -16,7 +16,7 @@ interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
   onCollapse?: (collapsed: boolean) => void;
 }
 
-const { ROOT, BRIDGE, CREATE_TOKEN, LAUNCH_PAD, CREATE_LAUNCH_PAD } = routesPaths;
+const { ROOT, BRIDGE, CREATE_TOKEN, LAUNCHPAD, CREATE_LAUNCHPAD } = routesPaths;
 
 export function Sidebar({ className, onCollapse }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -53,12 +53,12 @@ export function Sidebar({ className, onCollapse }: SidebarProps) {
         {
           title: 'Create Launchpads',
           icon:null,
-          href:  CREATE_LAUNCH_PAD,
+          href:  CREATE_LAUNCHPAD,
         },
         {
           title: 'Launchpad List',
           icon:null,
-          href: LAUNCH_PAD,
+          href: LAUNCHPAD,
         },
       ],
     },
@@ -171,7 +171,7 @@ export function Sidebar({ className, onCollapse }: SidebarProps) {
                           <NavLink
                             key={child.href}
                             to={child.href!}
-                            end={child.href === LAUNCH_PAD}
+                            end={child.href === LAUNCHPAD}
                             className={({ isActive }) =>
                               cn(
                                 'flex items-center rounded-md px-3 py-1.5 text-sm transition-colors',

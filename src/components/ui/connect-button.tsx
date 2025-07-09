@@ -55,7 +55,7 @@ function useCopyToClipboard(): [CopiedValue, CopyFn] {
 
 export function ConnectButton({ className }: { className?: string }) {
   const { address: evmAddress, isConnected, connector, chainId } = useAccount();
-  const {setToken} = useAuthToken()
+  const {setToken, removeToken} = useAuthToken()
   const {
     publicKey: solanaPubKey,
     connected,
@@ -130,6 +130,7 @@ export function ConnectButton({ className }: { className?: string }) {
   };
 
   const handleDisconnect = async () => {
+    removeToken()
     disconnect();
     setIsDropdownOpen(false);
     await disconnectSolanaWallet();

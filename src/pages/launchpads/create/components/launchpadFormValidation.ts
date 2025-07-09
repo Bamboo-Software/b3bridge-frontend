@@ -1,15 +1,28 @@
 import { z } from "zod";
 
 export const launchpadFormSchema = z.object({
-  token: z.string().min(1, "Token is required"),
+  token: z.any().refine(val => val != null, { message: "Token is required" }),
   chain: z.array(z.string()).min(1, "At least one chain is required"),
   chainFields: z.record(
     z.object({
-      address: z.string().optional(),
+      address: z.string().min(1, "Contract address is required"),
       totalFee: z.string().optional(),
-      payStatus: z.string().optional(),
-      payError: z.string().optional(),
-      payHash: z.string().optional(),
+      transactions: z.object({
+        native: z.object({
+          payStatus: z.string().optional(),
+          payError: z.string().optional(),
+          payHash: z.string().optional(),
+          amount: z.string().optional(),
+          gasEstimate: z.string().optional(),
+        }).optional(),
+        oft: z.object({
+          payStatus: z.string().optional(),
+          payError: z.string().optional(),
+          payHash: z.string().optional(),
+          amount: z.string().optional(),
+          tokenAddress: z.string().optional(),
+        }).optional()
+      }).optional(),
       presaleRate: z.string().min(1, "Presale Rate is required"),
       numberOfTokens: z.string().min(1, "Number of tokens is required"),
       softcap: z.string().min(1, "Softcap is required"),
@@ -32,6 +45,7 @@ export const launchpadFormSchema = z.object({
   youtube: z.string().url("Youtube must be a valid URL").optional().or(z.literal("")),
   description: z.string().optional(),
 }).superRefine((data, ctx) => {
+  // Validate time
   if (data.startTime && data.endTime && data.endTime <= data.startTime) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -39,6 +53,8 @@ export const launchpadFormSchema = z.object({
       path: ["endTime"],
     });
   }
+
+  // Validate chain fields
   if (data.chain && data.chain.length > 0) {
     for (const chainId of data.chain) {
       const field = data.chainFields?.[chainId];
@@ -49,7 +65,8 @@ export const launchpadFormSchema = z.object({
         !field.softcap ||
         !field.hardcap ||
         !field.minBuy ||
-        !field.maxBuy
+        !field.maxBuy ||
+        !field.address
       ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,

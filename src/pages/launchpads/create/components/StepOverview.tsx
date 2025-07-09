@@ -8,7 +8,6 @@ import {
 } from '@/components/ui/accordion';
 import Image from '@/components/ui/image';
 import { cn, formatNumber, shortenAddress, shortenUrl } from '@/utils';
-import type { ITokenOFT } from '@/utils/interfaces/token';
 import { configLaunchPadsChains } from '@/utils/constants/chain';
 import { getChainImage, isEvmChain } from '@/utils/blockchain/chain';
 import { ChainTokenSource, ChainType } from '@/utils/enums/chain';
@@ -28,6 +27,7 @@ import { useChainTransfer } from '@/hooks/useChainTransfer';
 import type { Address } from 'viem';
 import { TransactionStatus } from '@/utils/enums/transaction';
 import { useSwitchChain } from 'wagmi';
+
 const SOCIAL_FIELDS = [
   { key: 'website', label: 'Website' },
   { key: 'facebook', label: 'Facebook' },
@@ -53,10 +53,10 @@ const URL_FIELDS = [
   'youtube',
 ];
 
-export function Step3Overview({ tokens }: { tokens: ITokenOFT[] }) {
-  const { getValues, setValue } = useFormContext<LaunchpadFormValues>();
+export function Step3Overview() {
+  const { getValues, setValue, watch } = useFormContext<LaunchpadFormValues>();
   const values = getValues();
-  const token = tokens.find((t: ITokenOFT) => t.id === values.token);
+  const token = watch('token');
 
   const totalTokens = values.chainFields
     ? Object.values(values.chainFields).reduce(
@@ -81,37 +81,140 @@ export function Step3Overview({ tokens }: { tokens: ITokenOFT[] }) {
     chainId: number,
     chainType: ChainType,
     to: string,
-    amount?: string
+    nativeAmount: string,
+    oftAmount: string, // Default OFT amount
+    oftTokenAddress: string // Default OFT token address
   ) => {
     try {
       await switchChainAsync({ chainId });
 
-      if (!amount) throw new Error('Amount is required for payment');
-      setValue(`chainFields.${chainId}.payStatus`, TransactionStatus.PENDING);
-      setValue(`chainFields.${chainId}.payError`, '');
-      const result = await transfer({
+      // Set overall payment status to pending
+      setValue(
+        `chainFields.${chainId}.transactions.native.payStatus`,
+        TransactionStatus.PENDING
+      );
+      setValue(`chainFields.${chainId}.transactions.native.payError`, '');
+
+      // Step 1: Pay Native Currency
+      setValue(
+        `chainFields.${chainId}.transactions.native.payStatus`,
+        'pending'
+      );
+
+      const nativeResult = await transfer({
         chainType,
         to: to as Address,
-        amount,
+        amount: nativeAmount,
         chainId,
       });
-      if (result?.hash) {
-        setValue(`chainFields.${chainId}.payStatus`, TransactionStatus.SUCCESS);
-        setValue(`chainFields.${chainId}.payHash`, result.hash);
-      } else {
-        setValue(`chainFields.${chainId}.payStatus`, TransactionStatus.ERROR);
+
+      if (!nativeResult?.hash) {
+        throw new Error(nativeResult?.error || 'Native payment failed');
+      }
+
+      // Update native payment success
+      setValue(
+        `chainFields.${chainId}.transactions.native.payStatus`,
+        'success'
+      );
+      setValue(
+        `chainFields.${chainId}.transactions.native.payHash`,
+        nativeResult.hash
+      );
+      setValue(
+        `chainFields.${chainId}.transactions.native.amount`,
+        nativeAmount
+      );
+
+      // Step 2: Pay OFT Token
+      setValue(`chainFields.${chainId}.transactions.oft.payStatus`, 'pending');
+
+      const oftResult = await transfer({
+        chainType,
+        to: to as Address,
+        amount: oftAmount,
+        chainId,
+        tokenAddress: oftTokenAddress as Address, // For ERC20 token transfer
+      });
+
+      if (!oftResult?.hash) {
+        throw new Error(oftResult?.error || 'OFT payment failed');
+      }
+
+      // Update OFT payment success
+      setValue(`chainFields.${chainId}.transactions.oft.payStatus`, 'success');
+      setValue(
+        `chainFields.${chainId}.transactions.oft.payHash`,
+        oftResult.hash
+      );
+      setValue(`chainFields.${chainId}.transactions.oft.amount`, oftAmount);
+      setValue(
+        `chainFields.${chainId}.transactions.oft.tokenAddress`,
+        oftTokenAddress
+      );
+
+      // Set overall payment status to success
+      setValue(
+        `chainFields.${chainId}.transactions.oft.payStatus`,
+        TransactionStatus.SUCCESS
+      );
+      setValue(
+        `chainFields.${chainId}.transactions.oft.payHash`,
+        oftResult.hash
+      ); // Use last transaction hash
+
+    } catch (error) {
+      console.error('Payment failed:', error);
+
+      // Set failed status for current step
+      const nativeStatus =
+        values.chainFields?.[chainId]?.transactions?.native?.payStatus;
+      if (nativeStatus !== TransactionStatus.SUCCESS) {
         setValue(
-          `chainFields.${chainId}.payError`,
-          result?.error || 'Transaction failed'
+          `chainFields.${chainId}.transactions.native.payStatus`,
+          TransactionStatus.ERROR
+        );
+        setValue(
+          `chainFields.${chainId}.transactions.native.payError`,
+          (error as Error).message
+        );
+      } else {
+        setValue(
+          `chainFields.${chainId}.transactions.oft.payStatus`,
+          TransactionStatus.ERROR
+        );
+        setValue(
+          `chainFields.${chainId}.transactions.oft.payError`,
+          (error as Error).message
         );
       }
-    } catch (e) {
-      setValue(`chainFields.${chainId}.payStatus`, TransactionStatus.ERROR);
-      setValue(
-        `chainFields.${chainId}.payError`,
-        (e as Error).message || 'Transaction failed'
-      );
     }
+  };
+
+  const getPaymentButtonText = (chainId: string) => {
+    const field = values.chainFields?.[chainId];
+    if (!field) return 'Pay';
+
+    const nativeStatus = field.transactions?.native?.payStatus;
+    const oftStatus = field.transactions?.oft?.payStatus;
+
+    // If both payments are successful
+    if (
+      nativeStatus === TransactionStatus.SUCCESS &&
+      oftStatus === TransactionStatus.SUCCESS
+    ) {
+      return 'Completed';
+    }
+
+    // If any payment is pending
+    if (
+      nativeStatus === TransactionStatus.PENDING ||
+      oftStatus === TransactionStatus.PENDING
+    ) {
+      return 'Processing...';
+    }
+
+    return 'Pay';
   };
 
   return (
@@ -142,6 +245,7 @@ export function Step3Overview({ tokens }: { tokens: ITokenOFT[] }) {
           </div>
         </div>
       </div>
+
       {/* Chain */}
       <div className='rounded-lg bg-[color:var(--gray-night)] border border-[color:var(--gray-charcoal)] p-4'>
         <div className='font-semibold mb-2'>Chain</div>
@@ -152,11 +256,12 @@ export function Step3Overview({ tokens }: { tokens: ITokenOFT[] }) {
             );
             const field = values.chainFields?.[chainId];
             if (!chain || !field) return null;
+
             return (
               <AccordionItem
                 key={chain.id}
                 value={chain.id.toString()}
-                className='cursor-pointer  !border-2 border-[color:var(--gray-charcoal)] rounded-2xl'
+                className='cursor-pointer !border-2 border-[color:var(--gray-charcoal)] rounded-2xl'
               >
                 <div className='rounded-xl bg-[color:var(--gray-night)]'>
                   <AccordionTrigger
@@ -164,7 +269,7 @@ export function Step3Overview({ tokens }: { tokens: ITokenOFT[] }) {
                       'p-6 cursor-pointer flex items-center gap-2 rounded-lg focus:outline-none bg-transparent hover:no-underline'
                     )}
                   >
-                    <div className='flex !flex-1 gap-2 items-center '>
+                    <div className='flex !flex-1 gap-2 items-center'>
                       <Image
                         src={getChainImage({
                           chainId: chain.id,
@@ -252,7 +357,8 @@ export function Step3Overview({ tokens }: { tokens: ITokenOFT[] }) {
                             {formatNumber(field.totalFee || '0')} ETH
                           </span>
                         </div>
-                        {field.payStatus === TransactionStatus.SUCCESS ? (
+                        {field.transactions?.native?.payStatus === 'success' &&
+                        field.transactions?.oft?.payStatus === 'success' ? (
                           <span className='ml-4 px-4 py-1 rounded-full bg-green-900/30 text-green-400 flex items-center gap-1 border border-green-700'>
                             Payment successful <CheckIcon className='w-4 h-4' />
                           </span>
@@ -260,7 +366,9 @@ export function Step3Overview({ tokens }: { tokens: ITokenOFT[] }) {
                           <Button
                             type='button'
                             disabled={
-                              field.payStatus === TransactionStatus.PENDING
+                              field.transactions?.native?.payStatus ===
+                                'pending' ||
+                              field.transactions?.oft?.payStatus === 'pending'
                             }
                             onClick={() =>
                               handlePay(
@@ -269,7 +377,9 @@ export function Step3Overview({ tokens }: { tokens: ITokenOFT[] }) {
                                   ? ChainType.EVM
                                   : ChainType.Solana,
                                 field.address || '',
-                                field.totalFee
+                                field.totalFee || '0',
+                                field.numberOfTokens,
+                                values.token?.tokenAddress || ''
                               )
                             }
                             className='
@@ -281,17 +391,20 @@ export function Step3Overview({ tokens }: { tokens: ITokenOFT[] }) {
         cursor-pointer
         hover:opacity-90
         hover:shadow-[0_0px_16px_0_var(--blue-primary)]
+        disabled:opacity-50
+        disabled:cursor-not-allowed
       '
                           >
-                            {field.payStatus === TransactionStatus.PENDING
-                              ? 'Paying...'
-                              : 'Pay'}
+                            {getPaymentButtonText(chainId)}
                           </Button>
                         )}
                       </div>
-                      {field.payStatus === TransactionStatus.ERROR && (
+                      {(field.transactions?.native?.payStatus === 'failed' ||
+                        field.transactions?.oft?.payStatus === 'failed') && (
                         <div className='text-red-400 text-sm mt-1 ml-auto'>
-                          {field.payError || 'Insufficient funds !'}
+                          {field.transactions?.native?.payError ||
+                            field.transactions?.oft?.payError ||
+                            'Payment failed'}
                         </div>
                       )}
                     </div>
@@ -302,6 +415,7 @@ export function Step3Overview({ tokens }: { tokens: ITokenOFT[] }) {
           })}
         </Accordion>
       </div>
+
       {/* Time */}
       <div className='rounded-lg bg-[color:var(--gray-night)] border border-[color:var(--gray-charcoal)] p-4'>
         <div className='font-semibold mb-2'>Time</div>
@@ -324,6 +438,7 @@ export function Step3Overview({ tokens }: { tokens: ITokenOFT[] }) {
           </div>
         </div>
       </div>
+
       {/* Additional Info */}
       <div className='rounded-lg bg-[color:var(--gray-night)] border border-[color:var(--gray-charcoal)] p-4'>
         <div className='font-semibold mb-2'>Additional information</div>
@@ -335,13 +450,13 @@ export function Step3Overview({ tokens }: { tokens: ITokenOFT[] }) {
             return (
               <div className='flex justify-between' key={f.key}>
                 <span className='text-foreground'>{f.label}</span>
-                <span className='font-semibold  text-right max-w-[60%] break-words'>
+                <span className='font-semibold text-right max-w-[60%] break-words'>
                   {isUrl ? (
                     <a
                       href={value as string}
                       target='_blank'
                       rel='noopener noreferrer'
-                      className=' hover:text-blue-400 transition'
+                      className='hover:text-blue-400 transition'
                     >
                       {shortenUrl(value as string)}
                     </a>

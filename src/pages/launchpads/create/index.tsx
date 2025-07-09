@@ -15,6 +15,8 @@ import {
 } from './components/launchpadFormValidation';
 import { toast } from 'sonner';
 import { TransactionStatus } from '@/utils/enums/transaction';
+import { preSaleTokenManagementApi } from '@/services/pre-sale/pre-sale-token';
+import { appConfig } from '@/utils/constants/app';
 
 enum LaunchpadStep {
   Info = 1,
@@ -22,11 +24,10 @@ enum LaunchpadStep {
   Overview = 3,
 }
 
-
 export const TOKENS_OFT: ITokenOFT[] = [
   {
     id: '1',
-    tokenAddress: '0x1234567890abcdef',
+    tokenAddress: '0x779877A7B0D9E8603169DdbD7836e478b4624789',
     chainType: ChainType.EVM,
     chainId: '1',
     name: 'Defi Bamboo',
@@ -42,7 +43,7 @@ export const TOKENS_OFT: ITokenOFT[] = [
   },
   {
     id: '2',
-    tokenAddress: '0xabcdef1234567890',
+    tokenAddress: '0x779877A7B0D9E8603169DdbD7836e478b4624789',
     chainType: ChainType.EVM,
     chainId: '56',
     name: 'Bamboo Chain',
@@ -60,6 +61,13 @@ export const TOKENS_OFT: ITokenOFT[] = [
 
 export default function CreateLaunchpadPage() {
   const [step, setStep] = useState<LaunchpadStep>(LaunchpadStep.Info);
+
+  const [filterTokens, setFilterTokens] = useState({
+    page: 1,
+    q: ''
+  });
+
+  const { page, q } = filterTokens;
 
   const methods = useForm<LaunchpadFormValues>({
     resolver: zodResolver(launchpadFormSchema),
@@ -88,75 +96,108 @@ export default function CreateLaunchpadPage() {
   const onSubmit = (data: LaunchpadFormValues) => {
     console.log(data, 'data nay');
   };
+    const chainFields = watch('chainFields');
 
-  const handleNext = async () => {
-    let fields: string[] = [];
-    if (step === LaunchpadStep.Info) {
-      fields = ['token', 'startTime', 'endTime'];
-      const selectedChains = getValues('chain') || [];
-      selectedChains.forEach((chainKey: string) => {
-        fields.push(
-          `chainFields.${chainKey}.presaleRate`,
-          `chainFields.${chainKey}.numberOfTokens`,
-          `chainFields.${chainKey}.softcap`,
-          `chainFields.${chainKey}.hardcap`,
-          `chainFields.${chainKey}.minBuy`,
-          `chainFields.${chainKey}.maxBuy`
-        );
-      });
-    } else if (step === LaunchpadStep.Social) {
-      fields = ['logoUrl', 'website'];
-    }
-    const valid = await trigger(fields as any);
-    if (valid) {
-      if (step === LaunchpadStep.Social) {
-        const selectedChains = getValues('chain') || [];
-        const chainFields = getValues('chainFields') || {};
-        selectedChains.forEach((chainKey: string, idx: number) => {
-          if (!chainFields[chainKey]?.address) {
-            chainFields[chainKey] = {
-              ...chainFields[chainKey],
-              address: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-            };
-          }
-          if (!chainFields[chainKey]?.totalFee) {
-            // Mock fee, ví dụ mỗi chain 2000 + idx*100 ETH
-            chainFields[chainKey] = {
-              ...chainFields[chainKey],
-              totalFee: `${0.0001 + idx * 0.001}`,
-            };
-          }
+ const handleNext = async () => {
+  let fields: string[] = [];
+  if (step === LaunchpadStep.Info) {
+    fields = ['token', 'startTime', 'endTime'];
+    const selectedChains = getValues('chain') || [];
+    const currentChainFields = getValues('chainFields') || {};
+    
+    selectedChains.forEach((chainKey: string) => {
+      if (!currentChainFields[chainKey]) {
+        methods.setValue(`chainFields.${chainKey}`, {
+          address: '',
+          presaleRate: '',
+          numberOfTokens: '',
+          softcap: '',
+          hardcap: '',
+          minBuy: '',
+          maxBuy: ''
         });
-        methods.setValue('chainFields', chainFields);
       }
-      if (step < LaunchpadStep.Overview) {
-        setStep(step + 1);
-      }
-    } else {
-      const errors = methods.formState.errors;
-      let firstErrorMsg = 'Please fill all the form!';
-      const findFirstError = (obj: any): string | null => {
-        for (const key in obj) {
-          if (obj[key]?.message) return obj[key].message;
-          if (typeof obj[key] === 'object') {
-            const msg = findFirstError(obj[key]);
-            if (msg) return msg;
-          }
+      
+      // Thêm fields để validate
+      fields.push(
+        `chainFields.${chainKey}.presaleRate`,
+        `chainFields.${chainKey}.numberOfTokens`,
+        `chainFields.${chainKey}.softcap`,
+        `chainFields.${chainKey}.hardcap`,
+        `chainFields.${chainKey}.minBuy`,
+        `chainFields.${chainKey}.maxBuy`
+      );
+    });
+  } else if (step === LaunchpadStep.Social) {
+    fields = ['logoUrl', 'website'];
+  }
+  
+  const valid = await trigger(fields as any);
+  
+  if (valid) {
+    if (step === LaunchpadStep.Social) {
+      const selectedChains = getValues('chain') || [];
+      const chainFields = getValues('chainFields') || {};
+      selectedChains.forEach((chainKey: string, idx: number) => {
+        if (!chainFields[chainKey]?.address) {
+          chainFields[chainKey] = {
+            ...chainFields[chainKey],
+            address: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+          };
         }
-        return null;
-      };
-      const msg = findFirstError(errors);
-      if (msg) firstErrorMsg = msg;
-      toast.error(firstErrorMsg);
+        if (!chainFields[chainKey]?.totalFee) {
+          chainFields[chainKey] = {
+            ...chainFields[chainKey],
+            totalFee: `${0.0001 + idx * 0.001}`,
+          };
+        }
+      });
+      methods.setValue('chainFields', chainFields);
     }
-  };
+    if (step < LaunchpadStep.Overview) {
+      setStep(step + 1);
+    }
+  } else {
+    const errors = methods.formState.errors;
+    let firstErrorMsg = 'Please fill all the form!';
+    const findFirstError = (obj: any): string | null => {
+      for (const key in obj) {
+        if (obj[key]?.message) return obj[key].message;
+        if (typeof obj[key] === 'object') {
+          const msg = findFirstError(obj[key]);
+          if (msg) return msg;
+        }
+      }
+      return null;
+    };
+    const msg = findFirstError(errors);
+    if (msg) firstErrorMsg = msg;
+    toast.error(firstErrorMsg);
+  }
+};
+
   const chain = watch('chain');
-  const chainFields = watch('chainFields');
 
   const allPaid = chain?.every((chainId: string) => {
     const f = chainFields?.[chainId];
-    return f?.payStatus === TransactionStatus.SUCCESS && !!f?.payHash;
+    const nativeStatus = f?.transactions?.native?.payStatus;
+    const oftStatus = f?.transactions?.oft?.payStatus;
+    const nativeHash = f?.transactions?.native?.payHash;
+    const oftHash = f?.transactions?.oft?.payHash;
+    
+    return nativeStatus === TransactionStatus.SUCCESS && 
+            oftStatus === TransactionStatus.SUCCESS && 
+            !!nativeHash && 
+            !!oftHash;
   });
+
+  const { useGetMyTokensQuery } = preSaleTokenManagementApi;
+  const { data: tokenRes, isLoading: isLoadingMyTokens, error } = useGetMyTokensQuery({
+    page,
+    limit: appConfig.defaultLimit,
+    q
+  });
+
 
   return (
     <FormProvider {...methods}>
@@ -177,31 +218,30 @@ export default function CreateLaunchpadPage() {
               'Review all information before submitting your launchpad'}
           </p>
 
-          {step === LaunchpadStep.Info && <Step1Info tokens={TOKENS_OFT} />}
+          {step === LaunchpadStep.Info && <Step1Info tokenState={{
+            // tokenData:  tokenRes?.data?.data,
+            tokenData:  {
+              ...(tokenRes?.data?.data || {}),
+              items: TOKENS_OFT,
+              meta: {
+                total: TOKENS_OFT.length,
+                page: 1,
+                limit: TOKENS_OFT.length
+              }
+            },
+            isLoadingMyTokens,
+            error,
+            filterTokens,
+            setFilterTokens
+          }}/>}
           {step === LaunchpadStep.Social && <Step2Social />}
           {step === LaunchpadStep.Overview && (
-            <Step3Overview tokens={TOKENS_OFT} />
+            <Step3Overview/>
           )}
 
           {/* Fees & Actions */}
           <div className='flex gap-2 mt-5'>
             {step > LaunchpadStep.Info && (
-              //               <Button
-              //   variant="outline"
-              //   className="
-              //     flex-1 rounded-lg border-2 border-transparent
-              //     bg-gradient-to-r from-blue-primary via-blue-primary to-primary
-              //     bg-origin-border bg-clip-border
-              //     text-foreground
-              //     font-bold py-3 text-lg
-              //     hover:opacity-90
-              //     !bg-transparent
-              //   "
-              //   type="button"
-              //   onClick={() => setStep(step - 1)}
-              // >
-              //   Back
-              // </Button>
               <div
                 className='flex-1 bg-[linear-gradient(45deg,_var(--blue-primary),_var(--primary))]
         border-none

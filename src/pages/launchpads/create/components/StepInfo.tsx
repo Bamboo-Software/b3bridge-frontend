@@ -1,14 +1,16 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useState, useCallback, useEffect } from 'react';
 import { NumericFormat } from 'react-number-format';
 import { useFormContext, Controller } from 'react-hook-form';
+import InfiniteScroll from 'react-infinite-scroll-component';
 import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from '@/components/ui/select';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { DatePicker } from '@/components/ui/date-picker';
 import Image from '@/components/ui/image';
 import {
@@ -26,12 +28,121 @@ import { ChainTokenSource } from '@/utils/enums/chain';
 import type { ITokenOFT } from '@/utils/interfaces/token';
 import type { LaunchpadFormValues } from './launchpadFormValidation';
 import { NumericCustomInput } from '@/pages/common/NumericCustomInput';
+import type { Dispatch, SetStateAction } from 'react';
+import { appConfig } from '@/utils/constants/app';
+import { Loader2, ChevronDown } from 'lucide-react';
+import { useDebouncedValue } from '@/hooks/useDebounceValue';
 
-export function Step1Info({ tokens }: { tokens: ITokenOFT[] }) {
-  const { control, watch } = useFormContext<LaunchpadFormValues>();
+export function Step1Info({
+  tokenState,
+}: {
+  tokenState: {
+    tokenData: {
+      items: ITokenOFT[];
+      meta: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+      };
+    };
+    isLoadingMyTokens: boolean;
+    error: any;
+    filterTokens: {
+      page: number;
+      q: string;
+    };
+    setFilterTokens: Dispatch<
+      SetStateAction<{
+        page: number;
+        q: string;
+      }>
+    >;
+  };
+}) {
+  const { tokenData, isLoadingMyTokens, error, filterTokens, setFilterTokens } =
+    tokenState;
+  const { control, watch, setValue } = useFormContext<LaunchpadFormValues>();
   const selectedToken = watch('token');
-  const token = tokens.find((t: ITokenOFT) => t.id === selectedToken);
   const selectedChains = watch('chain') || [];
+
+  // State cho dropdown và infinity scroll
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [allTokens, setAllTokens] = useState<ITokenOFT[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [hasMore, setHasMore] = useState(true);
+
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 500);
+
+  useEffect(() => {
+    setAllTokens([]);
+    setHasMore(true);
+  }, [filterTokens.q]);
+
+  useEffect(() => {
+    if (tokenData?.items) {
+      setAllTokens((prev) => {
+        if (filterTokens.page === 1) {
+          return tokenData.items;
+        } else {
+          const newTokens = tokenData.items.filter(
+            (newToken) =>
+              !prev.some((existingToken) => existingToken.id === newToken.id)
+          );
+          return [...prev, ...newTokens];
+        }
+      });
+      setHasMore(tokenData.items.length === appConfig.defaultLimit);
+    } else if (tokenData && tokenData.items && tokenData.items.length === 0) {
+      setHasMore(false);
+    }
+  }, [tokenData, filterTokens.page]);
+
+  const handleFilterChange = (key: keyof typeof filterTokens, value: any) => {
+    setFilterTokens((prev) => ({
+      ...prev,
+      [key]: value,
+      ...(key !== 'page' ? { page: 1 } : {}),
+    }));
+  };
+
+  // Khi debouncedSearchTerm thay đổi, cập nhật filter
+  useEffect(() => {
+    handleFilterChange('q', debouncedSearchTerm);
+  }, [debouncedSearchTerm]);
+
+  // Load thêm tokens khi scroll
+  const fetchMoreTokens = useCallback(() => {
+    if (hasMore && !isLoadingMyTokens && tokenData?.meta) {
+      const totalItems = tokenData.meta.total;
+      const currentItems = allTokens.length;
+
+      // Chỉ fetch khi chưa có đủ items và còn page để load
+      if (
+        currentItems < totalItems &&
+        filterTokens.page < tokenData.meta.totalPages
+      ) {
+        setFilterTokens((prev) => ({ ...prev, page: prev.page + 1 }));
+      } else {
+        setHasMore(false);
+      }
+    }
+  }, [
+    hasMore,
+    isLoadingMyTokens,
+    setFilterTokens,
+    allTokens.length,
+    tokenData?.meta,
+    filterTokens.page,
+  ]);
+
+  // Khi chọn token, set object vào form
+  const handleSelectToken = (tokenObj: ITokenOFT) => {
+    setValue('token', tokenObj, { shouldValidate: true, shouldDirty: true });
+    setIsDropdownOpen(false);
+    setSearchTerm('');
+  };
+
   return (
     <>
       {/* Token */}
@@ -39,59 +150,158 @@ export function Step1Info({ tokens }: { tokens: ITokenOFT[] }) {
         <label className='block mb-2 font-semibold text-foreground'>
           Choose Token
         </label>
+
         <Controller
           name='token'
           control={control}
           rules={{ required: true }}
           render={({ field }) => (
-            <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger className='w-full  border border-[color:var(--gray-charcoal)] rounded-lg px-4 py-3 text-foreground hover:text-accent-foreground '>
-                <SelectValue placeholder='Select token' />
-              </SelectTrigger>
-              <SelectContent>
-                {tokens.map((t: ITokenOFT) => (
-                  <SelectItem
-                    className='!hover:text-accent-foreground'
-                    key={t.id}
-                    value={t.id}
-                  >
-                    <div className='flex gap-2'>
+            <DropdownMenu
+              open={isDropdownOpen}
+              onOpenChange={setIsDropdownOpen}
+            >
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant='outline'
+                  className='w-full justify-between border border-[color:var(--gray-charcoal)] rounded-lg px-4 py-3 text-foreground hover:text-accent-foreground h-auto'
+                >
+                  {selectedToken ? (
+                    <div className='flex items-center gap-2'>
                       <Image
-                        src={t.logoUrl || '/images/default-coin-logo.jpg'}
+                        src={
+                          selectedToken.logoUrl ||
+                          '/images/default-coin-logo.jpg'
+                        }
                         fallbackSrc='/images/default-coin-logo.jpg'
-                        alt={t.name}
+                        alt={selectedToken.name}
                         className='w-5 h-5 rounded-full'
                       />
-                      {t.name}
+                      <span>
+                        {selectedToken.name} ({selectedToken.symbol})
+                      </span>
                     </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  ) : (
+                    <span className='text-muted-foreground'>Select token</span>
+                  )}
+                  <ChevronDown className='h-4 w-4 opacity-50' />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className='w-[600px] p-0'>
+                <div className='p-4 border-b'>
+                  <Input
+                    placeholder='Search tokens...'
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className='w-full'
+                  />
+                </div>
+
+                <div
+                  id='token-infinity-scroll-container'
+                  className='max-h-[300px] overflow-y-auto'
+                >
+                  {error ? (
+                    <div className='p-4 text-sm text-red-500 text-center'>
+                      Error loading tokens:{' '}
+                      {error.message || 'Something went wrong'}
+                    </div>
+                  ) : (
+                    <InfiniteScroll
+                      dataLength={allTokens.length}
+                      next={fetchMoreTokens}
+                      hasMore={hasMore && !isLoadingMyTokens} // Thêm điều kiện !isLoadingMyTokens
+                      loader={
+                        <div className='flex items-center justify-center p-4'>
+                          <Loader2 className='h-4 w-4 animate-spin mr-2' />
+                          <span className='text-sm text-muted-foreground'>
+                            Loading...
+                          </span>
+                        </div>
+                      }
+                      scrollableTarget='token-infinity-scroll-container'
+                      endMessage={
+                        allTokens.length > 0 && (
+                          <div className='p-2 text-sm text-muted-foreground text-center'>
+                            All tokens loaded
+                          </div>
+                        )
+                      }
+                    >
+                      {/* Loading state cho lần fetch đầu tiên */}
+                      {isLoadingMyTokens && filterTokens.page === 1 ? (
+                        <div className='flex items-center justify-center p-8'>
+                          <Loader2 className='h-6 w-6 animate-spin mr-2' />
+                          <span className='text-sm text-muted-foreground'>
+                            Loading tokens...
+                          </span>
+                        </div>
+                      ) : allTokens.length > 0 ? (
+                        allTokens.map((t) => (
+                          <div
+                            key={t.id}
+                            className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted border-b border-border last:border-b-0 transition-colors ${
+                              field.value?.id === t.id
+                                ? 'bg-muted font-semibold'
+                                : ''
+                            }`}
+                            onClick={() => handleSelectToken(t)}
+                          >
+                            <Image
+                              src={t.logoUrl || '/images/default-coin-logo.jpg'}
+                              fallbackSrc='/images/default-coin-logo.jpg'
+                              alt={t.name}
+                              className='w-8 h-8 rounded-full'
+                            />
+                            <div className='flex-1'>
+                              <div className='font-medium text-foreground'>
+                                {t.name}
+                              </div>
+                              <div className='text-xs text-muted-foreground'>
+                                {t.symbol}
+                              </div>
+                            </div>
+                            {field.value?.id === t.id && (
+                              <div className='text-primary text-sm'>✓</div>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <div className='p-8 text-sm text-muted-foreground text-center'>
+                          No tokens found
+                        </div>
+                      )}
+                    </InfiniteScroll>
+                  )}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         />
 
-        {selectedToken && (
-          <div className='rounded-lg p-6 mt-3 flex flex-col  bg-[color:var(--gray-night)] border border-[color:var(--gray-charcoal)]'>
-            <div className='flex justify-between pb-3  border-b border-[color:var(--gray-charcoal)]'>
+        {selectedToken && selectedToken.id && (
+          <div className='rounded-lg p-6 mt-3 flex flex-col bg-[color:var(--gray-night)] border border-[color:var(--gray-charcoal)]'>
+            <div className='flex justify-between pb-3 border-b border-[color:var(--gray-charcoal)]'>
               <span className='text-foreground'>Name</span>
-              <span className='font-semibold  text-primary'>{token?.name}</span>
+              <span className='font-semibold text-primary'>
+                {selectedToken.name}
+              </span>
             </div>
             <div className='flex justify-between py-3 border-b border-[color:var(--gray-charcoal)]'>
               <span className='text-foreground'>Symbol</span>
-              <span className='font-semibold  text-primary'>
-                {token?.symbol}
+              <span className='font-semibold text-primary'>
+                {selectedToken.symbol}
               </span>
             </div>
             <div className='flex justify-between pt-3'>
               <span className='text-foreground'>Decimals</span>
-              <span className='font-semibold  text-primary'>
-                {token?.decimals}
+              <span className='font-semibold text-primary'>
+                {selectedToken.decimals}
               </span>
             </div>
           </div>
         )}
       </div>
+
       {/* Chain */}
       <div className='mb-6'>
         <div className='flex items-start justify-between mb-3'>
@@ -107,6 +317,7 @@ export function Step1Info({ tokens }: { tokens: ITokenOFT[] }) {
                 badgeClassName='!bg-[color:var(--gray-night)]'
                 value={field.value || []}
                 onValueChange={field.onChange}
+                maxCount={2}
                 options={configLaunchPadsChains.map((chain: Chain) => ({
                   label: (
                     <div className='flex items-center gap-2'>
@@ -130,7 +341,7 @@ export function Step1Info({ tokens }: { tokens: ITokenOFT[] }) {
           />
         </div>
 
-       <Accordion type='multiple' className='flex flex-col gap-3'>
+        <Accordion type='multiple' className='flex flex-col gap-3'>
           {configLaunchPadsChains
             .filter((chain: Chain) =>
               selectedChains.includes(chain.id.toString())
@@ -162,7 +373,7 @@ export function Step1Info({ tokens }: { tokens: ITokenOFT[] }) {
                       </span>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className='mx-6 pt-3 pb-6  border-t border-[color:var(--gray-charcoal)]'>
+                  <AccordionContent className='mx-6 pt-3 pb-6 border-t border-[color:var(--gray-charcoal)]'>
                     <div className='flex flex-col gap-0'>
                       <div className='flex justify-between pb-3'>
                         <label className='text-foreground'>Presale Rate</label>

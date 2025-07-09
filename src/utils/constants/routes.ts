@@ -6,6 +6,8 @@ export const routesPaths = {
     AUTH: createPath('/auth'),
     BRIDGE: createPath('/bridge'),
     CREATE_TOKEN: createPath('/create-token'),
-    LAUNCH_PAD: createPath('/launch-pads'),
-    CREATE_LAUNCH_PAD: createPath('/launch-pads/create'),
+    LAUNCHPAD: createPath('/launchpads'),
+    CREATE_LAUNCHPAD: createPath('/launchpads/create'),
+    LAUNCHPAD_DETAIL: (id: string) => createPath(`/launchpads/${id}`),
+    LAUNCHPAD_DETAIL_PATTERN: createPath('/launchpads/:id'),
 } as const;

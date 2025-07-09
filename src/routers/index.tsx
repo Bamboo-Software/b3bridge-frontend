@@ -8,8 +8,10 @@ import HomePage from '@/pages/homepage';
 import BridgePage from '@/pages/bridge';
 import CreateTokenPage from '@/pages/create-token';
 import CreateLaunchpadPage from '@/pages/launchpads/create';
+import LaunchpadsPage from '@/pages/launchpads';
+import LaunchpadDetailPage from '@/pages/launchpads/[id]';
 
-const { ROOT,BRIDGE,CREATE_TOKEN,CREATE_LAUNCH_PAD } = routesPaths;
+const { ROOT,BRIDGE,CREATE_TOKEN,CREATE_LAUNCHPAD, LAUNCHPAD, LAUNCHPAD_DETAIL_PATTERN } = routesPaths;
 
 const routes = createBrowserRouter([
   {
@@ -19,7 +21,9 @@ const routes = createBrowserRouter([
       { index: true, element: <HomePage /> },
       { path:BRIDGE, element: <BridgePage /> },
       { path:CREATE_TOKEN, element: <CreateTokenPage /> },
-      { path:CREATE_LAUNCH_PAD, element: <CreateLaunchpadPage /> },
+      { path:CREATE_LAUNCHPAD, element: <CreateLaunchpadPage /> },
+      { path:LAUNCHPAD, element: <LaunchpadsPage /> },
+      { path:LAUNCHPAD_DETAIL_PATTERN, element: <LaunchpadDetailPage /> },
     ],
   },
 
