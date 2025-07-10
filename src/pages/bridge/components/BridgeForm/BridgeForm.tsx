@@ -37,6 +37,7 @@ import { useLocalStorage } from 'react-use';
 import { useBridgeStatusStore } from '@/stores/bridge/useBridgeStatusStore';
 import { LocalStorageKey } from '@/utils/enums/local-storage';
 import { WalletConnectModal } from '@/pages/common/ConnectWalletModal';
+import { useWatchTokenEvents } from '@/hooks/event/useWatchTokenEvents ';
 
 const validateReceiver = (value: string) =>
   value ? /^0x[a-fA-F0-9]{40}$/.test(value) : null;
@@ -276,7 +277,30 @@ function BridgeForm() {
       });
     }
   };
+const shouldUpdate = useBridgeStatusStore((s) => s.shouldUpdateState);
+  const clearUpdateFlag = useBridgeStatusStore((s) => s.clearUpdateFlag);
 
+  const allTx = useTransactionStore((s) => s.allTx);
+  const setAllTx = useTransactionStore((s) => s.setAllTx);
+
+
+  useEffect(() => {
+    if (!shouldUpdate || !address) return;
+
+    const userTxs = allTx?.[address] || [];
+    const updatedTxs = userTxs.map((tx) => {
+      if (
+        tx.source === ChainTokenSource.Local &&
+        tx.status !== CCIPTransactionStatus.TARGET
+      ) {
+        return { ...tx, status: CCIPTransactionStatus.TARGET };
+      }
+      return tx;
+    });
+
+    setAllTx({ ...allTx, [address]: updatedTxs });
+    clearUpdateFlag();
+  }, [shouldUpdate, address, allTx, setAllTx, clearUpdateFlag]);
   // --- Render ---
   return (
     <>
