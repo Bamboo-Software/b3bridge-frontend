@@ -1,6 +1,5 @@
 import type { Address } from 'viem'
 import type { ChainType } from '../enums/chain'
-import type { EntryStatus } from '../enums/entry'
 
 export interface ITokenInfo {
   chainId: number
@@ -27,17 +26,75 @@ export interface ITokenStargateInfo {
 
 export interface ITokenOFT {
   id: string;
-  tokenAddress: string;
-  chainType: ChainType;
   chainId: string;
+  chainType: ChainType;
+  chainName: string;
   name: string;
   symbol: string;
   decimals: number;
   totalSupply: string;
+  description: string;
+  website: string;
   logoUrl: string;
-  status: EntryStatus;
-  isVerified: boolean;
-  tags: string[];
+  whitepaper: string;
+  telegram: string;
+  twitter: string;
+  discord: string;
+  github: string;
+  status: string;
   category: string;
+  tags: string[];
+  systemWalletAddress: string;
+  paymentTokenAddress: string;
+  paymentTokenSymbol: string;
+  deployFee: string;
+  deployTxHash: string;
+  platformFee: string;
+  estimatedDeploymentTime: number;
+  oftVersion: string;
+  sendFee: number;
+  receiveFee: number;
+  minGasToTransfer: number;
   createdAt: string;
+  updatedAt: string;
+}
+export interface CreateTokenPayload {
+  name: string;
+  symbol: string;
+  decimals: number;
+  description?: string;
+  website?: string;
+  whitepaper?: string;
+  telegram?: string;
+  twitter?: string;
+  discord?: string;
+  github?: string;
+  category?: string;
+  tags?: string[];
+  targetChains: string[];
+  tokenType: "OFT";
+  totalSupply: string;
+  logo: string;
+  chainFields?: Record<
+    string,
+    {
+      totalSupply: string;
+      transactions?: {
+        native?: {
+          gasEstimate: number;
+          gasPrice: number;
+        };
+        oft?: {
+          gasEstimate: number;
+          gasPrice: number;
+        };
+      };
+    }
+  >;
+}
+export interface BaseApiResponse<T> {
+  success: boolean;
+  statusCode: number;
+  message: string;
+  data: T
 }

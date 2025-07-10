@@ -7,6 +7,8 @@ import { layerZeroScanApi } from '@/services/layerzero-scan';
 import { stargateTransactionApi } from '@/services/stargate-transaction';
 import { preSaleAuthApi } from '@/services/pre-sale/pre-sale-auth';
 import { preSaleTokenManagementApi } from '@/services/pre-sale/pre-sale-token';
+import { uploadApi } from '@/services/upload';
+import { preSaleCreateTokenApi } from '@/services/pre-sale/create-token';
 
 export const listenerMiddleware = createListenerMiddleware({
   onError: () => console.error('An error listener middleware occurred'),
@@ -16,6 +18,8 @@ export const listenerMiddleware = createListenerMiddleware({
 const reducer = {
   [themeNamespace]: themeReducer,
   [bridgeApi.reducerPath]: bridgeApi.reducer,
+  [uploadApi.reducerPath]: uploadApi.reducer,
+  [preSaleCreateTokenApi.reducerPath]: preSaleCreateTokenApi.reducer,
   [stargateApi.reducerPath]: stargateApi.reducer,
   [layerZeroScanApi.reducerPath]: layerZeroScanApi.reducer,
   [stargateTransactionApi.reducerPath]: stargateTransactionApi.reducer,
@@ -30,8 +34,10 @@ export const store = configureStore({
     getDefaultMiddleware()
     .concat(
       bridgeApi.middleware,
+      uploadApi.middleware,
       stargateApi.middleware,
       layerZeroScanApi.middleware,
+      preSaleCreateTokenApi.middleware,
       stargateTransactionApi.middleware,
       // pre-sale
       preSaleAuthApi.middleware,
