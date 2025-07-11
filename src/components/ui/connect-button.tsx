@@ -134,7 +134,6 @@ export function ConnectButton({ className }: { className?: string }) {
     disconnect();
     setIsDropdownOpen(false);
     await disconnectSolanaWallet();
-    // location.reload();
   };
 
   const toggleDropdown = () => {

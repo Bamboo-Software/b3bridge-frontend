@@ -1,484 +1,321 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect } from 'react';
+/* eslint-disable react-hooks/exhaustive-deps */
+import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { LaunchpadMainContent } from './components/LaunchpadMainContent';
 import { LaunchpadSideBar } from './components/LaunchpadSidebar';
+import type {
+  ContributorRow,
+  PresaleDetailResponse,
+} from '@/utils/interfaces/launchpad';
+import { ChainType } from '@/utils/enums/chain';
+import { DeploymentStatus, PresaleStatus } from '@/utils/enums/presale';
+import { Category } from '@/utils/enums/presale';
+import { preSaleGeneralApi } from '@/services/pre-sale/pre-sale-general';
+import { preSaleApi } from '@/services/pre-sale/presales';
+import { useMultipleCampaignContributors } from '@/hooks/usePreSaleContract';
+import type { LaunchpadSupportedChain } from '@/utils/interfaces/chain';
+import { WalletConnectionRequired } from '@/pages/common/WalletConnectionRequired';
+import { useAccount } from 'wagmi';
+import { useAuthToken } from '@/hooks/useAuthToken';
 
-
-export interface LaunchpadDetailData {
-  id: string;
-  name: string;
-  logo: string;
-  banner: string;
-  status: 'upcoming' | 'live' | 'ended' | 'cancelled';
-  rating: number;
-  totalRating: number;
-  description: string;
-  chains: Array<{
-    id: string;
-    name: string;
-    logo: string;
-    raised: string;
-    target: string;
-    progress: number;
-    token: string;
-    participants: number;
-  }>;
-  tokens: Array<{
-    name: string;
-    symbol: string;
-    chain: string;
-    price: string;
-    allocation: string;
-    vesting: string;
-    logo: string;
-  }>;
-  goals: Array<{
-    name: string;
-    target: string;
-    current: string;
-    progress: number;
-    currency: string;
-  }>;
-  timeline: Array<{
-    phase: string;
-    date: string;
-    status: 'completed' | 'active' | 'upcoming';
-  }>;
-  contributors: Array<{
-    address: string;
-    amount: string;
-    allocation: string;
-    date: string;
-    wallet: string;
-  }>;
-}
-
-// Mock data for CANCELLED status
-// const mockDetailData: LaunchpadDetailData = {
-//   id: '2',
-//   name: 'President Elon',
-//   logo: '/images/tokens/president-elon.png',
-//   banner: '/images/banners/president-elon-banner.jpg',
-//   status: 'cancelled',
-//   rating: 4.8,
-//   totalRating: 156,
-//   description:
-//     "ELON is a meme coin inspired by the idea of Elon Musk becoming our president. He is one of the most influential figures of our time. Whether it's in tech, space, or shaping the future, people see Elon as a leader. This token reflects that same energy. We're not here to make political statements. We want to celebrate the idea of leadership with vision and purpose. $ELON represents the level of support his presidency would have.",
-//   chains: [
-//     {
-//       id: 'eth',
-//       name: 'Ethereum',
-//       logo: '/images/chains/ethereum.png',
-//       raised: '4',
-//       target: '200',
-//       progress: 2,
-//       token: 'ETH',
-//       participants: 479,
-//     },
-//     {
-//       id: 'avax',
-//       name: 'Avalanche',
-//       logo: '/images/chains/avalanche.png',
-//       raised: '4',
-//       target: '200',
-//       progress: 2,
-//       token: 'AVAX',
-//       participants: 89,
-//     },
-//     {
-//       id: 'bsc',
-//       name: 'BSC',
-//       logo: '/images/chains/bsc.png',
-//       raised: '4',
-//       target: '200',
-//       progress: 2,
-//       token: 'BSC',
-//       participants: 234,
-//     },
-//   ],
-//   tokens: [
-//     {
-//       name: 'President Elon',
-//       symbol: 'PELC',
-//       chain: 'Ethereum',
-//       price: '$0.0045 USDT',
-//       allocation: 'Choose to pay',
-//       vesting: 'TBA',
-//       logo: '/images/tokens/president-elon.png',
-//     },
-//   ],
-//   goals: [
-//     {
-//       name: 'Soft Cap',
-//       target: '50,000',
-//       current: '8,120',
-//       progress: 16.2,
-//       currency: 'USDT',
-//     },
-//     {
-//       name: 'Hard Cap',
-//       target: '200,000',
-//       current: '8,120',
-//       progress: 4.1,
-//       currency: 'USDT',
-//     },
-//   ],
-//   timeline: [
-//     {
-//       phase: 'Start time',
-//       date: '2025-06-01 10:00',
-//       status: 'completed',
-//     },
-//     {
-//       phase: 'End time',
-//       date: '2025-06-15 18:00',
-//       status: 'cancelled',
-//     },
-//   ],
-//   contributors: [
-//     {
-//       address: '0x7b6...Fe5',
-//       amount: '0.5',
-//       allocation: '111,111',
-//       date: '2025-06-02',
-//       wallet: 'ETH',
-//     },
-//     {
-//       address: '0x9A2...3cd',
-//       amount: '1.2',
-//       allocation: '266,666',
-//       date: '2025-06-02',
-//       wallet: 'AVAX',
-//     },
-//   ],
-// };
-
-// Mock data for ENDED status
-// const mockDetailData: LaunchpadDetailData = {
-//   id: '2',
-//   name: 'President Elon',
-//   logo: '/images/tokens/president-elon.png',
-//   banner: '/images/banners/president-elon-banner.jpg',
-//   status: 'ended',
-//   rating: 4.8,
-//   totalRating: 156,
-//   description:
-//     "ELON is a meme coin inspired by the idea of Elon Musk becoming our president. He is one of the most influential figures of our time. Whether it's in tech, space, or shaping the future, people see Elon as a leader. This token reflects that same energy. We're not here to make political statements. We want to celebrate the idea of leadership with vision and purpose. $ELON represents the level of support his presidency would have.",
-//   chains: [
-//     {
-//       id: 'eth',
-//       name: 'Ethereum',
-//       logo: '/images/chains/ethereum.png',
-//       raised: '200',
-//       target: '200',
-//       progress: 100,
-//       token: 'ETH',
-//       participants: 1250,
-//     },
-//     {
-//       id: 'avax',
-//       name: 'Avalanche',
-//       logo: '/images/chains/avalanche.png',
-//       raised: '180',
-//       target: '200',
-//       progress: 90,
-//       token: 'AVAX',
-//       participants: 450,
-//     },
-//     {
-//       id: 'bsc',
-//       name: 'BSC',
-//       logo: '/images/chains/bsc.png',
-//       raised: '200',
-//       target: '200',
-//       progress: 100,
-//       token: 'BSC',
-//       participants: 800,
-//     },
-//   ],
-//   tokens: [
-//     {
-//       name: 'President Elon',
-//       symbol: 'PELC',
-//       chain: 'Ethereum',
-//       price: '$0.0045 USDT',
-//       allocation: 'Choose to pay',
-//       vesting: 'TBA',
-//       logo: '/images/tokens/president-elon.png',
-//     },
-//   ],
-//   goals: [
-//     {
-//       name: 'Soft Cap',
-//       target: '50,000',
-//       current: '50,000',
-//       progress: 100,
-//       currency: 'USDT',
-//     },
-//     {
-//       name: 'Hard Cap',
-//       target: '200,000',
-//       current: '185,000',
-//       progress: 92.5,
-//       currency: 'USDT',
-//     },
-//   ],
-//   timeline: [
-//     {
-//       phase: 'Start time',
-//       date: '2025-05-01 10:00',
-//       status: 'completed',
-//     },
-//     {
-//       phase: 'End time',
-//       date: '2025-05-15 18:00',
-//       status: 'completed',
-//     },
-//   ],
-//   contributors: [
-//     {
-//       address: '0x7b6...Fe5',
-//       amount: '2.5',
-//       allocation: '555,555',
-//       date: '2025-05-02',
-//       wallet: 'ETH',
-//     },
-//     {
-//       address: '0x9A2...3cd',
-//       amount: '3.2',
-//       allocation: '711,111',
-//       date: '2025-05-03',
-//       wallet: 'AVAX',
-//     },
-//     {
-//       address: '0x1F8...9Ab',
-//       amount: '1.8',
-//       allocation: '400,000',
-//       date: '2025-05-02',
-//       wallet: 'BSC',
-//     },
-//     {
-//       address: '0x4C9...2Bd',
-//       amount: '4.1',
-//       allocation: '911,111',
-//       date: '2025-05-04',
-//       wallet: 'ETH',
-//     },
-//     {
-//       address: '0x8E1...7Af',
-//       amount: '1.3',
-//       allocation: '288,888',
-//       date: '2025-05-05',
-//       wallet: 'BSC',
-//     },
-//   ],
-// };
-
-// Mock data for UPCOMING status
-// const mockDetailData: LaunchpadDetailData = {
-//   id: '2',
-//   name: 'President Elon',
-//   logo: '/images/tokens/president-elon.png',
-//   banner: '/images/banners/president-elon-banner.jpg',
-//   status: 'upcoming',
-//   rating: 4.8,
-//   totalRating: 156,
-//   description:
-//     "ELON is a meme coin inspired by the idea of Elon Musk becoming our president. He is one of the most influential figures of our time. Whether it's in tech, space, or shaping the future, people see Elon as a leader. This token reflects that same energy. We're not here to make political statements. We want to celebrate the idea of leadership with vision and purpose. $ELON represents the level of support his presidency would have.",
-//   chains: [
-//     {
-//       id: 'eth',
-//       name: 'Ethereum',
-//       logo: '/images/chains/ethereum.png',
-//       raised: '0',
-//       target: '200',
-//       progress: 0,
-//       token: 'ETH',
-//       participants: 0,
-//     },
-//     {
-//       id: 'avax',
-//       name: 'Avalanche',
-//       logo: '/images/chains/avalanche.png',
-//       raised: '0',
-//       target: '200',
-//       progress: 0,
-//       token: 'AVAX',
-//       participants: 0,
-//     },
-//     {
-//       id: 'bsc',
-//       name: 'BSC',
-//       logo: '/images/chains/bsc.png',
-//       raised: '0',
-//       target: '200',
-//       progress: 0,
-//       token: 'BSC',
-//       participants: 0,
-//     },
-//   ],
-//   tokens: [
-//     {
-//       name: 'President Elon',
-//       symbol: 'PELC',
-//       chain: 'Ethereum',
-//       price: '$0.0045 USDT',
-//       allocation: 'Choose to pay',
-//       vesting: 'TBA',
-//       logo: '/images/tokens/president-elon.png',
-//     },
-//   ],
-//   goals: [
-//     {
-//       name: 'Soft Cap',
-//       target: '50,000',
-//       current: '0',
-//       progress: 0,
-//       currency: 'USDT',
-//     },
-//     {
-//       name: 'Hard Cap',
-//       target: '200,000',
-//       current: '0',
-//       progress: 0,
-//       currency: 'USDT',
-//     },
-//   ],
-//   timeline: [
-//     {
-//       phase: 'Start time',
-//       date: '2025-08-01 10:00',
-//       status: 'upcoming',
-//     },
-//     {
-//       phase: 'End time',
-//       date: '2025-08-15 18:00',
-//       status: 'upcoming',
-//     },
-//   ],
-//   contributors: [],
-// };
-
-// Mock data for LIVE status
-const mockDetailData: LaunchpadDetailData = {
-  id: '2',
-  name: 'President Elon',
-  logo: '/images/tokens/president-elon.png',
-  banner: '/images/banners/president-elon-banner.jpg',
-  status: 'live',
-  rating: 4.8,
-  totalRating: 156,
+const mockDetailData: PresaleDetailResponse = {
+  id: 'presale-1',
+  userId: 'user-123',
+  title: 'President Elon',
   description:
-    "ELON is a meme coin inspired by the idea of Elon Musk becoming our president. He is one of the most influential figures of our time. Whether it's in tech, space, or shaping the future, people see Elon as a leader. This token reflects that same energy. We're not here to make political statements. We want to celebrate the idea of leadership with vision and purpose. $ELON represents the level of support his presidency would have.",
-  chains: [
+    'ELON is a meme coin inspired by the idea of Elon Musk becoming our president. $ELON represents the level of support his presidency would have.',
+  bannerUrl: '/images/banners/president-elon-banner.jpg',
+  softCap: '50000',
+  hardCap: '200000',
+  presaleRate: '10000',
+  listingRate: '12000',
+  startTime: '2025-07-01T10:00:00.000Z',
+  endTime: '2025-07-15T18:00:00.000Z',
+  minContribution: '0.1',
+  maxContribution: '5',
+  liquidityPercent: 70,
+  liquidityLockDays: 365,
+  vestingEnabled: false,
+  vestingFirstReleasePercent: 0,
+  vestingCycleDays: 0,
+  vestingEachCyclePercent: 0,
+  whitelistEnabled: false,
+  publicStartTime: '2025-07-01T10:00:00.000Z',
+  fundRecipientAddress: '0x1234567890abcdef1234567890abcdef12345678',
+  fundRecipientChainType: ChainType.EVM,
+  fundRecipientChainId: '1',
+  totalRaised: '105000',
+  totalContributors: 802,
+  firstCreateTxHash: '0xabc123...',
+  firstCreateBlockNumber: '12345678',
+  firstCreateGasUsed: '210000',
+  firstCreateGasPrice: '10000000000',
+  firstCreateCost: '2100000000000000',
+  isFinalized: false,
+  finalizeTime: '',
+  status: PresaleStatus.ACTIVE,
+  cancelReason: '',
+  tags: ['Meme', 'Elon', 'Community'],
+  category: Category.MEME,
+  createdAt: '2025-06-20T09:00:00.000Z',
+  updatedAt: '2025-07-01T10:00:00.000Z',
+  supportedChains: [
     {
       id: 'eth',
-      name: 'Ethereum',
-      logo: '/images/chains/ethereum.png',
-      raised: '45',
-      target: '200',
-      progress: 22.5,
-      token: 'ETH',
-      participants: 479,
+      presaleId: 'presale-1',
+      oftTokenId: 'token-eth',
+      oftToken: {
+        id: 'token-eth',
+        chainId: '11155111',
+        name: 'President Elon',
+        description: 'President Elon Token',
+        symbol: 'ELON',
+        decimals: 18,
+        totalSupply: '1000000000',
+        logoUrl: '/images/tokens/president-elon.png',
+        createdAt: '2025-06-20T09:00:00.000Z',
+        updatedAt: '2025-06-20T09:00:00.000Z',
+      },
+      chainType: ChainType.EVM,
+      chainId: '11155111',
+      contractAddress: '0x859b4B1faA138Aa77938f37738C97Ad9D3d70c45',
+      tokenAddress: '0x2222222222222222222222222222222222222222',
+      systemWalletAddress: '0x3333333333333333333333333333333333333333',
+      userWalletAddress: '0x4444444444444444444444444444444444444444',
+      paymentTokenAddress: '0x0000000000000000000000000000000000000000',
+      softCap: '20000',
+      hardCap: '80000',
+      totalTokens: '400000000',
+      presaleRate: '10000',
+      listingRate: '12000',
+      minContribution: '0.1',
+      maxContribution: '5',
+      routerAddress: '0x5555555555555555555555555555555555555555',
+      pairAddress: '',
+      totalRaised: '45000',
+      totalContributors: 479,
+      createTxHash: '0xabc123...',
+      createBlockNumber: '12345678',
+      createGasUsed: '210000',
+      createGasPrice: '10000000000',
+      createCost: '2100000000000000',
+      finalizeTxHash: '',
+      finalizeBlockNumber: '',
+      finalizeGasUsed: '',
+      isFinalized: false,
+      status: DeploymentStatus.SUCCESS,
+      deployError: '',
+      notes: '',
+      createdAt: '2025-06-20T09:00:00.000Z',
+      updatedAt: '2025-07-01T10:00:00.000Z',
     },
     {
       id: 'avax',
-      name: 'Avalanche',
-      logo: '/images/chains/avalanche.png',
-      raised: '32',
-      target: '200',
-      progress: 16,
-      token: 'AVAX',
-      participants: 89,
+      presaleId: 'presale-1',
+      oftTokenId: 'token-avax',
+      oftToken: {
+        id: 'token-avax',
+        chainId: '43113',
+        name: 'President Elon',
+        description: 'President Elon Token',
+        symbol: 'ELON',
+        decimals: 18,
+        totalSupply: '1000000000',
+        logoUrl: '/images/tokens/president-elon.png',
+        createdAt: '2025-06-20T09:00:00.000Z',
+        updatedAt: '2025-06-20T09:00:00.000Z',
+      },
+      chainType: ChainType.EVM,
+      chainId: '43113',
+      contractAddress: '0x6666666666666666666666666666666666666666',
+      tokenAddress: '0x7777777777777777777777777777777777777777',
+      systemWalletAddress: '0x8888888888888888888888888888888888888888',
+      userWalletAddress: '0x9999999999999999999999999999999999999999',
+      paymentTokenAddress: '0x0000000000000000000000000000000000000000',
+      softCap: '15000',
+      hardCap: '60000',
+      totalTokens: '300000000',
+      presaleRate: '10000',
+      listingRate: '12000',
+      minContribution: '0.1',
+      maxContribution: '5',
+      routerAddress: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      pairAddress: '',
+      totalRaised: '32000',
+      totalContributors: 89,
+      createTxHash: '0xdef456...',
+      createBlockNumber: '22334455',
+      createGasUsed: '210000',
+      createGasPrice: '10000000000',
+      createCost: '2100000000000000',
+      finalizeTxHash: '',
+      finalizeBlockNumber: '',
+      finalizeGasUsed: '',
+      isFinalized: false,
+      status: DeploymentStatus.SUCCESS,
+      deployError: '',
+      notes: '',
+      createdAt: '2025-06-20T09:00:00.000Z',
+      updatedAt: '2025-07-01T10:00:00.000Z',
     },
     {
       id: 'bsc',
-      name: 'BSC',
-      logo: '/images/chains/bsc.png',
-      raised: '28',
-      target: '200',
-      progress: 14,
-      token: 'BSC',
-      participants: 234,
-    },
-  ],
-  tokens: [
-    {
-      name: 'President Elon',
-      symbol: 'PELC',
-      chain: 'Ethereum',
-      price: '$0.0045 USDT',
-      allocation: 'Choose to pay',
-      vesting: 'TBA',
-      logo: '/images/tokens/president-elon.png',
-    },
-  ],
-  goals: [
-    {
-      name: 'Soft Cap',
-      target: '50,000',
-      current: '27,895',
-      progress: 55.8,
-      currency: 'USDT',
-    },
-    {
-      name: 'Hard Cap',
-      target: '200,000',
-      current: '27,895',
-      progress: 13.9,
-      currency: 'USDT',
-    },
-  ],
-  timeline: [
-    {
-      phase: 'Start time',
-      date: '2025-07-01 10:00',
-      status: 'completed',
-    },
-    {
-      phase: 'End time',
-      date: '2025-07-15 18:00',
-      status: 'upcoming',
-    },
-  ],
-  contributors: [
-    {
-      address: '0x7b6...Fe5',
-      amount: '0.5',
-      allocation: '111,111',
-      date: '2025-07-02',
-      wallet: 'ETH',
-    },
-    {
-      address: '0x9A2...3cd',
-      amount: '1.2',
-      allocation: '266,666',
-      date: '2025-07-02',
-      wallet: 'AVAX',
-    },
-    {
-      address: '0x1F8...9Ab',
-      amount: '0.8',
-      allocation: '177,777',
-      date: '2025-07-01',
-      wallet: 'BSC',
+      presaleId: 'presale-1',
+      oftTokenId: 'token-bsc',
+      oftToken: {
+        id: 'token-bsc',
+        chainId: '97',
+        name: 'President Elon',
+        description: 'President Elon Token',
+        symbol: 'ELON',
+        decimals: 18,
+        totalSupply: '1000000000',
+        logoUrl: '/images/tokens/president-elon.png',
+        createdAt: '2025-06-20T09:00:00.000Z',
+        updatedAt: '2025-06-20T09:00:00.000Z',
+      },
+      chainType: ChainType.EVM,
+      chainId: '97',
+      contractAddress: '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      tokenAddress: '0xcccccccccccccccccccccccccccccccccccccccc',
+      systemWalletAddress: '0xdddddddddddddddddddddddddddddddddddddddd',
+      userWalletAddress: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+      paymentTokenAddress: '0x0000000000000000000000000000000000000000',
+      softCap: '15000',
+      hardCap: '60000',
+      totalTokens: '300000000',
+      presaleRate: '10000',
+      listingRate: '12000',
+      minContribution: '0.1',
+      maxContribution: '5',
+      routerAddress: '0xffffffffffffffffffffffffffffffffffffffff',
+      pairAddress: '',
+      totalRaised: '28000',
+      totalContributors: 234,
+      createTxHash: '0xghi789...',
+      createBlockNumber: '33445566',
+      createGasUsed: '210000',
+      createGasPrice: '10000000000',
+      createCost: '2100000000000000',
+      finalizeTxHash: '',
+      finalizeBlockNumber: '',
+      finalizeGasUsed: '',
+      isFinalized: false,
+      status: DeploymentStatus.SUCCESS,
+      deployError: '',
+      notes: '',
+      createdAt: '2025-06-20T09:00:00.000Z',
+      updatedAt: '2025-07-01T10:00:00.000Z',
     },
   ],
 };
 
 export default function LaunchpadDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const [launchpad, setLaunchpad] = useState<LaunchpadDetailData | null>(null);
- 
+  const [launchpad, setLaunchpad] = useState<PresaleDetailResponse | null>(
+    null
+  );
+
+  const { isConnected } = useAccount();
+  const { token } = useAuthToken();
+
+  const { useGetSupportedChainPreSalesQuery } = preSaleGeneralApi;
+  const { useGetDetailPreSalesQuery } = preSaleApi;
+  const {
+    data: supportedChains = { data: [] },
+    isLoading: isChainsLoading,
+    refetch: refetchSupportedChains,
+  } = useGetSupportedChainPreSalesQuery({});
+  const {
+    data: launchpadDetail,
+    isLoading: isLaunchpadLoading,
+    refetch: refetchLaunchpadDetail,
+  } = useGetDetailPreSalesQuery({ presaleId: id });
 
   useEffect(() => {
     if (id) {
       setLaunchpad(mockDetailData);
     }
-  }, [id]);
+  }, [id, launchpadDetail]);
 
-  if (!launchpad) {
+  const getChainInfo = (chainId: string) => {
+    return supportedChains.data.find(
+      (c: LaunchpadSupportedChain) => c.chainId === chainId
+    );
+  };
+
+  const chains = useMemo(
+    () =>
+      launchpad?.supportedChains.map((chain) => ({
+        key: chain.chainId,
+        label: getChainInfo(chain.chainId)?.name || chain.chainId,
+        contractAddress: chain.contractAddress,
+        chainId: Number(chain.chainId),
+      })) || [],
+    [launchpad, supportedChains]
+  );
+
+  const { data: contributorsByChain = [], loading: contributorsLoading } =
+    useMultipleCampaignContributors(
+      chains.map(({ contractAddress, chainId }) => ({
+        contractAddress: contractAddress as `0x${string}`,
+        chainId,
+      }))
+    );
+
+  const mergedContributors = useMemo(() => {
+    const map: Record<string, ContributorRow> = {};
+    chains.forEach((chain, idx) => {
+      const contributors = contributorsByChain?.[idx] || [];
+      for (const item of contributors) {
+        if (!map[item.wallet]) {
+          map[item.wallet] = { address: item.wallet };
+          chains.forEach((c) => {
+            map[item.wallet][c.key] = 0;
+          });
+        }
+        const amount =
+          typeof item.amount === 'bigint' ? Number(item.amount) : item.amount;
+        map[item.wallet][chain.key] =
+          Number(map[item.wallet][chain.key]) + amount;
+      }
+    });
+    return Object.values(map);
+  }, [contributorsByChain, chains]);
+
+  const refetchAll = () => {
+    refetchSupportedChains();
+    refetchLaunchpadDetail();
+  };
+
+  useEffect(() => {
+    if (token && isConnected) {
+      const timer = setTimeout(() => {
+        refetchAll();
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [token, isConnected]);
+
+  // Check wallet connection first
+  if (!isConnected || !token) {
+    return (
+      <div className='container mx-auto px-6 py-8'>
+        <WalletConnectionRequired
+          title='Connect Wallet to View Launchpad'
+          description='Please connect your wallet to browse and participate in this token presale.'
+        />
+      </div>
+    );
+  }
+
+  if (
+    !launchpad ||
+    isChainsLoading ||
+    isLaunchpadLoading ||
+    contributorsLoading
+  ) {
     return (
       <div className='flex items-center justify-center min-h-screen'>
         <div className='text-center'>
@@ -489,16 +326,22 @@ export default function LaunchpadDetailPage() {
     );
   }
 
-
   return (
     <div className='min-h-screen bg-background'>
       <div className='container mx-auto px-6 py-8'>
         <div className='grid grid-cols-1 lg:grid-cols-3 gap-8'>
           {/* Main Content */}
-            <LaunchpadMainContent launchpad={launchpad} />      
+          <LaunchpadMainContent
+            launchpad={launchpad}
+            supportedChains={supportedChains.data}
+            contributorState={mergedContributors}
+          />
 
           {/* Sidebar */}
-          <LaunchpadSideBar launchpad={launchpad} />
+          <LaunchpadSideBar
+            launchpad={launchpad}
+            contributorState={mergedContributors}
+          />
         </div>
       </div>
     </div>

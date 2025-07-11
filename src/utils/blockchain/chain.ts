@@ -1,4 +1,4 @@
-import { EVM_CHAIN_IDS ,  blockChainConfig, chainImages, } from '../constants/chain';
+import {   blockChainConfig, chainImages, } from '../constants/chain';
 import { wagmiConfig } from '../constants/wallet/wagmi';
 import {  BlockchainNameEnum, ChainId, ChainTokenSource, CryptoCurrencyEnum, type SUPPORTED_CHAINS_EVM } from '../enums/chain';
 
@@ -28,8 +28,12 @@ export function getChainImage({chainId, chainKey, source}: {
   } return ""
 }
 
-export function isEvmChain(chainId: number| string): boolean {
-  return EVM_CHAIN_IDS.has(chainId);
+export function isEvmChain(chainId: number | string): boolean {
+  const numericChainId = typeof chainId === 'string' ? parseInt(chainId) : chainId;
+  
+  const chain = wagmiConfig.chains.find(c => c.id === numericChainId);
+  
+  return !!chain;
 }
 
 export function getTokenAddressByChainIdAndTokenName(

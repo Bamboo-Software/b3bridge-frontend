@@ -98,3 +98,22 @@ export interface BaseApiResponse<T> {
   message: string;
   data: T
 }
+export interface ITokenGroup {
+  tokenGroupId: string;
+  tokens: ITokenOFT[];
+  totalTokensInGroup: number;
+  name: string;
+  symbol: string;
+  description: string;
+  logoUrl: string;
+  category: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface IGetListTokenResponse {
+  total: number;
+  totalTokens: number;
+  items: ITokenGroup[];
+}

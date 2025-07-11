@@ -1,96 +1,148 @@
-import type { LaunchpadData } from '..';
 import Image from '@/components/ui/image';
-import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { getStatusBadge } from '@/utils/launchpads';
 import { useNavigate } from 'react-router-dom';
 import { routesPaths } from '@/utils/constants/routes';
+import type { PresaleListItem } from '@/utils/interfaces/launchpad';
+import type { LaunchpadSupportedChain } from '@/utils/interfaces/chain';
+import { PresaleStatus } from '@/utils/enums/presale';
+import { ChainProgress } from './LaunchPadProgress';
 
-const LaunchpadCard: React.FC<{ launchpad: LaunchpadData }> = ({
-  launchpad,
+interface LaunchpadCardProps {
+  presale: PresaleListItem;
+  supportedChains: LaunchpadSupportedChain[];
+}
+
+const LaunchpadCard: React.FC<LaunchpadCardProps> = ({
+  presale,
+  supportedChains,
 }) => {
   const navigate = useNavigate();
 
   const handleViewClick = () => {
-    navigate(routesPaths.LAUNCHPAD_DETAIL(launchpad.id));
+    navigate(routesPaths.LAUNCHPAD_DETAIL(presale.id));
   };
+
+  // Format time remaining
+  const getTimeRemaining = () => {
+    const now = new Date();
+    const startTime = new Date(presale.startTime);
+    const endTime = new Date(presale.endTime);
+
+    if (now < startTime) {
+      const diff = startTime.getTime() - now.getTime();
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      return `${days}d ${hours}h`;
+    } else if (now < endTime) {
+      const diff = endTime.getTime() - now.getTime();
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      return `${days}d ${hours}h`;
+    }
+    return null;
+  };
+
+  const timeRemaining = getTimeRemaining();
+
+  // Get chain logo from supportedChains API data by chainId
+  const getChainLogo = (chainId: string) => {
+    const chainInfo = supportedChains.find(chain => chain.chainId === chainId);
+    return chainInfo?.icon || '/images/default-coin-logo.jpg';
+  };
+
+  // Get primary token info from first chain
+  const primaryChain = presale.supportedChains[0];
 
   return (
     <div className='bg-[color:var(--gray-night)] border border-[color:var(--gray-charcoal)] rounded-2xl p-6 hover:border-primary/30 transition-colors h-fit'>
       {/* Header */}
       <div className='flex items-start justify-between mb-6'>
         <div className='flex items-center gap-3'>
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
             <Image
-              src={launchpad.logo}
+              src={primaryChain?.oftToken.logoUrl || '/images/default-coin-logo.jpg'}
               fallbackSrc='/images/default-coin-logo.jpg'
-              alt={launchpad.name}
+              alt={presale.title}
               className='w-12 h-12 rounded-full'
             />
             <h3 className='text-xl font-semibold text-foreground'>
-              {launchpad.name}
+              {presale.title}
             </h3>
           </div>
         </div>
-        {getStatusBadge(launchpad.status)}
+        {getStatusBadge(presale.status)}
       </div>
 
-      {/* Chains Progress */}
+      {/* Description */}
+      <p className='text-sm text-muted-foreground mb-4 line-clamp-2'>
+        {presale.description}
+      </p>
+
+      {/* Tags */}
+      {presale.tags && presale.tags.length > 0 && (
+        <div className='flex flex-wrap gap-2 mb-4'>
+          {presale.tags.slice(0, 3).map((tag, index) => (
+            <span
+              key={index}
+              className='px-2 py-1 text-xs bg-primary/10 text-primary rounded-full'
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Chains Progress - Sử dụng component ChainProgress */}
       <div className='space-y-3 mb-4'>
-        {launchpad.chains.map((chain) => (
-          <div key={chain.id} className='space-y-2'>
-            <div className='flex items-center justify-between text-sm'>
-              <div className='flex items-center gap-2'>
-                <Image
-                  src={chain.logo}
-                  fallbackSrc='/images/default-coin-logo.jpg'
-                  alt={chain.name}
-                  className='w-4 h-4 rounded-full'
-                />
-                <span className='text-primary'>
-                  {chain.raised} - {chain.target} {chain.token}
-                </span>
-              </div>
-              <span className='text-muted-foreground'>
-                Progress ({chain.progress}%)
-              </span>
-            </div>
-            <Progress value={chain.progress} className='h-2' />
-            <div className='flex justify-between text-xs text-muted-foreground'>
-              <span>
-                {chain.raised} {chain.token}
-              </span>
-              <span>
-                {chain.target} {chain.token}
-              </span>
-            </div>
-          </div>
+        {presale.supportedChains.map((chain) => (
+          <ChainProgress
+            key={chain.id}
+            chain={{
+              id: chain.id,
+              chainId: chain.chainId,
+              hardCap: chain.hardCap,
+              totalRaised: chain.totalRaised,
+              paymentTokenAddress: chain.paymentTokenAddress,
+            }}
+            getChainLogo={getChainLogo}
+          />
         ))}
       </div>
 
       {/* Footer */}
       <div className='flex items-center justify-between pt-4 border-t border-[color:var(--gray-charcoal)]'>
         <div className='text-sm'>
-          {launchpad.status === 'upcoming' && launchpad.saleTime.start && (
+          {presale.status === PresaleStatus.PENDING && timeRemaining && (
             <span className='text-foreground'>
               Sale Starts in{' '}
-              <span className='font-mono'>{launchpad.saleTime.start}</span>
+              <span className='font-mono'>{timeRemaining}</span>
             </span>
           )}
-          {launchpad.status === 'live' && launchpad.saleTime.end && (
+          {presale.status === PresaleStatus.ACTIVE && timeRemaining && (
             <span className='text-foreground'>
               Sale Ends in{' '}
-              <span className='font-mono'>{launchpad.saleTime.end}</span>
+              <span className='font-mono'>{timeRemaining}</span>
             </span>
           )}
-          {launchpad.status === 'ended' && (
+          {presale.status === PresaleStatus.ENDED && (
             <span className='text-foreground'>
               Presale <span className='text-red-500'>Ended</span>
             </span>
           )}
-          {launchpad.status === 'cancelled' && (
+          {presale.status === PresaleStatus.CANCELLED && (
             <span className='text-foreground'>
               Presale <span className='text-gray-500'>Cancelled</span>
+            </span>
+          )}
+          {presale.status === PresaleStatus.FINALIZED && (
+            <span className='text-foreground'>
+              Presale <span className='text-green-500'>Finalized</span>
+            </span>
+          )}
+          {presale.status === PresaleStatus.DRAFT && (
+            <span className='text-foreground'>
+              Presale <span className='text-yellow-500'>Draft</span>
             </span>
           )}
         </div>
@@ -112,21 +164,31 @@ const LaunchpadCard: React.FC<{ launchpad: LaunchpadData }> = ({
   );
 };
 
-export const LaunchpadGrid: React.FC<{ launchpads: LaunchpadData[] }> = ({
-  launchpads,
+interface LaunchpadGridProps {
+  presales: PresaleListItem[];
+  supportedChains: LaunchpadSupportedChain[];
+}
+
+export const LaunchpadGrid: React.FC<LaunchpadGridProps> = ({
+  presales,
+  supportedChains,
 }) => {
-  if (launchpads.length === 0) {
+  if (presales.length === 0) {
     return (
       <div className='text-center py-12'>
-        <p className='text-muted-foreground'>No launchpads found</p>
+        <p className='text-muted-foreground'>No presales found</p>
       </div>
     );
   }
 
   return (
     <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start'>
-      {launchpads.map((launchpad) => (
-        <LaunchpadCard key={launchpad.id} launchpad={launchpad} />
+      {presales.map((presale) => (
+        <LaunchpadCard 
+          key={presale.id} 
+          presale={presale} 
+          supportedChains={supportedChains}
+        />
       ))}
     </div>
   );

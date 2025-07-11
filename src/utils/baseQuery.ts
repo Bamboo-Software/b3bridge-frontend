@@ -6,6 +6,7 @@ import {
 } from "@reduxjs/toolkit/query/react";
 import { disconnect } from '@wagmi/core';
 import { wagmiConfig } from './constants/wallet/wagmi';
+import { useAuthToken } from '@/hooks/useAuthToken';
 
 export const baseQueryWithReauth = (
   baseUrl: string
@@ -13,10 +14,9 @@ export const baseQueryWithReauth = (
   const baseQuery = fetchBaseQuery({
     baseUrl,
     prepareHeaders: (headers) => {
-      // const token = (getState() as RootState).auth.token;
-      const token = localStorage.getItem('auth-token');
+      const token =  useAuthToken.getState().token
       if (token) {
-        headers.set("Authorization", `Bearer ${JSON.parse(token).replace(/^"|"$/g, "")}`);
+        headers.set("Authorization", `Bearer ${token}`);
       }
       return headers;
     },
@@ -28,9 +28,7 @@ export const baseQueryWithReauth = (
     if (result.error?.status === 401) {
       try {
         await disconnect(wagmiConfig);
-        
-        localStorage.removeItem('auth-token');
-        
+        useAuthToken.getState().removeToken();
       } catch (error) {
         console.error('Error during logout:', error);
       }

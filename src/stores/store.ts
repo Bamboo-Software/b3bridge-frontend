@@ -9,6 +9,8 @@ import { preSaleAuthApi } from '@/services/pre-sale/pre-sale-auth';
 import { preSaleTokenManagementApi } from '@/services/pre-sale/pre-sale-token';
 import { uploadApi } from '@/services/upload';
 import { preSaleCreateTokenApi } from '@/services/pre-sale/create-token';
+import { preSaleApi } from '@/services/pre-sale/presales';
+import { preSaleGeneralApi } from '@/services/pre-sale/pre-sale-general';
 
 export const listenerMiddleware = createListenerMiddleware({
   onError: () => console.error('An error listener middleware occurred'),
@@ -26,6 +28,9 @@ const reducer = {
   // pre-sale
   [preSaleAuthApi.reducerPath]: preSaleAuthApi.reducer,
   [preSaleTokenManagementApi.reducerPath]: preSaleTokenManagementApi.reducer,
+  [preSaleApi.reducerPath]: preSaleApi.reducer,
+  [preSaleGeneralApi.reducerPath]: preSaleGeneralApi.reducer,
+  
 };
 
 export const store = configureStore({
@@ -42,6 +47,8 @@ export const store = configureStore({
       // pre-sale
       preSaleAuthApi.middleware,
       preSaleTokenManagementApi.middleware,
+      preSaleApi.middleware,
+      preSaleGeneralApi.middleware
     )
     .prepend(listenerMiddleware.middleware)
 });

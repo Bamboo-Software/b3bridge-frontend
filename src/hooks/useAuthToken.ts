@@ -1,6 +1,24 @@
-import { useLocalStorage } from 'react-use';
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
-export const useAuthToken = () => {
-    const [token, setToken, removeToken] = useLocalStorage<string | undefined>('auth-token', undefined);
-    return { token, setToken, removeToken };
-  };
+interface AuthState {
+  token: string | null;
+  setToken: (token: string | null) => void;
+  removeToken: () => void;
+  hasToken: () => boolean;
+}
+
+export const useAuthToken = create<AuthState>()(
+  persist(
+    (set, get) => ({
+      token: null,
+      setToken: (token: string | null) => set({ token }),
+      removeToken: () => set({ token: null }),
+      hasToken: () => !!get().token,
+    }),
+    {
+      name: 'auth-token', // localStorage key
+      partialize: (state) => ({ token: state.token }), // Only persist token
+    }
+  )
+);

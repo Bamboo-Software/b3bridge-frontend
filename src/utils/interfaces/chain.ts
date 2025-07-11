@@ -39,3 +39,13 @@ export interface IStargateChain {
   }
   shortName: string
 }
+
+export interface LaunchpadSupportedChain {
+  key: string;
+  name: string;
+  chainId: string;
+  chainType: string;
+  icon: string;
+  rpcUrl: string;
+  lzEndpoint: string;
+}

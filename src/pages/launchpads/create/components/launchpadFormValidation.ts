@@ -1,11 +1,11 @@
 import { z } from "zod";
 
 export const launchpadFormSchema = z.object({
+  presaleId: z.string().optional(),
   token: z.any().refine(val => val != null, { message: "Token is required" }),
   chain: z.array(z.string()).min(1, "At least one chain is required"),
   chainFields: z.record(
     z.object({
-      address: z.string().min(1, "Contract address is required"),
       totalFee: z.string().optional(),
       transactions: z.object({
         native: z.object({
@@ -29,6 +29,9 @@ export const launchpadFormSchema = z.object({
       hardcap: z.string().min(1, "Hardcap is required"),
       minBuy: z.string().min(1, "Minimum Buy is required"),
       maxBuy: z.string().min(1, "Maximum Buy is required"),
+      paymentTokenAddress: z.string().optional(),
+      paymentTokenSymbol: z.string().optional(),
+      systemWalletAddress: z.string().optional(),
     })
   ),
   startTime: z.date({ required_error: "Start time is required" }).nullable(),
@@ -65,8 +68,7 @@ export const launchpadFormSchema = z.object({
         !field.softcap ||
         !field.hardcap ||
         !field.minBuy ||
-        !field.maxBuy ||
-        !field.address
+        !field.maxBuy 
       ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,

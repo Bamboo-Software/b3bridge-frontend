@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useFormContext } from 'react-hook-form';
 import {
@@ -27,6 +28,8 @@ import { useChainTransfer } from '@/hooks/useChainTransfer';
 import type { Address } from 'viem';
 import { TransactionStatus } from '@/utils/enums/transaction';
 import { useSwitchChain } from 'wagmi';
+import type { ITokenOFT } from '@/utils/interfaces/token';
+import { ZeroAddress } from 'ethers';
 
 const SOCIAL_FIELDS = [
   { key: 'website', label: 'Website' },
@@ -81,6 +84,7 @@ export function Step3Overview() {
     chainId: number,
     chainType: ChainType,
     to: string,
+    paymentTokenAddress: string, // Default payment token address
     nativeAmount: string,
     oftAmount: string, // Default OFT amount
     oftTokenAddress: string // Default OFT token address
@@ -88,104 +92,106 @@ export function Step3Overview() {
     try {
       await switchChainAsync({ chainId });
 
-      // Set overall payment status to pending
-      setValue(
-        `chainFields.${chainId}.transactions.native.payStatus`,
-        TransactionStatus.PENDING
-      );
-      setValue(`chainFields.${chainId}.transactions.native.payError`, '');
+      const field = values.chainFields?.[chainId];
+      const nativeHash = field?.transactions?.native?.payHash;
+      const oftHash = field?.transactions?.oft?.payHash;
 
-      // Step 1: Pay Native Currency
-      setValue(
-        `chainFields.${chainId}.transactions.native.payStatus`,
-        'pending'
-      );
-
-      const nativeResult = await transfer({
-        chainType,
-        to: to as Address,
-        amount: nativeAmount,
-        chainId,
-      });
-
-      if (!nativeResult?.hash) {
-        throw new Error(nativeResult?.error || 'Native payment failed');
-      }
-
-      // Update native payment success
-      setValue(
-        `chainFields.${chainId}.transactions.native.payStatus`,
-        'success'
-      );
-      setValue(
-        `chainFields.${chainId}.transactions.native.payHash`,
-        nativeResult.hash
-      );
-      setValue(
-        `chainFields.${chainId}.transactions.native.amount`,
-        nativeAmount
-      );
-
-      // Step 2: Pay OFT Token
-      setValue(`chainFields.${chainId}.transactions.oft.payStatus`, 'pending');
-
-      const oftResult = await transfer({
-        chainType,
-        to: to as Address,
-        amount: oftAmount,
-        chainId,
-        tokenAddress: oftTokenAddress as Address, // For ERC20 token transfer
-      });
-
-      if (!oftResult?.hash) {
-        throw new Error(oftResult?.error || 'OFT payment failed');
-      }
-
-      // Update OFT payment success
-      setValue(`chainFields.${chainId}.transactions.oft.payStatus`, 'success');
-      setValue(
-        `chainFields.${chainId}.transactions.oft.payHash`,
-        oftResult.hash
-      );
-      setValue(`chainFields.${chainId}.transactions.oft.amount`, oftAmount);
-      setValue(
-        `chainFields.${chainId}.transactions.oft.tokenAddress`,
-        oftTokenAddress
-      );
-
-      // Set overall payment status to success
-      setValue(
-        `chainFields.${chainId}.transactions.oft.payStatus`,
-        TransactionStatus.SUCCESS
-      );
-      setValue(
-        `chainFields.${chainId}.transactions.oft.payHash`,
-        oftResult.hash
-      ); // Use last transaction hash
-
-    } catch (error) {
-      console.error('Payment failed:', error);
-
-      // Set failed status for current step
-      const nativeStatus =
-        values.chainFields?.[chainId]?.transactions?.native?.payStatus;
-      if (nativeStatus !== TransactionStatus.SUCCESS) {
+      // Skip native payment if already successful
+      if (!nativeHash) {
+        // Step 1: Pay Native Currency
         setValue(
           `chainFields.${chainId}.transactions.native.payStatus`,
-          TransactionStatus.ERROR
+          'pending'
+        );
+        setValue(`chainFields.${chainId}.transactions.native.payError`, '');
+
+        const nativeResult = await transfer({
+          chainType,
+          to: to as Address,
+          amount: nativeAmount,
+          chainId,
+          ...(paymentTokenAddress && paymentTokenAddress !== ZeroAddress && {
+            tokenAddress: paymentTokenAddress as Address,
+          })
+        });
+
+        if (!nativeResult?.hash) {
+          throw new Error(nativeResult?.error || 'Native payment failed');
+        }
+
+        // Update native payment success
+        setValue(
+          `chainFields.${chainId}.transactions.native.payStatus`,
+          'success'
+        );
+        setValue(
+          `chainFields.${chainId}.transactions.native.payHash`,
+          nativeResult.hash
+        );
+        setValue(
+          `chainFields.${chainId}.transactions.native.amount`,
+          nativeAmount
+        );
+      }
+
+      // Skip OFT payment if already successful
+      if (!oftHash) {
+        // Step 2: Pay OFT Token
+        setValue(
+          `chainFields.${chainId}.transactions.oft.payStatus`,
+          'pending'
+        );
+        setValue(`chainFields.${chainId}.transactions.oft.payError`, '');
+
+        const oftResult = await transfer({
+          chainType,
+          to: to as Address,
+          amount: oftAmount,
+          chainId,
+          tokenAddress: oftTokenAddress as Address, // For ERC20 token transfer
+        });
+
+        if (!oftResult?.hash) {
+          throw new Error(oftResult?.error || 'OFT payment failed');
+        }
+
+        // Update OFT payment success
+        setValue(
+          `chainFields.${chainId}.transactions.oft.payStatus`,
+          'success'
+        );
+        setValue(
+          `chainFields.${chainId}.transactions.oft.payHash`,
+          oftResult.hash
+        );
+        setValue(`chainFields.${chainId}.transactions.oft.amount`, oftAmount);
+        setValue(
+          `chainFields.${chainId}.transactions.oft.tokenAddress`,
+          oftTokenAddress
+        );
+      }
+    } catch (error) {
+      // Set failed status for current step
+      const currentField = values.chainFields?.[chainId];
+      const nativeStatus = currentField?.transactions?.native?.payStatus;
+      const nativeHash = currentField?.transactions?.native?.payHash;
+
+      if (!nativeHash || nativeStatus !== 'success') {
+        // Native payment failed
+        setValue(
+          `chainFields.${chainId}.transactions.native.payStatus`,
+          'failed'
         );
         setValue(
           `chainFields.${chainId}.transactions.native.payError`,
-          (error as Error).message
+          'Failed to pay'
         );
       } else {
-        setValue(
-          `chainFields.${chainId}.transactions.oft.payStatus`,
-          TransactionStatus.ERROR
-        );
+        // OFT payment failed
+        setValue(`chainFields.${chainId}.transactions.oft.payStatus`, 'failed');
         setValue(
           `chainFields.${chainId}.transactions.oft.payError`,
-          (error as Error).message
+          'Failed to pay'
         );
       }
     }
@@ -249,13 +255,17 @@ export function Step3Overview() {
       {/* Chain */}
       <div className='rounded-lg bg-[color:var(--gray-night)] border border-[color:var(--gray-charcoal)] p-4'>
         <div className='font-semibold mb-2'>Chain</div>
-        <Accordion type='single' collapsible className='flex flex-col gap-3'>
+        <Accordion type='multiple' className='flex flex-col gap-3'>
           {values.chain?.map((chainId: string) => {
             const chain = configLaunchPadsChains.find(
               (c) => c.id.toString() === chainId
             );
             const field = values.chainFields?.[chainId];
+            const oftToken = values.token?.tokens?.find(
+              (t: ITokenOFT) => t.chainId?.toString() === chainId
+            );
             if (!chain || !field) return null;
+            
 
             return (
               <AccordionItem
@@ -295,11 +305,11 @@ export function Step3Overview() {
                               <span
                                 className='flex items-center gap-2 font-semibold text-primary cursor-pointer truncate max-w-[220px]'
                                 onClick={() =>
-                                  handleCopy(chainId, field.address || '')
+                                  handleCopy(chainId, oftToken.tokenAddress || '')
                                 }
                               >
                                 <span>
-                                  {shortenAddress(field.address || '') || '-'}
+                                  {shortenAddress(oftToken.tokenAddress || '') || '-'}
                                 </span>
                                 {copied[chainId] ? (
                                   <CheckIcon className='text-green-500 w-[20px] h-[20px]' />
@@ -309,7 +319,7 @@ export function Step3Overview() {
                               </span>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <span>{field.address}</span>
+                              <span>{oftToken.tokenAddress}</span>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -351,11 +361,23 @@ export function Step3Overview() {
                         </div>
                       ))}
                       <div className='flex justify-between items-center py-3 border-t border-[color:var(--gray-charcoal)]'>
-                        <div className='text-foreground'>
-                          Total fees:
-                          <span className='font-semibold text-primary ms-1'>
-                            {formatNumber(field.totalFee || '0')} ETH
-                          </span>
+                        <div>
+                          <div className='text-foreground'>
+                            Total fees:
+                            <span className='font-semibold text-primary ms-1'>
+                              {formatNumber(field.totalFee || '0')} ETH
+                            </span>
+                          </div>
+                          {(field.transactions?.native?.payStatus ===
+                            'failed' ||
+                            field.transactions?.oft?.payStatus ===
+                              'failed') && (
+                            <div className='text-red-400 text-sm mt-1 ml-auto'>
+                              {field.transactions?.native?.payError ||
+                                field.transactions?.oft?.payError ||
+                                'Payment failed'}
+                            </div>
+                          )}
                         </div>
                         {field.transactions?.native?.payStatus === 'success' &&
                         field.transactions?.oft?.payStatus === 'success' ? (
@@ -376,10 +398,11 @@ export function Step3Overview() {
                                 isEvmChain(chain.id)
                                   ? ChainType.EVM
                                   : ChainType.Solana,
-                                field.address || '',
+                                field.systemWalletAddress || '',
+                                field.paymentTokenAddress || '',
                                 field.totalFee || '0',
                                 field.numberOfTokens,
-                                values.token?.tokenAddress || ''
+                                oftToken.tokenAddress || ''
                               )
                             }
                             className='
@@ -399,14 +422,6 @@ export function Step3Overview() {
                           </Button>
                         )}
                       </div>
-                      {(field.transactions?.native?.payStatus === 'failed' ||
-                        field.transactions?.oft?.payStatus === 'failed') && (
-                        <div className='text-red-400 text-sm mt-1 ml-auto'>
-                          {field.transactions?.native?.payError ||
-                            field.transactions?.oft?.payError ||
-                            'Payment failed'}
-                        </div>
-                      )}
                     </div>
                   </AccordionContent>
                 </div>

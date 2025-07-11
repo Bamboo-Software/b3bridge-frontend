@@ -1,7 +1,7 @@
 import { readContract } from '@wagmi/core'
 import { erc20Abi, zeroAddress, type Address } from 'viem'
 
-import { getChainNameByChainId, isEvmChain } from './chain'
+import { isEvmChain } from './chain'
 import { BlockchainNameEnum, ChainTokenSource, type SUPPORTED_CHAINS_EVM } from '../enums/chain'
 import { TokenImages } from '../constants/token'
 import { wagmiConfig } from '../constants/wallet/wagmi'
@@ -11,13 +11,18 @@ export async function getTokenSymbolAndDecimals(
   tokenAddress: `0x${string}`,
   chainId: SUPPORTED_CHAINS_EVM
 ) {
-  const native = getChainNameByChainId(chainId);
   if (!tokenAddress || tokenAddress === zeroAddress) {
-    if (native) {
-      return native;
+    const chain = wagmiConfig.chains.find(c => c.id === Number(chainId));
+    if (chain && chain.nativeCurrency) {
+      return {
+        symbol: chain.nativeCurrency.symbol,
+        decimals: chain.nativeCurrency.decimals,
+      };
     }
-    console.warn('Invalid or native token address but no mapping found');
-    return null;
+    return {
+      symbol: 'Unknown',
+      decimals: 0,
+    };
   }
   try {
     const [symbol, decimals] = await Promise.all([
@@ -43,12 +48,14 @@ export async function getTokenSymbolAndDecimals(
     };
   } catch (err) {
     console.error('Failed to read token info:', err);
-    return null;
+    return {
+      symbol: 'ETH',
+      decimals: 18,
+    };
   }
 }
 
-
-export async function getTokenData(chainId: SUPPORTED_CHAINS_EVM, tokenAddress: Address) {
+export async function getTokenData(chainId: SUPPORTED_CHAINS_EVM | number, tokenAddress: Address) {
   let tokenData: BlockchainNameEnum | { symbol: string; decimals: number } | null = null;
 
   if (isEvmChain(chainId)) {

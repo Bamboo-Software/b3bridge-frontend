@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { NumericFormat } from 'react-number-format';
 import { useFormContext, Controller } from 'react-hook-form';
 import InfiniteScroll from 'react-infinite-scroll-component';
@@ -25,7 +25,11 @@ import { configLaunchPadsChains } from '@/utils/constants/chain';
 import type { Chain } from 'viem';
 import { getChainImage } from '@/utils/blockchain/chain';
 import { ChainTokenSource } from '@/utils/enums/chain';
-import type { ITokenOFT } from '@/utils/interfaces/token';
+import type {
+  IGetListTokenResponse,
+  ITokenGroup,
+  ITokenOFT,
+} from '@/utils/interfaces/token';
 import type { LaunchpadFormValues } from './launchpadFormValidation';
 import { NumericCustomInput } from '@/pages/common/NumericCustomInput';
 import type { Dispatch, SetStateAction } from 'react';
@@ -37,15 +41,7 @@ export function Step1Info({
   tokenState,
 }: {
   tokenState: {
-    tokenData: {
-      items: ITokenOFT[];
-      meta: {
-        page: number;
-        limit: number;
-        total: number;
-        totalPages: number;
-      };
-    };
+    tokenData?: IGetListTokenResponse;
     isLoadingMyTokens: boolean;
     error: any;
     filterTokens: {
@@ -68,31 +64,41 @@ export function Step1Info({
 
   // State cho dropdown và infinity scroll
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [allTokens, setAllTokens] = useState<ITokenOFT[]>([]);
+  const [allTokenGroups, setAllTokenGroups] = useState<
+    IGetListTokenResponse['items']
+  >([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [hasMore, setHasMore] = useState(true);
 
   const debouncedSearchTerm = useDebouncedValue(searchTerm, 500);
 
   useEffect(() => {
-    setAllTokens([]);
+    setAllTokenGroups([]);
     setHasMore(true);
   }, [filterTokens.q]);
 
+  // Chỉ render token group, không flatten ra từng token
   useEffect(() => {
     if (tokenData?.items) {
-      setAllTokens((prev) => {
+      setAllTokenGroups((prev) => {
         if (filterTokens.page === 1) {
           return tokenData.items;
         } else {
-          const newTokens = tokenData.items.filter(
-            (newToken) =>
-              !prev.some((existingToken) => existingToken.id === newToken.id)
+          const newGroups = tokenData.items.filter(
+            (newGroup) =>
+              !prev.some(
+                (existingGroup) =>
+                  existingGroup.tokenGroupId === newGroup.tokenGroupId
+              )
           );
-          return [...prev, ...newTokens];
+          return [...prev, ...newGroups];
         }
       });
-      setHasMore(tokenData.items.length === appConfig.defaultLimit);
+      setHasMore(
+        (tokenData as any).meta
+          ? allTokenGroups.length < (tokenData as any).meta.total
+          : tokenData.items.length === appConfig.defaultLimit
+      );
     } else if (tokenData && tokenData.items && tokenData.items.length === 0) {
       setHasMore(false);
     }
@@ -106,21 +112,18 @@ export function Step1Info({
     }));
   };
 
-  // Khi debouncedSearchTerm thay đổi, cập nhật filter
   useEffect(() => {
     handleFilterChange('q', debouncedSearchTerm);
   }, [debouncedSearchTerm]);
 
-  // Load thêm tokens khi scroll
   const fetchMoreTokens = useCallback(() => {
-    if (hasMore && !isLoadingMyTokens && tokenData?.meta) {
-      const totalItems = tokenData.meta.total;
-      const currentItems = allTokens.length;
+    if (hasMore && !isLoadingMyTokens && (tokenData as any)?.meta) {
+      const totalItems = (tokenData as any).meta.total;
+      const currentItems = allTokenGroups.length;
 
-      // Chỉ fetch khi chưa có đủ items và còn page để load
       if (
         currentItems < totalItems &&
-        filterTokens.page < tokenData.meta.totalPages
+        filterTokens.page < (tokenData as any).meta.totalPages
       ) {
         setFilterTokens((prev) => ({ ...prev, page: prev.page + 1 }));
       } else {
@@ -131,20 +134,27 @@ export function Step1Info({
     hasMore,
     isLoadingMyTokens,
     setFilterTokens,
-    allTokens.length,
-    tokenData?.meta,
+    allTokenGroups.length,
+    tokenData,
     filterTokens.page,
   ]);
 
-  // Khi chọn token, set object vào form
-  const handleSelectToken = (tokenObj: ITokenOFT) => {
-    setValue('token', tokenObj, { shouldValidate: true, shouldDirty: true });
+  const handleSelectTokenGroup = (group: ITokenGroup) => {
+    setValue('token', group);
     setIsDropdownOpen(false);
     setSearchTerm('');
   };
 
+  // Lấy danh sách chainId từ token group đã chọn
+  const availableChains = useMemo(() => {
+    if (!selectedToken) return [];
+    return selectedToken.tokens.map((t: ITokenOFT) => t.chainId?.toString());
+  }, [selectedToken]);
+
+  const presaleId = watch('presaleId');
+
   return (
-    <>
+     <>
       {/* Token */}
       <div className='mb-6'>
         <label className='block mb-2 font-semibold text-foreground'>
@@ -164,6 +174,7 @@ export function Step1Info({
                 <Button
                   variant='outline'
                   className='w-full justify-between border border-[color:var(--gray-charcoal)] rounded-lg px-4 py-3 text-foreground hover:text-accent-foreground h-auto'
+                  disabled={!!presaleId}
                 >
                   {selectedToken ? (
                     <div className='flex items-center gap-2'>
@@ -193,6 +204,7 @@ export function Step1Info({
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className='w-full'
+                    disabled={!!presaleId}
                   />
                 </div>
 
@@ -207,9 +219,9 @@ export function Step1Info({
                     </div>
                   ) : (
                     <InfiniteScroll
-                      dataLength={allTokens.length}
+                      dataLength={allTokenGroups.length}
                       next={fetchMoreTokens}
-                      hasMore={hasMore && !isLoadingMyTokens} // Thêm điều kiện !isLoadingMyTokens
+                      hasMore={hasMore && !isLoadingMyTokens}
                       loader={
                         <div className='flex items-center justify-center p-4'>
                           <Loader2 className='h-4 w-4 animate-spin mr-2' />
@@ -220,14 +232,13 @@ export function Step1Info({
                       }
                       scrollableTarget='token-infinity-scroll-container'
                       endMessage={
-                        allTokens.length > 0 && (
+                        allTokenGroups.length > 0 && (
                           <div className='p-2 text-sm text-muted-foreground text-center'>
                             All tokens loaded
                           </div>
                         )
                       }
                     >
-                      {/* Loading state cho lần fetch đầu tiên */}
                       {isLoadingMyTokens && filterTokens.page === 1 ? (
                         <div className='flex items-center justify-center p-8'>
                           <Loader2 className='h-6 w-6 animate-spin mr-2' />
@@ -235,32 +246,38 @@ export function Step1Info({
                             Loading tokens...
                           </span>
                         </div>
-                      ) : allTokens.length > 0 ? (
-                        allTokens.map((t) => (
+                      ) : allTokenGroups.length > 0 ? (
+                        allTokenGroups.map((group) => (
                           <div
-                            key={t.id}
+                            key={group.tokenGroupId}
                             className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted border-b border-border last:border-b-0 transition-colors ${
-                              field.value?.id === t.id
+                              field.value?.tokenGroupId === group.tokenGroupId
                                 ? 'bg-muted font-semibold'
                                 : ''
                             }`}
-                            onClick={() => handleSelectToken(t)}
+                            onClick={() =>
+                              !presaleId && handleSelectTokenGroup(group)
+                            }
+                            style={presaleId ? { pointerEvents: 'none', opacity: 0.6 } : {}}
                           >
                             <Image
-                              src={t.logoUrl || '/images/default-coin-logo.jpg'}
+                              src={
+                                group.logoUrl || '/images/default-coin-logo.jpg'
+                              }
                               fallbackSrc='/images/default-coin-logo.jpg'
-                              alt={t.name}
+                              alt={group.name}
                               className='w-8 h-8 rounded-full'
                             />
                             <div className='flex-1'>
                               <div className='font-medium text-foreground'>
-                                {t.name}
+                                {group.name}
                               </div>
                               <div className='text-xs text-muted-foreground'>
-                                {t.symbol}
+                                {group.symbol}
                               </div>
                             </div>
-                            {field.value?.id === t.id && (
+                            {field.value?.tokenGroupId ===
+                              group.tokenGroupId && (
                               <div className='text-primary text-sm'>✓</div>
                             )}
                           </div>
@@ -318,24 +335,29 @@ export function Step1Info({
                 value={field.value || []}
                 onValueChange={field.onChange}
                 maxCount={2}
-                options={configLaunchPadsChains.map((chain: Chain) => ({
-                  label: (
-                    <div className='flex items-center gap-2'>
-                      <Image
-                        objectFit='contain'
-                        src={getChainImage({
-                          chainId: chain.id,
-                          source: ChainTokenSource.Local,
-                        })}
-                        alt={chain.name}
-                        className='w-5 h-5 rounded-full'
-                      />
-                      <span>{chain.name}</span>
-                    </div>
-                  ),
-                  value: chain.id.toString(),
-                }))}
+                options={configLaunchPadsChains
+                  .filter((chain: Chain) =>
+                    availableChains.includes(chain.id.toString())
+                  )
+                  .map((chain: Chain) => ({
+                    label: (
+                      <div className='flex items-center gap-2'>
+                        <Image
+                          objectFit='contain'
+                          src={getChainImage({
+                            chainId: chain.id,
+                            source: ChainTokenSource.Local,
+                          })}
+                          alt={chain.name}
+                          className='w-5 h-5 rounded-full'
+                        />
+                        <span>{chain.name}</span>
+                      </div>
+                    ),
+                    value: chain.id.toString(),
+                  }))}
                 placeholder='Select chain(s)'
+                disabled={!!presaleId}
               />
             )}
           />
@@ -343,8 +365,10 @@ export function Step1Info({
 
         <Accordion type='multiple' className='flex flex-col gap-3'>
           {configLaunchPadsChains
-            .filter((chain: Chain) =>
-              selectedChains.includes(chain.id.toString())
+            .filter(
+              (chain: Chain) =>
+                selectedChains.includes(chain.id.toString()) &&
+                availableChains.includes(chain.id.toString())
             )
             .map((chain: Chain) => (
               <AccordionItem
@@ -392,6 +416,7 @@ export function Step1Info({
                               onValueChange={(values) => {
                                 field.onChange(values.value);
                               }}
+                              disabled={!!presaleId}
                             />
                           )}
                         />
@@ -415,6 +440,7 @@ export function Step1Info({
                               onValueChange={(values) => {
                                 field.onChange(values.value);
                               }}
+                              disabled={!!presaleId}
                             />
                           )}
                         />
@@ -436,6 +462,7 @@ export function Step1Info({
                               onValueChange={(values) => {
                                 field.onChange(values.value);
                               }}
+                              disabled={!!presaleId}
                             />
                           )}
                         />
@@ -457,6 +484,7 @@ export function Step1Info({
                               onValueChange={(values) => {
                                 field.onChange(values.value);
                               }}
+                              disabled={!!presaleId}
                             />
                           )}
                         />
@@ -478,6 +506,7 @@ export function Step1Info({
                               onValueChange={(values) => {
                                 field.onChange(values.value);
                               }}
+                              disabled={!!presaleId}
                             />
                           )}
                         />
@@ -499,6 +528,7 @@ export function Step1Info({
                               onValueChange={(values) => {
                                 field.onChange(values.value);
                               }}
+                              disabled={!!presaleId}
                             />
                           )}
                         />
@@ -527,6 +557,7 @@ export function Step1Info({
                 value={field.value || undefined}
                 onChange={field.onChange}
                 placeholder='Start date'
+                disabled={!!presaleId}
               />
             )}
           />
@@ -545,6 +576,7 @@ export function Step1Info({
                 value={field.value || undefined}
                 onChange={field.onChange}
                 placeholder='End date'
+                disabled={!!presaleId}
               />
             )}
           />
