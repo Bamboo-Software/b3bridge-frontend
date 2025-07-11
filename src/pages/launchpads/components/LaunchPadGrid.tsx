@@ -52,7 +52,7 @@ const LaunchpadCard: React.FC<LaunchpadCardProps> = ({
   };
 
   // Get primary token info from first chain
-  const primaryChain = presale.supportedChains[0];
+  const primaryChain = presale.presaleChains[0];
 
   return (
     <div className='bg-[color:var(--gray-night)] border border-[color:var(--gray-charcoal)] rounded-2xl p-6 hover:border-primary/30 transition-colors h-fit'>
@@ -95,7 +95,7 @@ const LaunchpadCard: React.FC<LaunchpadCardProps> = ({
 
       {/* Chains Progress - Sử dụng component ChainProgress */}
       <div className='space-y-3 mb-4'>
-        {presale.supportedChains.map((chain) => (
+        {presale.presaleChains.map((chain) => (
           <ChainProgress
             key={chain.id}
             chain={{

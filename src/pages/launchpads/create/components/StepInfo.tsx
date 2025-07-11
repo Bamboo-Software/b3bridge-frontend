@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { NumericFormat } from 'react-number-format';
 import { useFormContext, Controller } from 'react-hook-form';
 import InfiniteScroll from 'react-infinite-scroll-component';
@@ -88,7 +88,7 @@ export function Step1Info({
             (newGroup) =>
               !prev.some(
                 (existingGroup) =>
-                  existingGroup.tokenGroupId === newGroup.tokenGroupId
+                  existingGroup.groupId === newGroup.groupId
               )
           );
           return [...prev, ...newGroups];
@@ -249,9 +249,9 @@ export function Step1Info({
                       ) : allTokenGroups.length > 0 ? (
                         allTokenGroups.map((group) => (
                           <div
-                            key={group.tokenGroupId}
+                            key={group.groupId}
                             className={`flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted border-b border-border last:border-b-0 transition-colors ${
-                              field.value?.tokenGroupId === group.tokenGroupId
+                              field.value?.groupId === group.groupId
                                 ? 'bg-muted font-semibold'
                                 : ''
                             }`}
@@ -276,8 +276,8 @@ export function Step1Info({
                                 {group.symbol}
                               </div>
                             </div>
-                            {field.value?.tokenGroupId ===
-                              group.tokenGroupId && (
+                            {field.value?.groupId ===
+                              group.groupId && (
                               <div className='text-primary text-sm'>✓</div>
                             )}
                           </div>

@@ -99,7 +99,7 @@ export interface BaseApiResponse<T> {
   data: T
 }
 export interface ITokenGroup {
-  tokenGroupId: string;
+  groupId: string;
   tokens: ITokenOFT[];
   totalTokensInGroup: number;
   name: string;

@@ -46,7 +46,7 @@ export const LaunchpadMainContent = ({
     }, 1500);
   };
 
-  const mainChain = launchpad.supportedChains[0];
+  const mainChain = launchpad.presaleChains[0];
   const oftToken = mainChain?.oftToken;
   const tokenAddress = mainChain?.tokenAddress || '';
   const tokenName = oftToken?.name || launchpad.title;
@@ -164,7 +164,7 @@ export const LaunchpadMainContent = ({
             <div className='font-semibold mb-4 text-white'>Chains</div>
             <div className='rounded-lg bg-[color:var(--gray-night)] border border-[color:var(--gray-charcoal)] p-4'>
               <Accordion type='multiple' className='flex flex-col gap-3'>
-                {launchpad.supportedChains.map((chain) => {
+                {launchpad.presaleChains.map((chain) => {
                   const chainInfo = getChainInfo(chain.chainId);
                   return (
                     <AccordionItem

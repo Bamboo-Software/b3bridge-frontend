@@ -139,8 +139,8 @@ export default function CreateLaunchpadPage() {
         return;
       } else {
         const draftData = result.data.data;
-        const id = draftData.presaleId;
-        const chainDeployments = draftData.chainDeployments || [];
+        const id = draftData.id;
+        const chainDeployments = draftData.presaleChains || [];
 
         // Set lại chainFields từ chainDeployments
         const chainFields = methods.getValues('chainFields') || {};
@@ -149,7 +149,7 @@ export default function CreateLaunchpadPage() {
           if (chainId) {
             chainFields[chainId] = {
               ...chainFields[chainId],
-              totalFee: deployment.requiredDeploymentFee,
+              totalFee: deployment.deployFee,
               paymentTokenAddress: deployment.paymentTokenAddress,
               paymentTokenSymbol: deployment.paymentTokenSymbol,
               systemWalletAddress: deployment.systemWalletAddress,
@@ -171,6 +171,7 @@ export default function CreateLaunchpadPage() {
   };
 
   const presaleId = watch('presaleId');
+
 
   const handleNext = async () => {
     let fields: string[] = [];
@@ -334,7 +335,6 @@ export default function CreateLaunchpadPage() {
       toast.error('Presale ID not found');
     }
   };
-
 
   return (
     <FormProvider {...methods}>

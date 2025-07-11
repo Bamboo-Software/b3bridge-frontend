@@ -80,7 +80,7 @@ export async function getTokenData(chainId: SUPPORTED_CHAINS_EVM | number, token
 export  function getTokenImage({source, symbol, chainId, tokenAddress}: {
   symbol?:string,
   source?: ChainTokenSource,
-  chainId?: SUPPORTED_CHAINS_EVM, 
+  chainId?: number, 
   tokenAddress: Address
 }) {
   if(source === ChainTokenSource.Stargate && symbol) {

@@ -137,7 +137,7 @@ export interface PresaleDetailResponse {
   category: Category;
   createdAt: string;
   updatedAt: string;
-  supportedChains: PresaleSupportedChain[];
+  presaleChains: PresaleSupportedChain[];
 }
 
 // Presale list item interface (simplified for list view)
@@ -156,7 +156,7 @@ export interface PresaleListItem {
   tags: string[];
   createdAt: string;
   updatedAt: string;
-  supportedChains: PresaleSupportedChain[];
+  presaleChains: PresaleSupportedChain[];
 }
 
 // Presale list response interface

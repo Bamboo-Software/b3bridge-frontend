@@ -14,16 +14,17 @@ import {
   RefreshCw,
   AlertTriangle,
 } from 'lucide-react';
-import { cn } from '@/utils';
 import { toast } from 'sonner';
 import { preSaleApi } from '@/services/pre-sale/presales';
 import type {
   PresalePaymentVerificationResponse,
   PresalePaymentVerificationStatus,
+  PresaleSupportedChain,
 } from '@/utils/interfaces/launchpad';
 import { DeploymentStatus, PaymentStatus } from '@/utils/enums/presale';
 import MissileIcon from '@/assets/icons/missile-icon.svg';
 import Image from '@/components/ui/image';
+
 export interface DeploymentStatusModalProps {
   open: boolean;
   presaleId?: string;
@@ -46,6 +47,8 @@ export function DeploymentStatusModal({
     });
 
   const [deploymentStarted, setDeploymentStarted] = useState(false);
+  const [deploymentError, setDeploymentError] = useState<string | null>(null);
+  const [isDeploying, setIsDeploying] = useState(false); // Thêm state cho loading deployment
 
   // Redux hooks
   const {
@@ -68,7 +71,7 @@ export function DeploymentStatusModal({
   const { data: presaleDetailData, refetch: refetchDetail } =
     useGetDetailPreSalesQuery({ presaleId }, { skip: !open || !presaleId });
 
-  const [deployContract] = useDeployContractPreSalesMutation();
+  const [deployContract, { isLoading: isDeploymentTriggering }] = useDeployContractPreSalesMutation();
 
   // Process payment verification data
   useEffect(() => {
@@ -102,7 +105,8 @@ export function DeploymentStatusModal({
         isVerifying: false,
         error: undefined,
       }));
-      if (allChainsReady && !deploymentStarted) {
+      
+      if (allChainsReady && !deploymentStarted && !deploymentError && !isDeploying) {
         toast.success('All payments verified successfully!');
         // Check presale detail status before triggering deployment
         checkAndTriggerDeployment();
@@ -116,7 +120,7 @@ export function DeploymentStatusModal({
         );
       }
     }
-  }, [paymentVerificationData, deploymentStarted]);
+  }, [paymentVerificationData, deploymentStarted, deploymentError, isDeploying]);
 
   // Check presale status and trigger deployment if needed
   const checkAndTriggerDeployment = useCallback(async () => {
@@ -128,20 +132,22 @@ export function DeploymentStatusModal({
     const presaleDetail = presaleDetailData.data;
 
     // Check if any chain is in DRAFT status
-    const hasDraftChains = presaleDetail.supportedChains?.some(
-      (chain: any) => chain.status === DeploymentStatus.DRAFT
+    const hasDraftChains = presaleDetail.presaleChains?.some(
+      (chain: PresaleSupportedChain) => chain.status === DeploymentStatus.DRAFT
     );
-
+    
     if (
       presaleDetail.status === DeploymentStatus.DRAFT &&
       hasDraftChains &&
-      !deploymentStarted
+      !deploymentStarted &&
+      !deploymentError &&
+      !isDeploying
     ) {
       handleTriggerDeployment();
-    } else {
+    } else if (!deploymentError && !isDeploying) {
       setDeploymentStarted(true);
     }
-  }, [presaleDetailData, deploymentStarted]);
+  }, [presaleDetailData, deploymentStarted, deploymentError, isDeploying]);
 
   // Verify payment function
   const handleVerifyPayment = useCallback(async () => {
@@ -153,6 +159,13 @@ export function DeploymentStatusModal({
       }));
 
       await refetchPaymentVerification();
+      
+      // Sau khi verify xong, set isVerifying về false
+      setPaymentStatus((prev) => ({
+        ...prev,
+        isVerifying: false,
+      }));
+      
     } catch (error: any) {
       console.error('Payment verification error:', error);
       setPaymentStatus((prev) => ({
@@ -167,21 +180,33 @@ export function DeploymentStatusModal({
   // Trigger deployment
   const handleTriggerDeployment = useCallback(async () => {
     try {
-      setDeploymentStarted(true);
+      setIsDeploying(true); // Bắt đầu loading
+      setDeploymentError(null);
 
       const result = await deployContract({ presaleId }).unwrap();
 
       if (result) {
+        setDeploymentStarted(true);
+        setIsDeploying(false); // Kết thúc loading
         toast.success('Contract deployment started successfully!');
       } else {
         throw new Error('Failed to trigger deployment');
       }
     } catch (error: any) {
       console.error('Trigger deployment error:', error);
-      toast.error('Failed to trigger deployment');
+      const errorMessage = error.message || 'Failed to trigger deployment';
+      setDeploymentError(errorMessage);
       setDeploymentStarted(false);
+      setIsDeploying(false); // Kết thúc loading
+      toast.error(errorMessage);
     }
   }, [presaleId, deployContract]);
+
+  // Retry deployment
+  const handleRetryDeployment = useCallback(() => {
+    setDeploymentError(null);
+    handleTriggerDeployment();
+  }, [handleTriggerDeployment]);
 
   // Effect to start verification when modal opens
   useEffect(() => {
@@ -195,7 +220,9 @@ export function DeploymentStatusModal({
     if (
       paymentStatus.allChainsReady &&
       presaleDetailData?.data &&
-      !deploymentStarted
+      !deploymentStarted &&
+      !deploymentError &&
+      !isDeploying
     ) {
       checkAndTriggerDeployment();
     }
@@ -203,18 +230,10 @@ export function DeploymentStatusModal({
     paymentStatus.allChainsReady,
     presaleDetailData,
     deploymentStarted,
+    deploymentError,
+    isDeploying,
     checkAndTriggerDeployment,
   ]);
-
-  const getPaymentStatusColor = (status: PaymentStatus, progress: number) => {
-    if (status === PaymentStatus.COMPLETED && progress === 100) {
-      return 'bg-green-100 text-green-700';
-    } else if (status === PaymentStatus.FAILED) {
-      return 'bg-red-100 text-red-700';
-    } else {
-      return 'bg-yellow-100 text-yellow-700';
-    }
-  };
 
   return (
     <Dialog
@@ -233,13 +252,68 @@ export function DeploymentStatusModal({
         </DialogHeader>
 
         <div className='space-y-6'>
-          {deploymentStarted && (
+          {/* Deployment Success */}
+          {deploymentStarted && !deploymentError && !isDeploying && (
             <div className='flex flex-col items-center justify-center'>
               <Image src={MissileIcon} alt='missile-icon' />
             </div>
           )}
 
-          {!deploymentStarted && (
+          {/* Deployment Loading */}
+          {isDeploying && (
+            <div className='border rounded-lg p-4'>
+              <h3 className='font-semibold mb-3 flex items-center gap-2'>
+                Deploying Contract
+                <RefreshCw className='w-4 h-4 animate-spin text-blue-500' />
+              </h3>
+              
+              <div className='space-y-3'>
+                <div className='flex items-center gap-2 text-blue-600'>
+                  <RefreshCw className='w-4 h-4 animate-spin' />
+                  <span>Deploying smart contracts to blockchain...</span>
+                </div>
+                <p className='text-sm text-blue-500'>
+                  This process may take a few minutes. Please wait...
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Deployment Error */}
+          {deploymentError && !isDeploying && (
+            <div className='border rounded-lg p-4'>
+              <h3 className='font-semibold mb-3 flex items-center gap-2'>
+                Deployment Failed
+                <XCircle className='w-4 h-4 text-red-500' />
+              </h3>
+              
+              <div className='space-y-3'>
+                <div className='flex items-center gap-2 text-red-600'>
+                  <XCircle className='w-4 h-4' />
+                  <span>Contract deployment failed</span>
+                </div>
+                <p className='text-sm text-red-500'>{deploymentError}</p>
+                <Button
+                  size='sm'
+                  onClick={handleRetryDeployment}
+                  disabled={isDeploying || isDeploymentTriggering}
+                  className='w-full mt-2'
+                >
+                  {isDeploying || isDeploymentTriggering ? (
+                    <>
+                      <RefreshCw className='w-4 h-4 animate-spin mr-2' />
+                      Retrying...
+                    </>
+                  ) : (
+                    'Retry Deployment'
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Payment Verification */}
+          {!deploymentStarted && !deploymentError && !isDeploying && (
             <div className='border rounded-lg p-4'>
               <h3 className='font-semibold mb-3 flex items-center gap-2'>
                 Payment Verification
@@ -280,36 +354,6 @@ export function DeploymentStatusModal({
                     <span>Some payments are still pending</span>
                   </div>
 
-                  {paymentStatus.chainsStatus.map((chain) => (
-                    <div
-                      key={chain.chainId}
-                      className='flex items-center justify-between p-2 bg-gray-50 rounded'
-                    >
-                      <div>
-                        <p className='font-medium text-sm'>{chain.chainName}</p>
-                        <p className='text-xs text-gray-600'>
-                          Chain ID: {chain.chainId}
-                        </p>
-                        <p className='text-xs text-gray-500'>
-                          Amount: {chain.amount}/{chain.requiredAmount}
-                        </p>
-                      </div>
-                      <div className='text-right'>
-                        <span
-                          className={cn(
-                            'px-2 py-1 rounded-full text-xs font-medium',
-                            getPaymentStatusColor(
-                              chain.paymentStatus,
-                              chain.paymentProgress
-                            )
-                          )}
-                        >
-                          {chain.paymentStatus} ({chain.paymentProgress}%)
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-
                   <Button
                     size='sm'
                     onClick={handleVerifyPayment}
@@ -330,7 +374,7 @@ export function DeploymentStatusModal({
         </div>
 
         {/* Footer with Action Buttons */}
-        {deploymentStarted && (
+        {deploymentStarted && !deploymentError && !isDeploying && (
           <div className='flex gap-3 pt-4 border-t'>
             <Button
               variant='outline'

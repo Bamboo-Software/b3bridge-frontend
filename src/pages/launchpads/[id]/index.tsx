@@ -59,7 +59,7 @@ const mockDetailData: PresaleDetailResponse = {
   category: Category.MEME,
   createdAt: '2025-06-20T09:00:00.000Z',
   updatedAt: '2025-07-01T10:00:00.000Z',
-  supportedChains: [
+  presaleChains: [
     {
       id: 'eth',
       presaleId: 'presale-1',
@@ -246,7 +246,7 @@ export default function LaunchpadDetailPage() {
 
   const chains = useMemo(
     () =>
-      launchpad?.supportedChains.map((chain) => ({
+      launchpad?.presaleChains.map((chain) => ({
         key: chain.chainId,
         label: getChainInfo(chain.chainId)?.name || chain.chainId,
         contractAddress: chain.contractAddress,

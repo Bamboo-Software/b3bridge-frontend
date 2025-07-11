@@ -31,7 +31,7 @@ const mockPresaleData: PresaleListItem[] = [
     tags: ['DeFi', 'Yield Farming', 'Staking'],
     createdAt: '2025-07-01T10:00:00.000Z',
     updatedAt: '2025-07-10T10:00:00.000Z',
-    supportedChains: [
+    presaleChains: [
       {
         id: 'chain-1',
         presaleId: '123e4567-e89b-12d3-a456-426614174001',
@@ -101,7 +101,7 @@ const mockPresaleData: PresaleListItem[] = [
     tags: ['Gaming', 'NFT', 'Marketplace'],
     createdAt: '2025-07-05T14:00:00.000Z',
     updatedAt: '2025-07-10T14:00:00.000Z',
-    supportedChains: [
+    presaleChains: [
       {
         id: 'chain-3',
         presaleId: '123e4567-e89b-12d3-a456-426614174002',
@@ -171,7 +171,7 @@ const mockPresaleData: PresaleListItem[] = [
     tags: ['DAO', 'Green Energy', 'Sustainability'],
     createdAt: '2025-05-15T09:00:00.000Z',
     updatedAt: '2025-07-01T09:00:00.000Z',
-    supportedChains: [
+    presaleChains: [
       {
         id: 'chain-4',
         presaleId: '123e4567-e89b-12d3-a456-426614174003',
@@ -295,7 +295,7 @@ const mockPresaleData: PresaleListItem[] = [
     tags: [],
     createdAt: '2025-07-10T16:00:00.000Z',
     updatedAt: '2025-07-10T16:00:00.000Z',
-    supportedChains: [
+    presaleChains: [
       {
         id: 'chain-5',
         presaleId: '123e4567-e89b-12d3-a456-426614174004',

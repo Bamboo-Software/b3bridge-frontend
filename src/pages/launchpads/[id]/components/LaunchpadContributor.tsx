@@ -46,7 +46,7 @@ export function LaunchpadContributor({
   const getChainInfo = (chainId: string) => {
     return supportedChains.find((c) => c.chainId === chainId);
   };
-  const chains = launchpad.supportedChains.map((chain) => ({
+  const chains = launchpad.presaleChains.map((chain) => ({
     key: chain.chainId,
     label: getChainInfo(chain.chainId)?.name || chain.chainId,
     contractAddress: chain.contractAddress,

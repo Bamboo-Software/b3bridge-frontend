@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import  { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -268,7 +268,7 @@ export function LaunchpadSideBar({ launchpad, contributorState }: LaunchpadSideB
 
             {/* Chain Progress Bars */}
             <div className='space-y-4 mb-6'>
-              {launchpad.supportedChains.map((chain) => (
+              {launchpad.presaleChains.map((chain) => (
                 <div key={chain.id} className='space-y-2'>
                   <div className='flex items-center justify-between'>
                     <div className='flex items-center gap-2'>
