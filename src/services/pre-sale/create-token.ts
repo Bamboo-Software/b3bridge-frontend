@@ -29,10 +29,11 @@ export const preSaleCreateTokenApi = createApi({
         method: "GET",
       }),
     }),
-    deployToken: builder.mutation<BaseApiResponse<any>, string>({
-      query: (tokenId) => ({
-        url: `/tokens/${tokenId}/deploy`,
+    deployToken: builder.mutation<BaseApiResponse<any[]>, { tokenIds: string[] }>({
+      query: (body) => ({
+        url: `/tokens/deploy-tokens`,
         method: "POST",
+        body,
       }),
     }),
   }),

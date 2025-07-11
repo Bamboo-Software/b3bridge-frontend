@@ -30,6 +30,7 @@ export const CreateTokenFormSchema = z.object({
       paymentTokenAddress: z.string().optional(),
       deployFee: z.string().optional(),
       platformFee: z.string().optional(),
+      tokenAddress: z.string().optional(),
       transactions: z
         .object({
           native: z

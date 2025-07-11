@@ -28,7 +28,7 @@ const ConfirmCreateToken: React.FC<ConfirmCreateTokenProps> = ({ next }) => {
   const { setValue, watch } = useFormContext<CreateTokenFormValues>();
   const { data: walletClient } = useWalletClient();
   const formData = watch();
-  const [deployToken] = useDeployTokenMutation();
+  const [deployToken , {isLoading:isLoadingDeployToken}] = useDeployTokenMutation();
   const { transfer } = useChainTransfer();
   const { switchChainAsync } = useSwitchChain();
 const watchedChainFields = useWatch<CreateTokenFormValues>({
@@ -47,22 +47,18 @@ const watchedChainFields = useWatch<CreateTokenFormValues>({
         TransactionStatus.PENDING
       );
       setValue(`chainFields.${chainId}.transactions.native.payError`, '');
-      
       const nativeResult = await transfer({
         chainType,
         to: to as Address,
         amount: nativeAmount,
         chainId,
       });
-      
       if (!nativeResult?.hash) {
         throw new Error(nativeResult?.error || 'Native payment failed');
       }
-      
       await waitForTransactionReceipt(walletClient!, {
         hash: nativeResult?.hash as `0x${string}`,
       })
-      
       setValue(
         `chainFields.${chainId}.transactions.native.payStatus`,
         TransactionStatus.SUCCESS
@@ -95,22 +91,34 @@ const onPay = (chainId: string, address: string, nativeAmount: string) => {
   };
   
   const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const deployIds = Object.values(formData.chainFields || {})
+  e.preventDefault();
+
+  const tokenIds = Object.values(formData.chainFields || {})
     .filter((field: any) => field?.transactions?.native?.isVerify === true)
     .map((field: any) => field?.id)
     .filter(Boolean);
 
-    try {
-      const results = await Promise.all(deployIds.map((tokenId) => deployToken(tokenId).unwrap())
-    );
-    console.log('All tokens deployed:', results);
+  if (tokenIds.length === 0) {
+    console.warn('No verified tokenIds to deploy.');
+    return;
+  }
+
+  try {
+    const result = await deployToken({ tokenIds }).unwrap();
+    console.log('Tokens deployed:', result.data);
+    for (const item of result.data) {
+        const chainId = item.chainId;
+        const tokenAddress = item.tokenAddress;
+
+        if (formData.chainFields?.[chainId]) {
+          formData.chainFields[chainId].tokenAddress = tokenAddress;
+        }
+      }
     next();
   } catch (error) {
-      console.error('Error deploying tokens:', error);
-    }
-  };
+    console.error('Error deploying tokens:', error);
+  }
+};
   
   useVerifyPaymentOnSuccess();
  const allVerified = useMemo(() => {
@@ -156,11 +164,15 @@ const onPay = (chainId: string, address: string, nativeAmount: string) => {
           })}
 
           <Button
-            disabled={!allVerified}
+            disabled={!allVerified || isLoadingDeployToken}
             type="submit"
             className="w-full bg-[linear-gradient(45deg,_var(--blue-primary),_var(--primary))] shadow-[0_0px_10px_0_var(--blue-primary)] border-none rounded-lg cursor-pointer hover:opacity-90 hover:shadow-[0_0px_16px_0_var(--blue-primary)] text-foreground"
           >
+            {isLoadingDeployToken ? <>
+            Processing
+            </> : <>
             Submit
+            </> }
           </Button>
         </CardContent>
       </Card>
