@@ -68,5 +68,12 @@ export const preSaleApi = createApi({
         { type: 'PresaleDetail', id: arg.presaleId }
       ],
     }),
+    getPreSalesExplore: builder.query({
+      query: (params) => ({
+        url: `/presales/explore`,
+        method: "GET",
+        params
+      }),
+    }),
   }),
 });

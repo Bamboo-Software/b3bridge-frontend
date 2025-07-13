@@ -35,12 +35,13 @@ export function FilterSection({
   setChainFilter,
   statusFilter,
   setStatusFilter,
-  orderField,
-  setOrderField,
-  orderDirection,
-  setOrderDirection,
+  // orderField,
+  // setOrderField,
+  // orderDirection,
+  // setOrderDirection,
   supportedChains
 }: FilterSectionProps) {
+  console.log("🚀 ~ supportedChains:", supportedChains)
   const formatDisplayValue = (value: string) => {
     if (value === 'All Status' || value === 'All Categories' || value === 'Chain') {
       return value;
@@ -48,29 +49,29 @@ export function FilterSection({
     return value.charAt(0).toUpperCase() + value.slice(1);
   };
 
-  const formatOrderFieldDisplay = (field: OrderField | null) => {
-    if (!field) return 'No Sort';
+  // const formatOrderFieldDisplay = (field: OrderField | null) => {
+  //   if (!field) return 'No Sort';
     
-    switch (field) {
-      case 'createdAt':
-        return 'Created Date';
-      case 'updatedAt':
-        return 'Updated Date';
-      case 'startTime':
-        return 'Start Time';
-      case 'totalRaised':
-        return 'Total Raised';
-      default:
-        return 'No Sort';
-    }
-  };
+  //   switch (field) {
+  //     case 'createdAt':
+  //       return 'Created Date';
+  //     case 'updatedAt':
+  //       return 'Updated Date';
+  //     case 'startTime':
+  //       return 'Start Time';
+  //     case 'totalRaised':
+  //       return 'Total Raised';
+  //     default:
+  //       return 'No Sort';
+  //   }
+  // };
 
-  const getSortDisplayText = () => {
-    if (!orderField) return 'No Sort';
-    const fieldText = formatOrderFieldDisplay(orderField);
-    const directionText = orderDirection === 'ASC' ? '↑' : '↓';
-    return `${fieldText} ${directionText}`;
-  };
+  // const getSortDisplayText = () => {
+  //   if (!orderField) return 'No Sort';
+  //   const fieldText = formatOrderFieldDisplay(orderField);
+  //   const directionText = orderDirection === 'ASC' ? '↑' : '↓';
+  //   return `${fieldText} ${directionText}`;
+  // };
 
   // Get unique chain names from supportedChains
   const getUniqueChains = () => {
@@ -81,6 +82,10 @@ export function FilterSection({
     
     return chainNames;
   };
+const selectedChainName =
+  chainFilter === 'Chain'
+    ? 'All Chains'
+    : supportedChains.find((c) => c.chainId === chainFilter)?.name || chainFilter;
 
   const uniqueChains = getUniqueChains();
 
@@ -99,37 +104,40 @@ export function FilterSection({
       
       <div className="flex gap-2 flex-1 justify-end">
         {/* Chain Filter */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="bg-[color:var(--gray-night)] border-[color:var(--gray-charcoal)] text-foreground min-w-32">
-              <Filter className="w-4 h-4 mr-2" />
-              {chainFilter === 'Chain' ? 'Chain' : chainFilter}
-              <ChevronDown className="w-4 h-4 ml-2" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="bg-[color:var(--gray-night)] border-[color:var(--gray-charcoal)]">
-            <DropdownMenuItem onClick={() => setChainFilter('Chain')}>
-              All Chains
+       <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" className="bg-[color:var(--gray-night)] border-[color:var(--gray-charcoal)] text-foreground min-w-32">
+            <Filter className="w-4 h-4 mr-2" />
+            {selectedChainName}
+            <ChevronDown className="w-4 h-4 ml-2" />
+          </Button>
+        </DropdownMenuTrigger>
+
+        <DropdownMenuContent className="bg-[color:var(--gray-night)] border-[color:var(--gray-charcoal)]">
+          <DropdownMenuItem onClick={() => setChainFilter('Chain')}>
+            All Chains
+          </DropdownMenuItem>
+
+          {supportedChains.map((chain) => (
+            <DropdownMenuItem 
+              key={chain.chainId}
+              onClick={() => setChainFilter(chain.chainId)}
+            >
+              {chain.name}
             </DropdownMenuItem>
-            {uniqueChains.map((chainName) => (
-              <DropdownMenuItem 
-                key={chainName}
-                onClick={() => setChainFilter(chainName)}
-              >
-                {chainName}
-              </DropdownMenuItem>
-            ))}
-            {/* Fallback if no chains loaded yet */}
-            {uniqueChains.length === 0 && (
-              <>
-                <DropdownMenuItem onClick={() => setChainFilter('Ethereum')}>Ethereum</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setChainFilter('BSC')}>BSC</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setChainFilter('Polygon')}>Polygon</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setChainFilter('Avalanche')}>Avalanche</DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+          ))}
+
+          {supportedChains.length === 0 && (
+            <>
+              <DropdownMenuItem onClick={() => setChainFilter('11155111')}>Ethereum</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setChainFilter('97')}>BSC</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setChainFilter('80001')}>Polygon</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setChainFilter('43113')}>Avalanche</DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
 
         {/* Status Filter */}
         <DropdownMenu>
@@ -151,17 +159,18 @@ export function FilterSection({
         </DropdownMenu>
 
         {/* Sort Filter */}
-        <DropdownMenu>
+        {/* <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="bg-[color:var(--gray-night)] border-[color:var(--gray-charcoal)] text-foreground min-w-40">
               {getSortDisplayText()}
               <ChevronDown className="w-4 h-4 ml-2" />
             </Button>
           </DropdownMenuTrigger>
+    
           <DropdownMenuContent className="bg-[color:var(--gray-night)] border-[color:var(--gray-charcoal)]">
             <DropdownMenuItem onClick={() => setOrderField(null)}>No Sort</DropdownMenuItem>
             
-            {/* Created Date Options */}
+            {/* Created Date Options
             <DropdownMenuItem onClick={() => { setOrderField('createdAt'); setOrderDirection('DESC'); }}>
               Created Date ↓ (Newest)
             </DropdownMenuItem>
@@ -169,7 +178,7 @@ export function FilterSection({
               Created Date ↑ (Oldest)
             </DropdownMenuItem>
 
-            {/* Updated Date Options */}
+            {/* Updated Date Options
             <DropdownMenuItem onClick={() => { setOrderField('updatedAt'); setOrderDirection('DESC'); }}>
               Updated Date ↓ (Latest)
             </DropdownMenuItem>
@@ -177,7 +186,7 @@ export function FilterSection({
               Updated Date ↑ (Earliest)
             </DropdownMenuItem>
 
-            {/* Start Time Options */}
+            {/* Start Time Options 
             <DropdownMenuItem onClick={() => { setOrderField('startTime'); setOrderDirection('ASC'); }}>
               Start Time ↑ (Earliest)
             </DropdownMenuItem>
@@ -185,7 +194,7 @@ export function FilterSection({
               Start Time ↓ (Latest)
             </DropdownMenuItem>
 
-            {/* Total Raised Options */}
+            {/* Total Raised Options 
             <DropdownMenuItem onClick={() => { setOrderField('totalRaised'); setOrderDirection('DESC'); }}>
               Total Raised ↓ (Highest)
             </DropdownMenuItem>
@@ -193,7 +202,7 @@ export function FilterSection({
               Total Raised ↑ (Lowest)
             </DropdownMenuItem>
           </DropdownMenuContent>
-        </DropdownMenu>
+        </DropdownMenu>  */}
       </div>
     </div>
   );

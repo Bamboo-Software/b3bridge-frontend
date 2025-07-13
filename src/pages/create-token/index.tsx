@@ -7,10 +7,13 @@ import SuccessCreateToken from './create/SuccessCreateToken';
 import { CreateTokenFormSchema, type CreateTokenFormValues } from './create/CreateTokenFormValidation';
 import { useCreateTokenMutation } from '@/services/pre-sale/create-token';
 import type { CreateTokenPayload } from '@/utils/interfaces/token';
+import { WalletConnectionRequired } from '../common/WalletConnectionRequired';
+import { useAccount } from 'wagmi';
 
 const CreateTokenPage: React.FC = () => {
   const [createToken] = useCreateTokenMutation();
   const [current, setCurrent] = useState(0);
+   const { isConnected } = useAccount();
    const methods = useForm<CreateTokenFormValues>({
     resolver: zodResolver(CreateTokenFormSchema),
     defaultValues: {
@@ -134,7 +137,16 @@ const handleCreateToken = async () => {
       content: <SuccessCreateToken formData={formData} next={next} />,
     },
   ];
-
+if (!isConnected) {
+    return (
+      <div className='container mx-auto px-6 py-8'>
+        <WalletConnectionRequired
+          title='Connect Wallet to Create Token'
+          description='Please connect your wallet to browse .'
+        />
+      </div>
+    );
+  }
   return <FormProvider {...methods}>
       <div>{steps[current].content}</div>
     </FormProvider>

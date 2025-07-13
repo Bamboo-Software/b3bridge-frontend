@@ -7,6 +7,8 @@ import type { PresaleListItem } from '@/utils/interfaces/launchpad';
 import type { LaunchpadSupportedChain } from '@/utils/interfaces/chain';
 import { PresaleStatus } from '@/utils/enums/presale';
 import { ChainProgress } from './LaunchPadProgress';
+import { useMemo } from 'react';
+import { useCountdown, type CountdownTime } from '@/hooks/useCountdown';
 
 interface LaunchpadCardProps {
   presale: PresaleListItem;
@@ -18,17 +20,18 @@ const LaunchpadCard: React.FC<LaunchpadCardProps> = ({
   supportedChains,
 }) => {
   const navigate = useNavigate();
-
+  
   const handleViewClick = () => {
     navigate(routesPaths.LAUNCHPAD_DETAIL(presale.id));
   };
-
+  
+  console.log("🚀 ~ presale:", presale.status)
   // Format time remaining
   const getTimeRemaining = () => {
     const now = new Date();
     const startTime = new Date(presale.startTime);
     const endTime = new Date(presale.endTime);
-
+    
     if (now < startTime) {
       const diff = startTime.getTime() - now.getTime();
       const days = Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -42,12 +45,25 @@ const LaunchpadCard: React.FC<LaunchpadCardProps> = ({
     }
     return null;
   };
-
+const targetDate = useMemo(() => {
+  if (presale.status === PresaleStatus.PENDING) {
+    return presale.startTime;
+  } else if (presale.status === PresaleStatus.ACTIVE) {
+    return presale.endTime;
+  }
+  return null;
+}, [presale.status, presale.startTime, presale.endTime]);
+  const countdown = useCountdown(targetDate);
+  function formatCountdown(countdown: CountdownTime): string {
+  const { days, hours, minutes, seconds } = countdown;
+  return `${days}:${hours}:${minutes}:${seconds}`;
+}
   const timeRemaining = getTimeRemaining();
 
   // Get chain logo from supportedChains API data by chainId
   const getChainLogo = (chainId: string) => {
     const chainInfo = supportedChains.find(chain => chain.chainId === chainId);
+    console.log("🚀 ~ getChainLogo ~ chainInfo:", chainInfo)
     return chainInfo?.icon || '/images/default-coin-logo.jpg';
   };
 
@@ -58,7 +74,7 @@ const LaunchpadCard: React.FC<LaunchpadCardProps> = ({
     <div className='bg-[color:var(--gray-night)] border border-[color:var(--gray-charcoal)] rounded-2xl p-6 hover:border-primary/30 transition-colors h-fit'>
       {/* Header */}
       <div className='flex items-start justify-between mb-6'>
-        <div className='flex items-center gap-3'>
+        <div className='flex gap-3 items-start'>
           <div className="flex flex-col gap-2">
             <Image
               src={primaryChain?.oftToken.logoUrl || '/images/default-coin-logo.jpg'}
@@ -70,8 +86,9 @@ const LaunchpadCard: React.FC<LaunchpadCardProps> = ({
               {presale.title}
             </h3>
           </div>
+          <div> {getStatusBadge(presale.status)}</div>
         </div>
-        {getStatusBadge(presale.status)}
+        {/* {getStatusBadge(presale.status)} */}
       </div>
 
       {/* Description */}
@@ -102,6 +119,7 @@ const LaunchpadCard: React.FC<LaunchpadCardProps> = ({
               id: chain.id,
               chainId: chain.chainId,
               hardCap: chain.hardCap,
+              softCap: chain.softCap,
               totalRaised: chain.totalRaised,
               paymentTokenAddress: chain.paymentTokenAddress,
             }}
@@ -113,10 +131,10 @@ const LaunchpadCard: React.FC<LaunchpadCardProps> = ({
       {/* Footer */}
       <div className='flex items-center justify-between pt-4 border-t border-[color:var(--gray-charcoal)]'>
         <div className='text-sm'>
-          {presale.status === PresaleStatus.PENDING && timeRemaining && (
-            <span className='text-foreground'>
+          {presale.status === PresaleStatus.PENDING && targetDate && (
+            <span className="text-foreground">
               Sale Starts in{' '}
-              <span className='font-mono'>{timeRemaining}</span>
+              <span className="font-mono">{formatCountdown(countdown)}</span>
             </span>
           )}
           {presale.status === PresaleStatus.ACTIVE && timeRemaining && (

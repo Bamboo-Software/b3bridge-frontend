@@ -2,10 +2,10 @@ import { Badge } from '@/components/ui/badge';
 
 export const getStatusBadge = (status: string) => {
   switch (status) {
-    case 'upcoming':
+    case 'Pending':
       return (
         <Badge className='text-[color:var(--orange-primary)] bg-[color:var(--wood-dark)] border-none rounded-full px-3 py-1 text-xs font-medium'>
-          ● Upcoming
+          ● Pending
         </Badge>
       );
     case 'live':
@@ -14,16 +14,16 @@ export const getStatusBadge = (status: string) => {
           ● Sale live
         </Badge>
       );
-    case 'ended':
+    case 'Cancelled':
       return (
         <Badge className='bg-[color:var(--red-deep)] text-[color:var(--red-soft)] border-none rounded-full px-3 py-1 text-xs font-medium'>
-          ● Ended
+          ● Cancelled
         </Badge>
       );
-    case 'cancelled':
+    case 'Finalized':
       return (
         <Badge className='bg-[color:var(--gray-muted)] text-[color:var(--gray-lightyhjmjm)] border-none rounded-full px-3 py-1 text-xs font-medium'>
-          ● Cancelled
+          ● Finalized
         </Badge>
       );
     default:
