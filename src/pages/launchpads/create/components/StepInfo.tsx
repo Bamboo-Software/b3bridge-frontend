@@ -456,7 +456,7 @@ export function Step1Info({
                               customInput={NumericCustomInput}
                               placeholder='Softcap'
                               allowNegative={false}
-                              decimalScale={0}
+                              decimalScale={6}
                               allowLeadingZeros={false}
                               thousandSeparator
                               onValueChange={(values) => {
@@ -478,7 +478,7 @@ export function Step1Info({
                               customInput={NumericCustomInput}
                               placeholder='Hardcap'
                               allowNegative={false}
-                              decimalScale={0}
+                              decimalScale={6}
                               allowLeadingZeros={false}
                               thousandSeparator
                               onValueChange={(values) => {
@@ -500,7 +500,7 @@ export function Step1Info({
                               customInput={NumericCustomInput}
                               placeholder='Minimum Buy'
                               allowNegative={false}
-                              decimalScale={0}
+                              decimalScale={6}
                               allowLeadingZeros={false}
                               thousandSeparator
                               onValueChange={(values) => {
@@ -522,7 +522,7 @@ export function Step1Info({
                               customInput={NumericCustomInput}
                               placeholder='Maximum Buy'
                               allowNegative={false}
-                              decimalScale={0}
+                              decimalScale={6}
                               allowLeadingZeros={false}
                               thousandSeparator
                               onValueChange={(values) => {

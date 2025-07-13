@@ -8,9 +8,9 @@ export const preSaleTokenManagementApi = createApi({
   reducerPath,
   baseQuery: baseQueryWithReauth(baseUrl),
   endpoints: (builder) => ({
-    getMyTokens: builder.query({
+    getMyTokenGroups: builder.query({
       query: (params) => ({
-        url: `/tokens`,
+        url: `/tokens/groups`,
         method: "GET",
         params,
       }),

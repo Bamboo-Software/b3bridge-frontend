@@ -7,6 +7,7 @@ const baseUrl = import.meta.env.VITE_PRESALE_API_URL;
 export const preSaleApi = createApi({
   reducerPath,
   baseQuery: baseQueryWithReauth(baseUrl),
+  tagTypes: ['Presale', 'PresaleDetail'],
   endpoints: (builder) => ({
     createPreSales: builder.mutation({
       query: (body) => ({
@@ -14,24 +15,34 @@ export const preSaleApi = createApi({
         method: "POST",
         body,
       }),
+      invalidatesTags: ['Presale'],
     }),
     verifyPaymentPreSales: builder.query({
       query: (params) => ({
         url: `/presales/${params.presaleId}/verify-payment`,
         method: "GET",
       }),
+      providesTags: (result, error, arg) => [
+        { type: 'PresaleDetail', id: arg.presaleId }
+      ],
     }),
     deployContractPreSales: builder.mutation({
       query: (params) => ({
         url: `/presales/${params.presaleId}/deploy`,
         method: "POST",
       }),
+      invalidatesTags: (result, error, arg) => [
+        { type: 'PresaleDetail', id: arg.presaleId }
+      ],
     }),
     getDetailPreSales: builder.query({
       query: (params) => ({
         url: `/presales/${params.presaleId}`,
         method: "GET",
       }),
+      providesTags: (result, error, arg) => [
+        { type: 'PresaleDetail', id: arg.presaleId }
+      ],
     }),
     getPreSales: builder.query({
       query: (params) => ({
@@ -39,6 +50,28 @@ export const preSaleApi = createApi({
         method: "GET",
         params
       }),
+      providesTags: ['Presale'],
+    }),
+    cancelPreSales: builder.mutation({
+      query: (body) => ({
+        url: `/presales/${body.presaleId}/cancel`,
+        method: "POST",
+        body
+      }),
+      invalidatesTags: (result, error, arg) => [
+        'Presale',
+        { type: 'PresaleDetail', id: arg.presaleId }
+      ],
+    }),
+    finalizePreSales: builder.mutation({
+      query: (params) => ({
+        url: `/presales/${params.presaleId}/finalize`,
+        method: "POST",
+      }),
+      invalidatesTags: (result, error, arg) => [
+        'Presale',
+        { type: 'PresaleDetail', id: arg.presaleId }
+      ],
     }),
   }),
 });

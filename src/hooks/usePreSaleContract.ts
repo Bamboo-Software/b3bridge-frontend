@@ -63,15 +63,15 @@ export function useMultipleCampaignContributors(
     chainId,
   }));
 
-  const { data, isLoading, error } = useReadContracts({ contracts: calls });
+  const { data, isLoading, error, refetch } = useReadContracts({ contracts: calls });
 
   const contributors = data?.map(r =>
     Array.isArray(r.result)
       ? (r.result as IContributorInfo[]).map(contributor => ({
-          wallet: contributor.wallet,
-          amount: contributor.amount,
-          timestamp: contributor.timestamp,
-        }))
+        wallet: contributor.wallet,
+        amount: contributor.amount,
+        timestamp: contributor.timestamp,
+      }))
       : []
   ) ?? [];
 
@@ -79,6 +79,7 @@ export function useMultipleCampaignContributors(
     data: contributors,
     loading: isLoading,
     error,
+    refetch
   };
 }
 
@@ -178,12 +179,13 @@ export function useMultipleCampaignTargetAmount(
     chainId,
   }));
 
-  const { data, isLoading, error } = useReadContracts({ contracts: calls });
+  const { data, isLoading, error, refetch } = useReadContracts({ contracts: calls });
 
   return {
     data: data?.map(r => r.result as bigint | undefined) ?? [],
     loading: isLoading,
     error,
+    refetch,
   };
 }
 
@@ -197,12 +199,13 @@ export function useMultipleCampaignTotalRaised(
     chainId,
   }));
 
-  const { data, isLoading, error } = useReadContracts({ contracts: calls });
+  const { data, isLoading, error, refetch } = useReadContracts({ contracts: calls });
 
   return {
     data: data?.map(r => r.result as bigint | undefined) ?? [],
     loading: isLoading,
     error,
+    refetch, 
   };
 }
 
@@ -302,46 +305,28 @@ export function useApproveERC20() {
 }
 
 export function useContribute() {
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-
   const contributeAsync = async (contractAddress: Address, amount: bigint, chainId: number, value?: bigint) => {
-    try {
-      setIsPending(true);
-      setError(null);
-
-      const hash = await writeContract(
-        wagmiConfig,
-        {
-          address: contractAddress,
-          abi: abi,
-          functionName: 'contribute',
-          args: [amount],
-          value: value,
-          chainId,
-        }
-      );
-
-      await waitForTransactionReceipt(wagmiConfig, {
-        hash,
+    const hash = await writeContract(
+      wagmiConfig,
+      {
+        address: contractAddress,
+        abi: abi,
+        functionName: 'contribute',
+        args: [amount],
+        value: value,
         chainId,
-      });
+      }
+    );
 
-      return hash;
-    } catch (err) {
-      const error = err as Error;
-      setError(error);
-      throw error;
-    } finally {
-      setIsPending(false);
-    }
+    await waitForTransactionReceipt(wagmiConfig, {
+      hash,
+      chainId,
+    });
+
+    return hash;
   };
 
-  return {
-    contributeAsync,
-    isPending,
-    error,
-  };
+  return contributeAsync;
 }
 
 export function useClaimTokens() {

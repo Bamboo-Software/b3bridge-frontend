@@ -81,7 +81,6 @@ export function ConnectButton({ className }: { className?: string }) {
       const wallet = getWalletByKey(connector?.id || '');
 
       if (!wallet) return;
-      setModalOpen(false);
       const nonceRes = await getMetamaskNonce({
         walletAddress: evmAddress,
         chainType: ChainType.EVM,
@@ -104,6 +103,7 @@ export function ConnectButton({ className }: { className?: string }) {
       });
       if(!response?.data?.token) throw new Error('Login failed');
       setToken(response?.data?.token)
+      setModalOpen(false);
     } catch (e) {
       disconnect();
       console.error('Error connecting EVM wallet:', e);

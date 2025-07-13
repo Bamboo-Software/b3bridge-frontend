@@ -258,7 +258,7 @@ export const LaunchpadMainContent = ({
                                 Maximum Buy
                               </span>
                               <span className='font-semibold text-primary'>
-                                {chain.maxContribution}
+                                {formatNumber(chain.maxContribution)}
                               </span>
                             </div>
                           </div>

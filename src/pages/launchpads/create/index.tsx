@@ -98,6 +98,7 @@ export default function CreateLaunchpadPage() {
             minContribution: chain?.minBuy || '0',
             maxContribution: chain?.maxBuy || '0',
             totalTokens: chain?.numberOfTokens || '0',
+            userWalletAddress: address
           };
         }) || [];
 
@@ -301,12 +302,12 @@ export default function CreateLaunchpadPage() {
     );
   });
 
-  const { useGetMyTokensQuery } = preSaleTokenManagementApi;
+  const { useGetMyTokenGroupsQuery } = preSaleTokenManagementApi;
   const {
     data: tokenRes,
     isLoading: isLoadingMyTokens,
     error,
-  } = useGetMyTokensQuery({
+  } = useGetMyTokenGroupsQuery({
     page,
     limit: appConfig.defaultLimit,
     q,
@@ -440,7 +441,9 @@ export default function CreateLaunchpadPage() {
                     'Submit'
                   )}
                 </Button>
-              ))}
+              ))
+              }
+         
           </div>
         </div>
 
@@ -460,6 +463,7 @@ export default function CreateLaunchpadPage() {
 
         <DeploymentStatusModal
           open={showDeploymentModal}
+          onOpenChange={setShowDeploymentModal}
           presaleId={presaleId}
           onContinueCreate={handleContinueCreate}
           onSeeDetail={handleSeeDetail}

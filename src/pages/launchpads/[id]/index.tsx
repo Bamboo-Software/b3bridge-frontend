@@ -1,293 +1,95 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { LaunchpadMainContent } from './components/LaunchpadMainContent';
 import { LaunchpadSideBar } from './components/LaunchpadSidebar';
-import type {
-  ContributorRow,
-  PresaleDetailResponse,
-} from '@/utils/interfaces/launchpad';
-import { ChainType } from '@/utils/enums/chain';
-import { DeploymentStatus, PresaleStatus } from '@/utils/enums/presale';
-import { Category } from '@/utils/enums/presale';
 import { preSaleGeneralApi } from '@/services/pre-sale/pre-sale-general';
 import { preSaleApi } from '@/services/pre-sale/presales';
 import { useMultipleCampaignContributors } from '@/hooks/usePreSaleContract';
+import { useProcessedContributors } from '@/hooks/useProcessedContributors';
 import type { LaunchpadSupportedChain } from '@/utils/interfaces/chain';
 import { WalletConnectionRequired } from '@/pages/common/WalletConnectionRequired';
 import { useAccount } from 'wagmi';
 import { useAuthToken } from '@/hooks/useAuthToken';
-
-const mockDetailData: PresaleDetailResponse = {
-  id: 'presale-1',
-  userId: 'user-123',
-  title: 'President Elon',
-  description:
-    'ELON is a meme coin inspired by the idea of Elon Musk becoming our president. $ELON represents the level of support his presidency would have.',
-  bannerUrl: '/images/banners/president-elon-banner.jpg',
-  softCap: '50000',
-  hardCap: '200000',
-  presaleRate: '10000',
-  listingRate: '12000',
-  startTime: '2025-07-01T10:00:00.000Z',
-  endTime: '2025-07-15T18:00:00.000Z',
-  minContribution: '0.1',
-  maxContribution: '5',
-  liquidityPercent: 70,
-  liquidityLockDays: 365,
-  vestingEnabled: false,
-  vestingFirstReleasePercent: 0,
-  vestingCycleDays: 0,
-  vestingEachCyclePercent: 0,
-  whitelistEnabled: false,
-  publicStartTime: '2025-07-01T10:00:00.000Z',
-  fundRecipientAddress: '0x1234567890abcdef1234567890abcdef12345678',
-  fundRecipientChainType: ChainType.EVM,
-  fundRecipientChainId: '1',
-  totalRaised: '105000',
-  totalContributors: 802,
-  firstCreateTxHash: '0xabc123...',
-  firstCreateBlockNumber: '12345678',
-  firstCreateGasUsed: '210000',
-  firstCreateGasPrice: '10000000000',
-  firstCreateCost: '2100000000000000',
-  isFinalized: false,
-  finalizeTime: '',
-  status: PresaleStatus.ACTIVE,
-  cancelReason: '',
-  tags: ['Meme', 'Elon', 'Community'],
-  category: Category.MEME,
-  createdAt: '2025-06-20T09:00:00.000Z',
-  updatedAt: '2025-07-01T10:00:00.000Z',
-  presaleChains: [
-    {
-      id: 'eth',
-      presaleId: 'presale-1',
-      oftTokenId: 'token-eth',
-      oftToken: {
-        id: 'token-eth',
-        chainId: '11155111',
-        name: 'President Elon',
-        description: 'President Elon Token',
-        symbol: 'ELON',
-        decimals: 18,
-        totalSupply: '1000000000',
-        logoUrl: '/images/tokens/president-elon.png',
-        createdAt: '2025-06-20T09:00:00.000Z',
-        updatedAt: '2025-06-20T09:00:00.000Z',
-      },
-      chainType: ChainType.EVM,
-      chainId: '11155111',
-      contractAddress: '0x859b4B1faA138Aa77938f37738C97Ad9D3d70c45',
-      tokenAddress: '0x2222222222222222222222222222222222222222',
-      systemWalletAddress: '0x3333333333333333333333333333333333333333',
-      userWalletAddress: '0x4444444444444444444444444444444444444444',
-      paymentTokenAddress: '0x0000000000000000000000000000000000000000',
-      softCap: '20000',
-      hardCap: '80000',
-      totalTokens: '400000000',
-      presaleRate: '10000',
-      listingRate: '12000',
-      minContribution: '0.1',
-      maxContribution: '5',
-      routerAddress: '0x5555555555555555555555555555555555555555',
-      pairAddress: '',
-      totalRaised: '45000',
-      totalContributors: 479,
-      createTxHash: '0xabc123...',
-      createBlockNumber: '12345678',
-      createGasUsed: '210000',
-      createGasPrice: '10000000000',
-      createCost: '2100000000000000',
-      finalizeTxHash: '',
-      finalizeBlockNumber: '',
-      finalizeGasUsed: '',
-      isFinalized: false,
-      status: DeploymentStatus.SUCCESS,
-      deployError: '',
-      notes: '',
-      createdAt: '2025-06-20T09:00:00.000Z',
-      updatedAt: '2025-07-01T10:00:00.000Z',
-    },
-    {
-      id: 'avax',
-      presaleId: 'presale-1',
-      oftTokenId: 'token-avax',
-      oftToken: {
-        id: 'token-avax',
-        chainId: '43113',
-        name: 'President Elon',
-        description: 'President Elon Token',
-        symbol: 'ELON',
-        decimals: 18,
-        totalSupply: '1000000000',
-        logoUrl: '/images/tokens/president-elon.png',
-        createdAt: '2025-06-20T09:00:00.000Z',
-        updatedAt: '2025-06-20T09:00:00.000Z',
-      },
-      chainType: ChainType.EVM,
-      chainId: '43113',
-      contractAddress: '0x6666666666666666666666666666666666666666',
-      tokenAddress: '0x7777777777777777777777777777777777777777',
-      systemWalletAddress: '0x8888888888888888888888888888888888888888',
-      userWalletAddress: '0x9999999999999999999999999999999999999999',
-      paymentTokenAddress: '0x0000000000000000000000000000000000000000',
-      softCap: '15000',
-      hardCap: '60000',
-      totalTokens: '300000000',
-      presaleRate: '10000',
-      listingRate: '12000',
-      minContribution: '0.1',
-      maxContribution: '5',
-      routerAddress: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-      pairAddress: '',
-      totalRaised: '32000',
-      totalContributors: 89,
-      createTxHash: '0xdef456...',
-      createBlockNumber: '22334455',
-      createGasUsed: '210000',
-      createGasPrice: '10000000000',
-      createCost: '2100000000000000',
-      finalizeTxHash: '',
-      finalizeBlockNumber: '',
-      finalizeGasUsed: '',
-      isFinalized: false,
-      status: DeploymentStatus.SUCCESS,
-      deployError: '',
-      notes: '',
-      createdAt: '2025-06-20T09:00:00.000Z',
-      updatedAt: '2025-07-01T10:00:00.000Z',
-    },
-    {
-      id: 'bsc',
-      presaleId: 'presale-1',
-      oftTokenId: 'token-bsc',
-      oftToken: {
-        id: 'token-bsc',
-        chainId: '97',
-        name: 'President Elon',
-        description: 'President Elon Token',
-        symbol: 'ELON',
-        decimals: 18,
-        totalSupply: '1000000000',
-        logoUrl: '/images/tokens/president-elon.png',
-        createdAt: '2025-06-20T09:00:00.000Z',
-        updatedAt: '2025-06-20T09:00:00.000Z',
-      },
-      chainType: ChainType.EVM,
-      chainId: '97',
-      contractAddress: '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
-      tokenAddress: '0xcccccccccccccccccccccccccccccccccccccccc',
-      systemWalletAddress: '0xdddddddddddddddddddddddddddddddddddddddd',
-      userWalletAddress: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
-      paymentTokenAddress: '0x0000000000000000000000000000000000000000',
-      softCap: '15000',
-      hardCap: '60000',
-      totalTokens: '300000000',
-      presaleRate: '10000',
-      listingRate: '12000',
-      minContribution: '0.1',
-      maxContribution: '5',
-      routerAddress: '0xffffffffffffffffffffffffffffffffffffffff',
-      pairAddress: '',
-      totalRaised: '28000',
-      totalContributors: 234,
-      createTxHash: '0xghi789...',
-      createBlockNumber: '33445566',
-      createGasUsed: '210000',
-      createGasPrice: '10000000000',
-      createCost: '2100000000000000',
-      finalizeTxHash: '',
-      finalizeBlockNumber: '',
-      finalizeGasUsed: '',
-      isFinalized: false,
-      status: DeploymentStatus.SUCCESS,
-      deployError: '',
-      notes: '',
-      createdAt: '2025-06-20T09:00:00.000Z',
-      updatedAt: '2025-07-01T10:00:00.000Z',
-    },
-  ],
-};
+import { DeploymentStatus } from '@/utils/enums/presale';
+import type { PresaleSupportedChain } from '@/utils/interfaces/launchpad';
 
 export default function LaunchpadDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const [launchpad, setLaunchpad] = useState<PresaleDetailResponse | null>(
-    null
-  );
 
   const { isConnected } = useAccount();
   const { token } = useAuthToken();
 
+  // API hooks
   const { useGetSupportedChainPreSalesQuery } = preSaleGeneralApi;
   const { useGetDetailPreSalesQuery } = preSaleApi;
+  
   const {
     data: supportedChains = { data: [] },
     isLoading: isChainsLoading,
     refetch: refetchSupportedChains,
   } = useGetSupportedChainPreSalesQuery({});
+  
   const {
     data: launchpadDetail,
     isLoading: isLaunchpadLoading,
+    error: launchpadError,
     refetch: refetchLaunchpadDetail,
   } = useGetDetailPreSalesQuery({ presaleId: id });
 
-  useEffect(() => {
-    if (id) {
-      setLaunchpad(mockDetailData);
-    }
-  }, [id, launchpadDetail]);
+  // Use launchpadDetail.data directly
+  const launchpad = launchpadDetail?.data;
 
+  // Helper function to get chain info
   const getChainInfo = (chainId: string) => {
     return supportedChains.data.find(
       (c: LaunchpadSupportedChain) => c.chainId === chainId
     );
   };
 
+  // Create chains array for contract calls
   const chains = useMemo(
     () =>
-      launchpad?.presaleChains.map((chain) => ({
+      launchpad?.presaleChains.map((chain: PresaleSupportedChain) => ({
         key: chain.chainId,
         label: getChainInfo(chain.chainId)?.name || chain.chainId,
         contractAddress: chain.contractAddress,
         chainId: Number(chain.chainId),
+        paymentTokenAddress: chain.paymentTokenAddress,
       })) || [],
-    [launchpad, supportedChains]
+    [launchpad?.presaleChains, supportedChains.data]
   );
 
-  const { data: contributorsByChain = [], loading: contributorsLoading } =
+  // Get contributors data from blockchain
+  const { data: contributorsByChain = [], loading: contributorsLoading, refetch: refetchContributors } =
     useMultipleCampaignContributors(
-      chains.map(({ contractAddress, chainId }) => ({
+      chains.map(({ contractAddress, chainId }: {
+        contractAddress: string;
+        chainId: number;
+      }) => ({
         contractAddress: contractAddress as `0x${string}`,
         chainId,
       }))
     );
 
-  const mergedContributors = useMemo(() => {
-    const map: Record<string, ContributorRow> = {};
-    chains.forEach((chain, idx) => {
-      const contributors = contributorsByChain?.[idx] || [];
-      for (const item of contributors) {
-        if (!map[item.wallet]) {
-          map[item.wallet] = { address: item.wallet };
-          chains.forEach((c) => {
-            map[item.wallet][c.key] = 0;
-          });
-        }
-        const amount =
-          typeof item.amount === 'bigint' ? Number(item.amount) : item.amount;
-        map[item.wallet][chain.key] =
-          Number(map[item.wallet][chain.key]) + amount;
-      }
-    });
-    return Object.values(map);
-  }, [contributorsByChain, chains]);
+  // Process contributors with proper token decimals
+  const { 
+    contributors: mergedContributors, 
+    loading: contributorsProcessing,
+    error: contributorsError 
+  } = useProcessedContributors({
+    chains,
+    contributorsByChain,
+    presaleChains: launchpad?.presaleChains || []
+  });
 
-  const refetchAll = () => {
+  // Refetch all data
+  const refetchAll = useCallback(() => {
     refetchSupportedChains();
     refetchLaunchpadDetail();
-  };
+  }, [refetchSupportedChains, refetchLaunchpadDetail]);
 
+  // Auto-refetch when wallet connects
   useEffect(() => {
     if (token && isConnected) {
       const timer = setTimeout(() => {
@@ -296,7 +98,7 @@ export default function LaunchpadDetailPage() {
 
       return () => clearTimeout(timer);
     }
-  }, [token, isConnected]);
+  }, [token, isConnected, refetchAll]);
 
   // Check wallet connection first
   if (!isConnected || !token) {
@@ -310,11 +112,65 @@ export default function LaunchpadDetailPage() {
     );
   }
 
+  // Check for error or draft status
+  if (
+    !isLaunchpadLoading &&
+    (launchpadError ||
+      !launchpad ||
+      launchpad?.status === DeploymentStatus.DRAFT)
+  ) {
+    return (
+      <div className='min-h-screen bg-background'>
+        <div className='container mx-auto px-6 py-8'>
+          <div className='flex flex-col items-center justify-center min-h-[60vh] text-center'>
+            <div className='mb-6'>
+              <div className='w-24 h-24 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center'>
+                <svg
+                  className='w-12 h-12 text-gray-400'
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.5-.769-6.238-2.071'
+                  />
+                </svg>
+              </div>
+            </div>
+            <h1 className='text-3xl font-bold mb-4'>
+              Launchpad Not Found
+            </h1>
+            <p className='text-lg text-gray-600 mb-8 max-w-md'>
+              The launchpad you're looking for doesn't exist or is not yet
+              available for public viewing.
+            </p>
+            <button
+              onClick={() => window.history.back()}
+              className='px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors'
+            >
+              Go Back
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if contributors processing failed
+  if (contributorsError) {
+    console.error('Contributors processing error:', contributorsError);
+  }
+
+  // Loading state
   if (
     !launchpad ||
     isChainsLoading ||
     isLaunchpadLoading ||
-    contributorsLoading
+    contributorsLoading ||
+    contributorsProcessing
   ) {
     return (
       <div className='flex items-center justify-center min-h-screen'>
@@ -341,6 +197,8 @@ export default function LaunchpadDetailPage() {
           <LaunchpadSideBar
             launchpad={launchpad}
             contributorState={mergedContributors}
+            supportedChains={supportedChains.data}
+            refetchContributors={refetchContributors}
           />
         </div>
       </div>

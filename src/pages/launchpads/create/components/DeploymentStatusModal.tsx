@@ -30,6 +30,7 @@ export interface DeploymentStatusModalProps {
   presaleId?: string;
   onContinueCreate?: () => void;
   onSeeDetail?: () => void;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function DeploymentStatusModal({
@@ -37,6 +38,7 @@ export function DeploymentStatusModal({
   presaleId,
   onContinueCreate,
   onSeeDetail,
+  onOpenChange
 }: DeploymentStatusModalProps) {
   const [paymentStatus, setPaymentStatus] =
     useState<PresalePaymentVerificationStatus>({
@@ -48,7 +50,7 @@ export function DeploymentStatusModal({
 
   const [deploymentStarted, setDeploymentStarted] = useState(false);
   const [deploymentError, setDeploymentError] = useState<string | null>(null);
-  const [isDeploying, setIsDeploying] = useState(false); // Thêm state cho loading deployment
+  const [isDeploying, setIsDeploying] = useState(false);
 
   // Redux hooks
   const {
@@ -73,8 +75,25 @@ export function DeploymentStatusModal({
 
   const [deployContract, { isLoading: isDeploymentTriggering }] = useDeployContractPreSalesMutation();
 
+  // Reset states when modal closes
+  useEffect(() => {
+    if (!open) {
+      setPaymentStatus({
+        isVerified: false,
+        isVerifying: false,
+        allChainsReady: false,
+        chainsStatus: [],
+      });
+      setDeploymentStarted(false);
+      setDeploymentError(null);
+      setIsDeploying(false);
+    }
+  }, [open]);
+
   // Process payment verification data
   useEffect(() => {
+    if (!open) return;
+
     if (
       paymentVerificationData?.data &&
       Array.isArray(paymentVerificationData?.data)
@@ -108,7 +127,6 @@ export function DeploymentStatusModal({
       
       if (allChainsReady && !deploymentStarted && !deploymentError && !isDeploying) {
         toast.success('All payments verified successfully!');
-        // Check presale detail status before triggering deployment
         checkAndTriggerDeployment();
       } else if (!allChainsReady) {
         const pendingChains = paymentVerificationData?.data.filter(
@@ -120,10 +138,12 @@ export function DeploymentStatusModal({
         );
       }
     }
-  }, [paymentVerificationData, deploymentStarted, deploymentError, isDeploying]);
+  }, [paymentVerificationData, deploymentStarted, deploymentError, isDeploying, open]);
 
   // Check presale status and trigger deployment if needed
   const checkAndTriggerDeployment = useCallback(async () => {
+    if (!open) return;
+
     if (!presaleDetailData?.data) {
       await refetchDetail();
       return;
@@ -147,10 +167,12 @@ export function DeploymentStatusModal({
     } else if (!deploymentError && !isDeploying) {
       setDeploymentStarted(true);
     }
-  }, [presaleDetailData, deploymentStarted, deploymentError, isDeploying]);
+  }, [presaleDetailData, deploymentStarted, deploymentError, isDeploying, open]);
 
   // Verify payment function
   const handleVerifyPayment = useCallback(async () => {
+    if (!open) return;
+
     try {
       setPaymentStatus((prev) => ({
         ...prev,
@@ -160,7 +182,6 @@ export function DeploymentStatusModal({
 
       await refetchPaymentVerification();
       
-      // Sau khi verify xong, set isVerifying về false
       setPaymentStatus((prev) => ({
         ...prev,
         isVerifying: false,
@@ -175,19 +196,21 @@ export function DeploymentStatusModal({
       }));
       toast.error('Failed to verify payment');
     }
-  }, [refetchPaymentVerification]);
+  }, [refetchPaymentVerification, open]);
 
   // Trigger deployment
   const handleTriggerDeployment = useCallback(async () => {
+    if (!open) return;
+
     try {
-      setIsDeploying(true); // Bắt đầu loading
+      setIsDeploying(true);
       setDeploymentError(null);
 
       const result = await deployContract({ presaleId }).unwrap();
 
       if (result) {
         setDeploymentStarted(true);
-        setIsDeploying(false); // Kết thúc loading
+        setIsDeploying(false);
         toast.success('Contract deployment started successfully!');
       } else {
         throw new Error('Failed to trigger deployment');
@@ -197,10 +220,10 @@ export function DeploymentStatusModal({
       const errorMessage = error.message || 'Failed to trigger deployment';
       setDeploymentError(errorMessage);
       setDeploymentStarted(false);
-      setIsDeploying(false); // Kết thúc loading
+      setIsDeploying(false);
       toast.error(errorMessage);
     }
-  }, [presaleId, deployContract]);
+  }, [presaleId, deployContract, open]);
 
   // Retry deployment
   const handleRetryDeployment = useCallback(() => {
@@ -217,6 +240,8 @@ export function DeploymentStatusModal({
 
   // Check when both payment and detail data are available
   useEffect(() => {
+    if (!open) return;
+
     if (
       paymentStatus.allChainsReady &&
       presaleDetailData?.data &&
@@ -233,17 +258,16 @@ export function DeploymentStatusModal({
     deploymentError,
     isDeploying,
     checkAndTriggerDeployment,
+    open
   ]);
 
   return (
     <Dialog
       open={open}
-      onOpenChange={() => {}}
+      onOpenChange={onOpenChange}
     >
       <DialogContent
-        className='sm:max-w-[600px] max-h-[80vh] overflow-y-auto [&>button]:hidden'
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => e.preventDefault()} 
+        className='sm:max-w-[600px] max-h-[80vh] overflow-y-auto'
       >
         <DialogHeader>
           <DialogTitle className='flex items-center gap-2'>
