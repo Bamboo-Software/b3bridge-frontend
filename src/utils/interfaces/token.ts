@@ -104,6 +104,7 @@ export interface ITokenGroup {
   totalTokensInGroup: number;
   name: string;
   symbol: string;
+  decimals: number;
   description: string;
   logoUrl: string;
   category: string;

@@ -22,18 +22,13 @@ export const preSaleApi = createApi({
         url: `/presales/${params.presaleId}/verify-payment`,
         method: "GET",
       }),
-      providesTags: (result, error, arg) => [
-        { type: 'PresaleDetail', id: arg.presaleId }
-      ],
+     
     }),
     deployContractPreSales: builder.mutation({
       query: (params) => ({
         url: `/presales/${params.presaleId}/deploy`,
         method: "POST",
       }),
-      invalidatesTags: (result, error, arg) => [
-        { type: 'PresaleDetail', id: arg.presaleId }
-      ],
     }),
     getDetailPreSales: builder.query({
       query: (params) => ({

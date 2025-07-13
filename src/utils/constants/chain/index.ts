@@ -7,7 +7,6 @@ import { appConfig } from '../app';
 import { avalanche, avalancheFuji, bsc, bscTestnet, mainnet, sei, seiTestnet, sepolia, type Chain } from 'viem/chains';
 import ethereumABI from "./ethereumABI.json";
 import routerCCIP from "./routerCCIP.json";
-import presaleABI from "./presaleABI.json";
 import seiABI from "./seiABI.json";
 
 export const baseUrl =
@@ -82,5 +81,3 @@ export const CHAIN_ENV_KEYS: Record<number, string> = {
   [sepolia.id]: 'ETH',
   [seiTestnet.id]: 'SEI',
 };
-
-export const presaleContractAbi = presaleABI;

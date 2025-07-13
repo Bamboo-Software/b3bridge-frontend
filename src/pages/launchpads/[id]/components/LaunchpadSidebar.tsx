@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import { formatUnits } from 'viem';
 import { ChainProgressBar } from './LaunchpadProgressBar';
 import type { LaunchpadSupportedChain } from '@/utils/interfaces/chain';
+import { getErrorMessage } from '@/utils/errors';
 
 interface LaunchpadSideBarProps {
   launchpad: PresaleDetailResponse;
@@ -53,6 +54,7 @@ export function LaunchpadSideBar({
   const [contributingChains, setContributingChains] = useState<Set<string>>(
     new Set()
   );
+  const [currentTime, setCurrentTime] = useState(new Date().getTime());
 
   const { useGetMeQuery } = preSaleAuthApi;
   const { useFinalizePreSalesMutation, useCancelPreSalesMutation } = preSaleApi;
@@ -72,6 +74,7 @@ export function LaunchpadSideBar({
     () =>
       launchpad.presaleChains.map((chain) => ({
         contractAddress: chain.contractAddress as `0x${string}`,
+        abi: chain.contractAbi, 
         chainId: Number(chain.chainId),
       })),
     [launchpad.presaleChains]
@@ -89,10 +92,24 @@ export function LaunchpadSideBar({
     error: raisedError,
     refetch: refetchTotalRaised,
   } = useMultipleCampaignTotalRaised(contracts);
+
   const isCreator =
     userData?.data?.id &&
     launchpad.userId &&
     userData?.data?.id === launchpad.userId;
+
+  // Real-time calculation with currentTime dependency
+  const hasStarted = useMemo(() => {
+    if (!launchpad.startTime) return false;
+    const startTime = new Date(launchpad.startTime).getTime();
+    return currentTime >= startTime;
+  }, [launchpad.startTime, currentTime]);
+
+  const hasEnded = useMemo(() => {
+    if (!launchpad.endTime) return false;
+    const endTime = new Date(launchpad.endTime).getTime();
+    return currentTime >= endTime;
+  }, [launchpad.endTime, currentTime]);
 
   // Check which chains user has contributed to
   const contributedChains = useMemo(() => {
@@ -115,13 +132,6 @@ export function LaunchpadSideBar({
     return contributed;
   }, [contributorState, address, launchpad.presaleChains]);
 
-  const hasStarted = useMemo(() => {
-    if (!launchpad.startTime) return false;
-    const now = new Date().getTime();
-    const startTime = new Date(launchpad.startTime).getTime();
-    return now >= startTime;
-  }, [launchpad.startTime]);
-
   const handleAmountChange = (chainId: string, value: string) => {
     setAmounts((prev) => ({
       ...prev,
@@ -137,6 +147,20 @@ export function LaunchpadSideBar({
   };
 
   const getStatusDisplay = () => {
+    // Check if presale has ended based on time
+    if (launchpad.status === PresaleStatus.ACTIVE && hasEnded) {
+      return {
+        title: 'Presale Ended',
+        countdown: false,
+        showInputs: false,
+        showChainButtons: false,
+        showMainButton: isCreator,
+        buttonText: isCreator ? 'Finalize' : null,
+        buttonEnabled: isCreator ? !isFinalizing && !isCancelling : false,
+        action: isCreator ? 'finalize' : null,
+      };
+    }
+
     switch (launchpad.status) {
       case PresaleStatus.ACTIVE:
         if (!isConnected) {
@@ -146,9 +170,9 @@ export function LaunchpadSideBar({
             showInputs: hasStarted,
             showChainButtons: hasStarted,
             showMainButton: true,
-            buttonText: 'Connect Wallet',
-            buttonEnabled: true,
-            action: 'connect',
+            buttonText: hasStarted ? 'Connect Wallet' : 'Coming Soon',
+            buttonEnabled: hasStarted,
+            action: hasStarted ? 'connect' : null,
           };
         } else if (isCreator) {
           return {
@@ -157,9 +181,9 @@ export function LaunchpadSideBar({
             showInputs: false,
             showChainButtons: false,
             showMainButton: true,
-            buttonText: 'Cancel', // Always show Cancel when ACTIVE
-            buttonEnabled: !isCancelling && !isFinalizing,
-            action: 'cancel', // Always cancel action when ACTIVE
+            buttonText: hasStarted ? 'Cancel' : 'Coming Soon',
+            buttonEnabled: hasStarted && !isCancelling && !isFinalizing,
+            action: hasStarted ? 'cancel' : null,
           };
         } else {
           return {
@@ -167,10 +191,10 @@ export function LaunchpadSideBar({
             countdown: true,
             showInputs: hasStarted,
             showChainButtons: hasStarted,
-            showMainButton: false,
-            buttonText: hasStarted ? 'Contribute' : 'Coming Soon',
-            buttonEnabled: hasStarted,
-            action: hasStarted ? 'contribute' : null,
+            showMainButton: !hasStarted,
+            buttonText: hasStarted ? null : 'Coming Soon',
+            buttonEnabled: false,
+            action: null,
           };
         }
       case PresaleStatus.CANCELLED:
@@ -184,16 +208,16 @@ export function LaunchpadSideBar({
           buttonEnabled: false,
           action: null,
         };
-      case PresaleStatus.ENDED:
+      case PresaleStatus.FINALIZED:
         return {
-          title: 'Presale Ended',
+          title: 'Presale Finalized',
           countdown: false,
           showInputs: false,
           showChainButtons: false,
-          showMainButton: true,
-          buttonText: isCreator ? 'Finalize' : 'Claim', // Creator can finalize when ended
-          buttonEnabled: isCreator ? !isFinalizing && !isCancelling : true,
-          action: isCreator ? 'finalize' : 'claim',
+          showMainButton: false,
+          buttonText: null,
+          buttonEnabled: false,
+          action: null,
         };
       case PresaleStatus.PENDING:
         return {
@@ -201,10 +225,10 @@ export function LaunchpadSideBar({
           countdown: true,
           showInputs: false,
           showChainButtons: false,
-          showMainButton: isCreator,
-          buttonText: isCreator ? 'Cancel' : 'Coming Soon',
-          buttonEnabled: isCreator && !isCancelling && !isFinalizing,
-          action: isCreator ? 'cancel' : null,
+          showMainButton: true,
+          buttonText: 'Coming Soon',
+          buttonEnabled: false,
+          action: null,
         };
       default:
         return {
@@ -230,11 +254,13 @@ export function LaunchpadSideBar({
   };
 
   const calculateCountdown = () => {
+    const now = new Date().getTime();
+    setCurrentTime(now); // Update current time every second
+
     const targetDate = getTargetDate();
     if (!targetDate) return;
 
     const target = new Date(targetDate).getTime();
-    const now = new Date().getTime();
     const difference = target - now;
 
     if (difference > 0) {
@@ -252,7 +278,6 @@ export function LaunchpadSideBar({
   };
 
   const handleButtonClick = () => {
-    console.log(statusConfig.action, 'statusConfig.action');
     switch (statusConfig.action) {
       case 'connect':
         setIsWalletModalOpen(true);
@@ -306,11 +331,18 @@ export function LaunchpadSideBar({
 
       // Convert amount to BigInt (assuming 18 decimals for now)
       const amountBigInt = BigInt(Math.floor(parseFloat(amount) * 10 ** 18));
-
+      const chainData = launchpad.presaleChains.find(
+        (c) => c.chainId === chain.chainId
+      );
+      
+      if (!chainData?.contractAbi) {
+        throw new Error('Contract ABI not found for this chain');
+      }
       await contribute(
         chain.contractAddress as `0x${string}`,
+        chainData.contractAbi,
         amountBigInt,
-        Number(chain.chainId)
+        Number(chain.chainId),
       );
 
       toast.success(
@@ -342,63 +374,35 @@ export function LaunchpadSideBar({
   };
 
   const handleFinalize = async () => {
-    console.log('vao finalize nay');
     try {
       const result = await finalizePreSales({
         presaleId: launchpad.id,
       }).unwrap();
       console.log(result, 'Presale finalized successfully');
       toast.success('Presale finalized successfully!');
-      // Optionally reload data or redirect
     } catch (error: any) {
       console.error('Finalize error:', error);
-      const errorMessage =
-        error?.data?.message || error?.message || 'Failed to finalize presale';
+      const errorMessage = getErrorMessage(error, 'Failed to finalize presale');
       toast.error(errorMessage);
     }
   };
 
   const handleCancel = async () => {
-  try {
-    const result = await cancelPreSales({ presaleId: launchpad.id, reason: "Insufficient interest" }).unwrap();
-    console.log(result, 'Presale cancelled successfully');
-    toast.success('Presale cancelled successfully!');
-    // Optionally reload data or redirect
-  } catch (error: any) {
-    console.error('Cancel error:', error);
-    
-    // Handle different error formats
-    let errorMessage = 'Failed to cancel presale';
-    
-    if (error?.data?.message) {
-      // If message is an array of error objects
-      if (Array.isArray(error.data.message)) {
-        // Get first error message
-        const firstError = error.data.message[0];
-        if (typeof firstError === 'string') {
-          errorMessage = firstError;
-        } else if (firstError?.error) {
-          errorMessage = firstError.error;
-        } else if (firstError?.field) {
-          errorMessage = `Error in ${firstError.field}: ${firstError.error || 'Invalid value'}`;
-        }
-      } 
-      // If message is a string
-      else if (typeof error.data.message === 'string') {
-        errorMessage = error.data.message;
-      }
-    } 
-    // Fallback to error.message if available
-    else if (error?.message && typeof error.message === 'string') {
-      errorMessage = error.message;
+    try {
+      const result = await cancelPreSales({
+        presaleId: launchpad.id,
+        reason: 'Insufficient interest',
+      }).unwrap();
+      console.log(result, 'Presale cancelled successfully');
+      toast.success('Presale cancelled successfully!');
+    } catch (error: any) {
+      console.error('Cancel error:', error);
+      const errorMessage = getErrorMessage(error, 'Failed to cancel presale');
+      toast.error(errorMessage);
     }
-    
-    toast.error(errorMessage);
-  }
-};
+  };
 
   const handleClaim = () => {
-    // TODO: Implement claim logic
     toast.info('Claim functionality coming soon!');
   };
 
@@ -416,7 +420,7 @@ export function LaunchpadSideBar({
     const interval = setInterval(calculateCountdown, 1000);
 
     return () => clearInterval(interval);
-  }, [launchpad.status, launchpad.startTime, launchpad.endTime, hasStarted]);
+  }, [launchpad.status, launchpad.startTime, launchpad.endTime]);
 
   useEffect(() => {
     if (isConnected) setIsWalletModalOpen(false);

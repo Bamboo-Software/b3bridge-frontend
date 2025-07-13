@@ -95,9 +95,9 @@ export function Step1Info({
         }
       });
       setHasMore(
-        (tokenData as any).meta
-          ? allTokenGroups.length < (tokenData as any).meta.total
-          : tokenData.items.length === appConfig.defaultLimit
+        (tokenData)
+          ? allTokenGroups.length < tokenData.total
+          : (tokenData as IGetListTokenResponse).items.length === appConfig.defaultLimit
       );
     } else if (tokenData && tokenData.items && tokenData.items.length === 0) {
       setHasMore(false);
@@ -117,13 +117,13 @@ export function Step1Info({
   }, [debouncedSearchTerm]);
 
   const fetchMoreTokens = useCallback(() => {
-    if (hasMore && !isLoadingMyTokens && (tokenData as any)?.meta) {
-      const totalItems = (tokenData as any).meta.total;
+    if (hasMore && !isLoadingMyTokens && (tokenData)) {
+      const totalItems = (tokenData).total;
       const currentItems = allTokenGroups.length;
 
       if (
         currentItems < totalItems &&
-        filterTokens.page < (tokenData as any).meta.totalPages
+        filterTokens.page <  Math.ceil((tokenData).total / appConfig.defaultLimit)
       ) {
         setFilterTokens((prev) => ({ ...prev, page: prev.page + 1 }));
       } else {

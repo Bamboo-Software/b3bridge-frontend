@@ -1,4 +1,3 @@
-import { presaleContractAbi } from '@/utils/constants/chain';
 import type { ICampaignAddresses, IContributorInfo, ICampaignBasicInfo } from '@/utils/interfaces/launchpad';
 import { type Address, type Abi, erc20Abi } from 'viem';
 import { useReadContract, useReadContracts } from 'wagmi';
@@ -6,10 +5,7 @@ import { writeContract, waitForTransactionReceipt } from '@wagmi/core';
 import { useState } from 'react';
 import { wagmiConfig } from '@/utils/constants/wallet/wagmi';
 
-const abi = presaleContractAbi as Abi;
-
-// Các hàm đọc contract, thêm chainId vào parameter
-export function useCampaignBasicInfo(contractAddress: Address, chainId: number) {
+export function useCampaignBasicInfo(contractAddress: Address, abi: Abi, chainId: number) {
   const { data: rawData, isLoading, error } = useReadContract({
     address: contractAddress,
     abi,
@@ -35,7 +31,7 @@ export function useCampaignBasicInfo(contractAddress: Address, chainId: number) 
   return { data, isLoading, error };
 }
 
-export function useCampaignAddresses(contractAddress: Address, chainId: number) {
+export function useCampaignAddresses(contractAddress: Address, abi: Abi, chainId: number) {
   const { data: rawData, isLoading, error } = useReadContract({
     address: contractAddress,
     abi,
@@ -54,9 +50,9 @@ export function useCampaignAddresses(contractAddress: Address, chainId: number) 
 }
 
 export function useMultipleCampaignContributors(
-  contracts: { contractAddress: Address; chainId: number }[]
+  contracts: { contractAddress: Address; abi: Abi; chainId: number }[]
 ) {
-  const calls = contracts.map(({ contractAddress, chainId }) => ({
+  const calls = contracts.map(({ contractAddress, abi, chainId }) => ({
     address: contractAddress,
     abi,
     functionName: 'getContributors',
@@ -83,7 +79,7 @@ export function useMultipleCampaignContributors(
   };
 }
 
-export function useCampaignOwner(contractAddress: Address, chainId: number) {
+export function useCampaignOwner(contractAddress: Address, abi: Abi, chainId: number) {
   const { data, isLoading, error } = useReadContract({
     address: contractAddress,
     abi,
@@ -98,7 +94,7 @@ export function useCampaignOwner(contractAddress: Address, chainId: number) {
   };
 }
 
-export function useUserContribution(contractAddress: Address, userAddress?: Address, chainId?: number) {
+export function useUserContribution(contractAddress: Address, abi: Abi, userAddress?: Address, chainId?: number) {
   const { data, isLoading, error } = useReadContract({
     address: contractAddress,
     abi,
@@ -117,7 +113,7 @@ export function useUserContribution(contractAddress: Address, userAddress?: Addr
   };
 }
 
-export function useUserContributionTime(contractAddress: Address, userAddress?: Address, chainId?: number) {
+export function useUserContributionTime(contractAddress: Address, abi: Abi, userAddress?: Address, chainId?: number) {
   const { data, isLoading, error } = useReadContract({
     address: contractAddress,
     abi,
@@ -136,7 +132,7 @@ export function useUserContributionTime(contractAddress: Address, userAddress?: 
   };
 }
 
-export function useCampaignTargetAmount(contractAddress: Address, chainId: number) {
+export function useCampaignTargetAmount(contractAddress: Address, abi: Abi, chainId: number) {
   const { data, isLoading, error } = useReadContract({
     address: contractAddress,
     abi,
@@ -147,7 +143,7 @@ export function useCampaignTargetAmount(contractAddress: Address, chainId: numbe
   return { data: data as bigint | undefined, isLoading, error };
 }
 
-export function useCampaignTotalRaised(contractAddress: Address, chainId: number) {
+export function useCampaignTotalRaised(contractAddress: Address, abi: Abi, chainId: number) {
   const { data, isLoading, error } = useReadContract({
     address: contractAddress,
     abi,
@@ -158,7 +154,7 @@ export function useCampaignTotalRaised(contractAddress: Address, chainId: number
   return { data: data as bigint | undefined, isLoading, error };
 }
 
-export function useCampaignSoftCap(contractAddress: Address, chainId: number) {
+export function useCampaignSoftCap(contractAddress: Address, abi: Abi, chainId: number) {
   const { data, isLoading, error } = useReadContract({
     address: contractAddress,
     abi,
@@ -170,9 +166,9 @@ export function useCampaignSoftCap(contractAddress: Address, chainId: number) {
 }
 
 export function useMultipleCampaignTargetAmount(
-  contracts: { contractAddress: Address; chainId: number }[]
+  contracts: { contractAddress: Address; abi: Abi; chainId: number }[]
 ) {
-  const calls = contracts.map(({ contractAddress, chainId }) => ({
+  const calls = contracts.map(({ contractAddress, abi, chainId }) => ({
     address: contractAddress,
     abi,
     functionName: 'targetAmount',
@@ -190,9 +186,9 @@ export function useMultipleCampaignTargetAmount(
 }
 
 export function useMultipleCampaignTotalRaised(
-  contracts: { contractAddress: Address; chainId: number }[]
+  contracts: { contractAddress: Address; abi: Abi; chainId: number }[]
 ) {
-  const calls = contracts.map(({ contractAddress, chainId }) => ({
+  const calls = contracts.map(({ contractAddress, abi, chainId }) => ({
     address: contractAddress,
     abi,
     functionName: 'totalRaised',
@@ -210,9 +206,9 @@ export function useMultipleCampaignTotalRaised(
 }
 
 export function useMultipleCampaignSoftCap(
-  contracts: { contractAddress: Address; chainId: number }[]
+  contracts: { contractAddress: Address; abi: Abi; chainId: number }[]
 ) {
-  const calls = contracts.map(({ contractAddress, chainId }) => ({
+  const calls = contracts.map(({ contractAddress, abi, chainId }) => ({
     address: contractAddress,
     abi,
     functionName: 'softCap',
@@ -228,7 +224,7 @@ export function useMultipleCampaignSoftCap(
   };
 }
 
-export function useCampaignStatus(contractAddress: Address, chainId: number) {
+export function useCampaignStatus(contractAddress: Address, abi: Abi, chainId: number) {
   const { data: finalized, isLoading: finalizedLoading } = useReadContract({
     address: contractAddress,
     abi,
@@ -305,12 +301,12 @@ export function useApproveERC20() {
 }
 
 export function useContribute() {
-  const contributeAsync = async (contractAddress: Address, amount: bigint, chainId: number, value?: bigint) => {
+  const contributeAsync = async (contractAddress: Address, abi: Abi, amount: bigint, chainId: number, value?: bigint) => {
     const hash = await writeContract(
       wagmiConfig,
       {
         address: contractAddress,
-        abi: abi,
+        abi,
         functionName: 'contribute',
         args: [amount],
         value: value,
@@ -333,7 +329,7 @@ export function useClaimTokens() {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const claimTokensAsync = async (contractAddress: Address, chainId: number) => {
+  const claimTokensAsync = async (contractAddress: Address, abi: Abi, chainId: number) => {
     try {
       setIsPending(true);
       setError(null);
@@ -342,7 +338,7 @@ export function useClaimTokens() {
         wagmiConfig,
         {
           address: contractAddress,
-          abi: abi,
+          abi,
           functionName: 'claimTokens',
           chainId,
         }
@@ -374,7 +370,7 @@ export function useFinalizeCampaign() {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const finalizeCampaignAsync = async (contractAddress: Address, chainId: number) => {
+  const finalizeCampaignAsync = async (contractAddress: Address, abi: Abi, chainId: number) => {
     try {
       setIsPending(true);
       setError(null);
@@ -383,7 +379,7 @@ export function useFinalizeCampaign() {
         wagmiConfig,
         {
           address: contractAddress,
-          abi: abi,
+          abi,
           functionName: 'finalizeCampaign',
           chainId,
         }
@@ -415,7 +411,7 @@ export function useCancelCampaign() {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const cancelCampaignAsync = async (contractAddress: Address, chainId: number) => {
+  const cancelCampaignAsync = async (contractAddress: Address, abi: Abi, chainId: number) => {
     try {
       setIsPending(true);
       setError(null);
@@ -424,7 +420,7 @@ export function useCancelCampaign() {
         wagmiConfig,
         {
           address: contractAddress,
-          abi: abi,
+          abi,
           functionName: 'cancelCampaign',
           chainId,
         }
@@ -456,7 +452,7 @@ export function useDepositTokens() {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const depositTokensAsync = async (contractAddress: Address, chainId: number) => {
+  const depositTokensAsync = async (contractAddress: Address, abi: Abi, chainId: number) => {
     try {
       setIsPending(true);
       setError(null);
@@ -465,7 +461,7 @@ export function useDepositTokens() {
         wagmiConfig,
         {
           address: contractAddress,
-          abi: abi,
+          abi,
           functionName: 'depositTokens',
           chainId,
         }
@@ -497,7 +493,7 @@ export function useRefund() {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const refundAsync = async (contractAddress: Address, chainId: number) => {
+  const refundAsync = async (contractAddress: Address, abi: Abi, chainId: number) => {
     try {
       setIsPending(true);
       setError(null);
@@ -506,7 +502,7 @@ export function useRefund() {
         wagmiConfig,
         {
           address: contractAddress,
-          abi: abi,
+          abi,
           functionName: 'refund',
           chainId,
         }
@@ -538,7 +534,7 @@ export function useWithdrawFunds() {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const withdrawFundsAsync = async (contractAddress: Address, chainId: number) => {
+  const withdrawFundsAsync = async (contractAddress: Address, abi: Abi, chainId: number) => {
     try {
       setIsPending(true);
       setError(null);
@@ -547,7 +543,7 @@ export function useWithdrawFunds() {
         wagmiConfig,
         {
           address: contractAddress,
-          abi: abi,
+          abi,
           functionName: 'withdrawFunds',
           chainId,
         }
@@ -579,7 +575,7 @@ export function useWithdrawUnsoldTokens() {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const withdrawUnsoldTokensAsync = async (contractAddress: Address, chainId: number) => {
+  const withdrawUnsoldTokensAsync = async (contractAddress: Address, abi: Abi, chainId: number) => {
     try {
       setIsPending(true);
       setError(null);
@@ -588,7 +584,7 @@ export function useWithdrawUnsoldTokens() {
         wagmiConfig,
         {
           address: contractAddress,
-          abi: abi,
+          abi,
           functionName: 'withdrawUnsoldTokens',
           chainId,
         }
@@ -615,7 +611,6 @@ export function useWithdrawUnsoldTokens() {
     error,
   };
 }
-
 
 export function isContributor(contributors: IContributorInfo[], userAddress: Address) {
   return contributors.some(contributor =>

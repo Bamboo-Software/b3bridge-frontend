@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type { Address } from 'viem';
+import type { Abi, Address } from 'viem';
 import type { Category, DeploymentStatus, PaymentStatus, PresaleStatus } from '../enums/presale';
 import type { ChainType } from '../enums/chain';
 
@@ -94,6 +94,7 @@ export interface PresaleSupportedChain {
   notes: string;
   createdAt: string;
   updatedAt: string;
+  contractAbi: Abi;
 }
 
 // Presale detail response interface (full detail)
