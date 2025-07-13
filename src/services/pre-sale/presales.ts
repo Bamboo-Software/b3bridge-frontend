@@ -7,7 +7,7 @@ const baseUrl = import.meta.env.VITE_PRESALE_API_URL;
 export const preSaleApi = createApi({
   reducerPath,
   baseQuery: baseQueryWithReauth(baseUrl),
-  tagTypes: ['Presale', 'PresaleDetail'],
+  tagTypes: ['Presale', 'PresaleDetail',"PresaleExplore","PresaleContribution"],
   endpoints: (builder) => ({
     createPreSales: builder.mutation({
       query: (body) => ({
@@ -74,6 +74,15 @@ export const preSaleApi = createApi({
         method: "GET",
         params
       }),
+      providesTags: ['PresaleExplore'],
+    }),
+    getPreSalesContribution: builder.query({
+      query: (params) => ({
+        url: `/contributions/presales`,
+        method: "GET",
+        params
+      }),
+      providesTags: ['PresaleContribution'],
     }),
   }),
 });

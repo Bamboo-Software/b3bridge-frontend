@@ -74,7 +74,7 @@ const targetDate = useMemo(() => {
     <div className='bg-[color:var(--gray-night)] border border-[color:var(--gray-charcoal)] rounded-2xl p-6 hover:border-primary/30 transition-colors h-fit'>
       {/* Header */}
       <div className='flex items-start justify-between mb-6'>
-        <div className='flex gap-3 items-start'>
+        <div className='flex w-full gap-3 items-start justify-between'>
           <div className="flex flex-col gap-2">
             <Image
               src={primaryChain?.oftToken.logoUrl || '/images/default-coin-logo.jpg'}
@@ -134,13 +134,13 @@ const targetDate = useMemo(() => {
           {presale.status === PresaleStatus.PENDING && targetDate && (
             <span className="text-foreground">
               Sale Starts in{' '}
-              <span className="font-mono">{formatCountdown(countdown)}</span>
+              <span className="font-mono font-extrabold text-[20px]">{formatCountdown(countdown)}</span>
             </span>
           )}
           {presale.status === PresaleStatus.ACTIVE && timeRemaining && (
             <span className='text-foreground'>
               Sale Ends in{' '}
-              <span className='font-mono'>{timeRemaining}</span>
+              <span className='font-mono'>{formatCountdown(countdown)}</span>
             </span>
           )}
           {presale.status === PresaleStatus.ENDED && (
