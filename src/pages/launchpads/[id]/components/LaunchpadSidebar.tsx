@@ -501,6 +501,7 @@ export function LaunchpadSideBar({
         chainData.contractAbi,
         amountBigInt,
         Number(chain.chainId),
+        amountBigInt,
       );
 
       toast.success(
