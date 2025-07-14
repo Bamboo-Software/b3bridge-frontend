@@ -48,7 +48,6 @@ const TokenInfoDisplay: React.FC<TokenInfoDisplayProps> = ({
 
   const feeText = showFees ? `${nativeAmount} ${chain.nativeCurrency.symbol}` : null;
   const payStatus = watchedChainFields?.[chainId]?.transactions?.native?.payStatus;
-
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <div className="bg-[#1a1d21] rounded-lg p-4 space-y-3">
@@ -115,15 +114,17 @@ const TokenInfoDisplay: React.FC<TokenInfoDisplayProps> = ({
                 <span className="text-gray-400">Total fees: <span className="text-[#34D3FF]">{formatNumber(nativeAmount,0,2)} {chain.nativeCurrency.symbol}</span></span>
                 {showPayButton && (
                   <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      className="bg-[linear-gradient(45deg,_var(--blue-primary),_var(--primary))] shadow-[0_0px_10px_0_var(--blue-primary)] border-none rounded-lg cursor-pointer hover:opacity-90 hover:shadow-[0_0px_16px_0_var(--blue-primary)] text-foreground px-6 py-1 h-8 text-sm"
-                      onClick={() => onPay?.(chainId)}
-                      disabled={payStatus === 'pending'}
-                    >
-                      Pay
-                    </Button>
-                    {payStatus === 'pending' && (
+                    {payStatus !== "success" && payStatus !== "pending" && (
+                      <Button
+                        type="button"
+                        className="bg-[linear-gradient(45deg,_var(--blue-primary),_var(--primary))] shadow-[0_0px_10px_0_var(--blue-primary)] border-none rounded-lg cursor-pointer hover:opacity-90 hover:shadow-[0_0px_16px_0_var(--blue-primary)] text-foreground px-6 py-1 h-8 text-sm"
+                        onClick={() => onPay?.(chainId)}
+                        disabled={payStatus === 'pending'}
+                      >
+                        Pay
+                      </Button>
+                    )}
+                    {payStatus == 'pending' && (
                       <span className="text-yellow-400">Pending...</span>
                     )}
                     {payStatus === 'success' && (
@@ -131,9 +132,7 @@ const TokenInfoDisplay: React.FC<TokenInfoDisplayProps> = ({
                         Payment successful <CheckIcon className="w-4 h-4" />
                       </span>
                     )}
-                    {payStatus === 'error' && (
-                      <span className="text-red-400">Error</span>
-                    )}
+                    
                   </div>
                 )}
               </div>

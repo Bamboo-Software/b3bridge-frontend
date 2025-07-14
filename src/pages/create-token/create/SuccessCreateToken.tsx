@@ -40,10 +40,12 @@ const SuccessCreateToken: React.FC<SuccessCreateTokenProps> = ({ formData, next 
             const nativeAmount = chainData?.platformFee || '';
             const totalSupply = chainData?.totalSupply || '';
             const isVerified = chainData?.transactions?.native?.isVerify === true;
-
+            const watchedChainFields = formData.chainFields || {};
             return (
               <div key={chainId} className="space-y-4">
                 <TokenInfoDisplay
+                  watchedChainFields={watchedChainFields}
+                  chainId={chainId}
                   formData={formData}
                   showFees={true}
                   nativeAmount={nativeAmount}
