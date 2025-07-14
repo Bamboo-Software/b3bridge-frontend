@@ -74,20 +74,20 @@ export function FilterSection({
   // };
 
   // Get unique chain names from supportedChains
-  const getUniqueChains = () => {
-    const chainNames = supportedChains
-      .map(chain => chain.name)
-      .filter((name, index, array) => array.indexOf(name) === index) // Remove duplicates
-      .sort(); // Sort alphabetically
+  // const getUniqueChains = () => {
+  //   const chainNames = supportedChains
+  //     .map(chain => chain.name)
+  //     .filter((name, index, array) => array.indexOf(name) === index) // Remove duplicates
+  //     .sort(); // Sort alphabetically
     
-    return chainNames;
-  };
+  //   return chainNames;
+  // };
 const selectedChainName =
   chainFilter === 'Chain'
     ? 'All Chains'
     : supportedChains.find((c) => c.chainId === chainFilter)?.name || chainFilter;
 
-  const uniqueChains = getUniqueChains();
+  // const uniqueChains = getUniqueChains();
 
   return (
     <div className="flex flex-col md:flex-row gap-4 mb-8">
@@ -151,7 +151,7 @@ const selectedChainName =
             <DropdownMenuItem onClick={() => setStatusFilter('All Status')}>All Status</DropdownMenuItem>
             <DropdownMenuItem onClick={() => setStatusFilter(PresaleStatus.ACTIVE)}>Active</DropdownMenuItem>
             <DropdownMenuItem onClick={() => setStatusFilter(PresaleStatus.PENDING)}>Pending</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setStatusFilter(PresaleStatus.ENDED)}>Ended</DropdownMenuItem>
+            {/* <DropdownMenuItem onClick={() => setStatusFilter(PresaleStatus.ENDED)}>Ended</DropdownMenuItem> */}
             <DropdownMenuItem onClick={() => setStatusFilter(PresaleStatus.CANCELLED)}>Cancelled</DropdownMenuItem>
             <DropdownMenuItem onClick={() => setStatusFilter(PresaleStatus.FINALIZED)}>Finalized</DropdownMenuItem>
             <DropdownMenuItem onClick={() => setStatusFilter(PresaleStatus.DRAFT)}>Draft</DropdownMenuItem>

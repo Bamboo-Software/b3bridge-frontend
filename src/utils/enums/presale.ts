@@ -16,7 +16,7 @@ export enum PresaleStatus {
   DRAFT = 'Draft',
   PENDING = 'Pending',
   ACTIVE = 'Active',
-  ENDED = 'Ended',
+  // ENDED = 'Ended',
   CANCELLED = 'Cancelled',
   FINALIZED = 'Finalized'
 }

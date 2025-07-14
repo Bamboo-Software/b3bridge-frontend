@@ -144,11 +144,11 @@ const targetDate = useMemo(() => {
               <span className='font-mono text-[20px] font-semibold'>{formatCountdown(countdown)}</span>
             </span>
           )}
-          {presale.status === PresaleStatus.ENDED && (
+          {/* {presale.status === PresaleStatus.ENDED && (
             <span className='text-foreground'>
               Presale <span className='text-red-500'>Ended</span>
             </span>
-          )}
+          )} */}
           {presale.status === PresaleStatus.CANCELLED && (
             <span className='text-foreground'>
               Presale <span className='text-gray-500'>Cancelled</span>
