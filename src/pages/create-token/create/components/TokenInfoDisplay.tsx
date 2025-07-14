@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Separator } from '@/components/ui/separator';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, Copy, Check } from 'lucide-react';
+import { ChevronDown, Copy, CheckIcon, Check } from 'lucide-react';
 import Image from '@/components/ui/image';
 import { Button } from '@/components/ui/button';
 import { configLaunchPadsChains } from '@/utils/constants/chain';
@@ -138,7 +138,9 @@ const TokenInfoDisplay: React.FC<TokenInfoDisplayProps> = ({ formData, showFees 
                               <span className="text-yellow-400">Pending...</span>
                             )}
                             {formData.chainFields?.[chainId]?.transactions?.native?.payStatus === 'success' && (
-                              <Check className="w-4 h-4 text-green-400" />
+                               <span className='ml-4 px-4 py-1 rounded-full bg-green-900/30 text-green-400 flex items-center gap-1 border border-green-700'>
+                                                          Payment successful <CheckIcon className='w-4 h-4' />
+                                                        </span>
                             )}
                             {formData.chainFields?.[chainId]?.transactions?.native?.payStatus === 'error' && (
                               <span className="text-red-400">Error</span>
