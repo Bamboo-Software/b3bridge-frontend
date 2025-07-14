@@ -6,7 +6,6 @@ import { RefreshCw } from 'lucide-react';
 import type {
   ContributorRow,
   PresaleDetailResponse,
-  PresaleSupportedChain,
 } from '@/utils/interfaces/launchpad';
 import { useAccount } from 'wagmi';
 import { WalletConnectModal } from '@/pages/common/ConnectWalletModal';
@@ -17,12 +16,15 @@ import {
   useContribute,
   useMultipleCampaignTargetAmount,
   useMultipleCampaignTotalRaised,
+  useClaimTokens,
+  useMultipleUserHasClaimed,
 } from '@/hooks/usePreSaleContract';
 import { toast } from 'sonner';
 import { formatUnits } from 'viem';
 import { ChainProgressBar } from './LaunchpadProgressBar';
 import type { LaunchpadSupportedChain } from '@/utils/interfaces/chain';
 import { getErrorMessage } from '@/utils/errors';
+import { useAuthToken } from '@/hooks/useAuthToken';
 
 interface LaunchpadSideBarProps {
   launchpad: PresaleDetailResponse;
@@ -57,6 +59,9 @@ export function LaunchpadSideBar({
   const [contributingChains, setContributingChains] = useState<Set<string>>(
     new Set()
   );
+  const [claimingChains, setClaimingChains] = useState<Set<string>>(
+    new Set()
+  );
   const [currentTime, setCurrentTime] = useState(new Date().getTime());
   const [countdownCompleted, setCountdownCompleted] = useState(false);
 
@@ -69,6 +74,7 @@ export function LaunchpadSideBar({
     data: userData,
     isLoading: userLoading,
     isError: userError,
+    refetch: refetchGetMe,
   } = useGetMeQuery({});
   const { isConnected, address } = useAccount();
 
@@ -76,6 +82,17 @@ export function LaunchpadSideBar({
     useFinalizePreSalesMutation();
   const [cancelPreSales, { isLoading: isCancelling }] =
     useCancelPreSalesMutation();
+  const { token } = useAuthToken();
+
+   useEffect(() => {
+      if (token && isConnected) {
+        const timer = setTimeout(() => {
+          refetchGetMe();
+        }, 100);
+  
+        return () => clearTimeout(timer);
+      }
+    }, [token, isConnected]);
 
   const contracts = useMemo(
     () =>
@@ -100,10 +117,41 @@ export function LaunchpadSideBar({
     refetch: refetchTotalRaised,
   } = useMultipleCampaignTotalRaised(contracts);
 
+  // Check claimed status for all chains
+  const {
+    data: userClaimedStatus,
+    loading: claimedLoading,
+    error: claimedError,
+    refetch: refetchClaimedStatus,
+  } = useMultipleUserHasClaimed(contracts, address);
+
+  const contribute = useContribute();
+  const { claimTokensAsync, isPending: isClaimingGlobal } = useClaimTokens();
+
   const isCreator =
     userData?.data?.id &&
     launchpad.userId &&
     userData?.data?.id === launchpad.userId;
+  
+  // Check if all chains have reached their target
+  const allChainsReachedTarget = useMemo(() => {
+    if (!targetAmounts || !totalRaisedAmounts) return false;
+    
+    return targetAmounts.every((target, index) => {
+      if (!target || !totalRaisedAmounts[index]) return false;
+      return totalRaisedAmounts[index]! >= target;
+    });
+  }, [targetAmounts, totalRaisedAmounts]);
+
+
+  // Check if a specific chain has reached its target
+  const isChainTargetReached = (chainIndex: number) => {
+    if (!targetAmounts || !totalRaisedAmounts) return false;
+    const target = targetAmounts[chainIndex];
+    const raised = totalRaisedAmounts[chainIndex];
+    if (!target || !raised) return false;
+    return raised >= target;
+  };
 
   // Real-time calculation with currentTime dependency
   const hasStarted = useMemo(() => {
@@ -139,6 +187,23 @@ export function LaunchpadSideBar({
     return contributed;
   }, [contributorState, address, launchpad.presaleChains]);
 
+  // Check if user can claim from a chain
+  const canClaimFromChain = (chainId: string, chainIndex: number) => {
+    const hasContributed = contributedChains.has(chainId);
+    const canClaim = hasEnded || launchpad.status === PresaleStatus.FINALIZED || allChainsReachedTarget;
+    const hasNotClaimed = userClaimedStatus && !userClaimedStatus[chainIndex];
+    
+    return hasContributed && canClaim && isConnected && hasNotClaimed;
+  };
+
+  // Check if user has already claimed from a chain
+  const hasUserClaimed = (chainId: string, chainIndex: number) => {
+    const hasContributed = contributedChains.has(chainId);
+    const hasClaimed = userClaimedStatus && userClaimedStatus[chainIndex];
+    
+    return hasContributed && hasClaimed;
+  };
+
   const handleAmountChange = (chainId: string, value: string) => {
     setAmounts((prev) => ({
       ...prev,
@@ -153,7 +218,72 @@ export function LaunchpadSideBar({
     }));
   };
 
+  // Handle claim tokens for a specific chain
+  const handleClaimTokens = async (chain: any, chainIndex: number) => {
+    const chainId = chain.id;
+
+    if (!canClaimFromChain(chainId, chainIndex)) {
+      toast.error('You cannot claim from this chain');
+      return;
+    }
+
+    try {
+      setClaimingChains((prev) => new Set(prev).add(chainId));
+
+      const chainData = launchpad.presaleChains.find(
+        (c) => c.chainId === chain.chainId
+      );
+      
+      if (!chainData?.contractAbi) {
+        throw new Error('Contract ABI not found for this chain');
+      }
+
+      const hash = await claimTokensAsync(
+        chain.contractAddress as `0x${string}`,
+        chainData.contractAbi,
+        Number(chain.chainId)
+      );
+
+      toast.success(
+        `Successfully claimed tokens from ${chain.chainName}! Transaction: ${hash.slice(0, 10)}...`
+      );
+
+      // Reload data after successful claim
+      await Promise.all([
+        refetchTargetAmounts(),
+        refetchTotalRaised(),
+        refetchContributors(),
+        refetchClaimedStatus(),
+      ]);
+    } catch (error: any) {
+      console.error('Claim tokens error:', error);
+      const errorMessage = getErrorMessage(error, 'Failed to claim tokens');
+      toast.error(`Failed to claim from ${chain.chainName}: ${errorMessage}`);
+    } finally {
+      setClaimingChains((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(chainId);
+        return newSet;
+      });
+    }
+  };
+
   const getStatusDisplay = () => {
+    // Check if all chains reached target - treat as finalized
+    if (allChainsReachedTarget && (launchpad.status === PresaleStatus.ACTIVE) ) {
+      return {
+        title: 'Presale Finalized',
+        countdown: false,
+        showInputs: false,
+        showChainButtons: false,
+        showClaimButtons: true,
+        showMainButton: isCreator,
+        buttonText: isCreator ? 'Finalize' : null,
+        buttonEnabled: isCreator ? !isFinalizing && !isCancelling : false,
+        action: isCreator ? 'finalize' : null,
+      };
+    }
+
     // Check if presale has ended based on time
     if (launchpad.status === PresaleStatus.ACTIVE && hasEnded) {
       return {
@@ -161,6 +291,7 @@ export function LaunchpadSideBar({
         countdown: false,
         showInputs: false,
         showChainButtons: false,
+        showClaimButtons: true,
         showMainButton: isCreator,
         buttonText: isCreator ? 'Finalize' : null,
         buttonEnabled: isCreator ? !isFinalizing && !isCancelling : false,
@@ -176,6 +307,7 @@ export function LaunchpadSideBar({
             countdown: true,
             showInputs: hasStarted,
             showChainButtons: hasStarted,
+            showClaimButtons: false,
             showMainButton: true,
             buttonText: hasStarted ? 'Connect Wallet' : 'Coming Soon',
             buttonEnabled: hasStarted,
@@ -187,6 +319,7 @@ export function LaunchpadSideBar({
             countdown: true,
             showInputs: false,
             showChainButtons: false,
+            showClaimButtons: false,
             showMainButton: true,
             buttonText: hasStarted ? 'Cancel' : 'Coming Soon',
             buttonEnabled: hasStarted && !isCancelling && !isFinalizing,
@@ -198,6 +331,7 @@ export function LaunchpadSideBar({
             countdown: true,
             showInputs: hasStarted,
             showChainButtons: hasStarted,
+            showClaimButtons: false,
             showMainButton: !hasStarted,
             buttonText: hasStarted ? null : 'Coming Soon',
             buttonEnabled: false,
@@ -210,6 +344,7 @@ export function LaunchpadSideBar({
           countdown: false,
           showInputs: false,
           showChainButtons: false,
+          showClaimButtons: false,
           showMainButton: false,
           buttonText: null,
           buttonEnabled: false,
@@ -221,6 +356,7 @@ export function LaunchpadSideBar({
           countdown: false,
           showInputs: false,
           showChainButtons: false,
+          showClaimButtons: true,
           showMainButton: false,
           buttonText: null,
           buttonEnabled: false,
@@ -232,6 +368,7 @@ export function LaunchpadSideBar({
           countdown: true,
           showInputs: false,
           showChainButtons: false,
+          showClaimButtons: false,
           showMainButton: true,
           buttonText: 'Coming Soon',
           buttonEnabled: false,
@@ -243,6 +380,7 @@ export function LaunchpadSideBar({
           countdown: false,
           showInputs: false,
           showChainButtons: false,
+          showClaimButtons: false,
           showMainButton: true,
           buttonText: 'Connect Wallet',
           buttonEnabled: true,
@@ -289,20 +427,17 @@ export function LaunchpadSideBar({
       const seconds = Math.floor((difference % (1000 * 60)) / 1000);
 
       setCountdown({ days, hours, minutes, seconds });
-      hasRefetchedRef.current = false; // Reset refetch flag when counting
+      hasRefetchedRef.current = false;
     } else {
-      // Countdown reached 0
       setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
       setCountdownCompleted(true);
       
-      // Only refetch once when countdown completes
       if (!hasRefetchedRef.current) {
         console.log('Countdown completed, refetching launchpad data...');
         refetchLaunchpadDetail();
         hasRefetchedRef.current = true;
       }
       
-      // Stop the interval since countdown is complete
       clearCountdownInterval();
     }
   };
@@ -318,17 +453,12 @@ export function LaunchpadSideBar({
       case 'cancel':
         handleCancel();
         break;
-      case 'claim':
-        handleClaim();
-        break;
       default:
         break;
     }
   };
 
-  const contribute = useContribute();
-
-  const handleChainContribute = async (chain: PresaleSupportedChain) => {
+  const handleChainContribute = async (chain: any) => {
     const chainId = chain.id;
     const amount = amounts[chainId];
 
@@ -337,28 +467,27 @@ export function LaunchpadSideBar({
       return;
     }
 
-    // Validate amount against min/max
     const amountNum = parseFloat(amount);
     const minContrib = Number(chain.minContribution);
     const maxContrib = Number(chain.maxContribution);
 
     if (amountNum < minContrib) {
       toast.error(
-        `Amount must be at least ${minContrib}`
+        `Amount must be at least ${minContrib} ${chain.paymentTokenSymbol}`
       );
       return;
     }
 
     if (amountNum > maxContrib) {
       toast.error(
-        `Amount cannot exceed ${maxContrib}`
+        `Amount cannot exceed ${maxContrib} ${chain.paymentTokenSymbol}`
       );
       return;
     }
 
     try {
       setContributingChains((prev) => new Set(prev).add(chainId));
-      // Convert amount to BigInt (assuming 18 decimals for now)
+
       const amountBigInt = BigInt(Math.floor(parseFloat(amount) * 10 ** 18));
       const chainData = launchpad.presaleChains.find(
         (c) => c.chainId === chain.chainId
@@ -372,20 +501,17 @@ export function LaunchpadSideBar({
         chainData.contractAbi,
         amountBigInt,
         Number(chain.chainId),
-        amountBigInt
       );
 
       toast.success(
-        `Successfully contributed ${amount}`
+        `Successfully contributed ${amount} ${chain.paymentTokenSymbol}`
       );
 
-      // Reset amount for this chain
       setAmounts((prev) => ({
         ...prev,
         [chainId]: '',
       }));
 
-      // Reload data after successful contribution
       await Promise.all([
         refetchTargetAmounts(),
         refetchTotalRaised(),
@@ -405,12 +531,11 @@ export function LaunchpadSideBar({
 
   const handleFinalize = async () => {
     try {
-      const result = await finalizePreSales({
+      await finalizePreSales({
         presaleId: launchpad.id,
       }).unwrap();
-      console.log(result, 'Presale finalized successfully');
       toast.success('Presale finalized successfully!');
-      refetchLaunchpadDetail(); // Refetch after finalize
+      refetchLaunchpadDetail();
     } catch (error: any) {
       console.error('Finalize error:', error);
       const errorMessage = getErrorMessage(error, 'Failed to finalize presale');
@@ -420,22 +545,18 @@ export function LaunchpadSideBar({
 
   const handleCancel = async () => {
     try {
-      const result = await cancelPreSales({
+      await cancelPreSales({
         presaleId: launchpad.id,
         reason: 'Insufficient interest',
       }).unwrap();
-      console.log(result, 'Presale cancelled successfully');
+      
       toast.success('Presale cancelled successfully!');
-      refetchLaunchpadDetail(); // Refetch after cancel
+      refetchLaunchpadDetail();
     } catch (error: any) {
       console.error('Cancel error:', error);
       const errorMessage = getErrorMessage(error, 'Failed to cancel presale');
       toast.error(errorMessage);
     }
-  };
-
-  const handleClaim = () => {
-    toast.info('Claim functionality coming soon!');
   };
 
   const handleWalletModalClose = () => {
@@ -444,27 +565,24 @@ export function LaunchpadSideBar({
 
   // Main countdown effect
   useEffect(() => {
-    // Clear any existing interval
     clearCountdownInterval();
     
-    // Reset states when launchpad data changes
     setCountdownCompleted(false);
     hasRefetchedRef.current = false;
 
     if (launchpad.status === PresaleStatus.CANCELLED || 
-        launchpad.status === PresaleStatus.FINALIZED) {
+        launchpad.status === PresaleStatus.FINALIZED ||
+        allChainsReachedTarget) {
       setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
       return;
     }
 
-    // Check if countdown should be active
     const targetDate = getTargetDate();
     if (!targetDate) return;
 
     const now = new Date().getTime();
     const target = new Date(targetDate).getTime();
     
-    // If target time has already passed, don't start interval
     if (target <= now) {
       setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
       setCountdownCompleted(true);
@@ -476,25 +594,22 @@ export function LaunchpadSideBar({
       return;
     }
 
-    // Start countdown
     calculateCountdown();
     intervalRef.current = setInterval(calculateCountdown, 1000);
 
     return () => clearCountdownInterval();
-  }, [launchpad.status, launchpad.startTime, launchpad.endTime, hasStarted, hasEnded]);
+  }, [launchpad.status, launchpad.startTime, launchpad.endTime, hasStarted, hasEnded, allChainsReachedTarget]);
 
   useEffect(() => {
     if (isConnected) setIsWalletModalOpen(false);
   }, [isConnected]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => clearCountdownInterval();
   }, []);
 
   const statusConfig = getStatusDisplay();
 
-  // Loading & error UI
   if (userLoading) {
     return (
       <div className='flex items-start justify-start min-h-[200px]'>
@@ -511,8 +626,7 @@ export function LaunchpadSideBar({
     );
   }
 
-  // Error loading contract data
-  if (targetError || raisedError) {
+  if (targetError || raisedError || claimedError) {
     return (
       <div className='flex items-start justify-start min-h-[200px]'>
         <span className='text-red-500'>
@@ -522,8 +636,7 @@ export function LaunchpadSideBar({
     );
   }
 
-  // Loading contract data
-  if (targetLoading || raisedLoading) {
+  if (targetLoading || raisedLoading || claimedLoading) {
     return (
       <div className='flex items-start justify-start min-h-[200px]'>
         <div className='flex items-center gap-2'>
@@ -536,7 +649,7 @@ export function LaunchpadSideBar({
 
   return (
     <>
-      <div className='h-fit bg-[linear-gradient(45deg,_var(--blue-primary),_var(--primary))] border-none rounded-xl cursor-pointer  hover:shadow-[0_0px_10px_0_var(--blue-primary)] p-[1px]'>
+      <div className='h-fit bg-[linear-gradient(45deg,_var(--blue-primary),_var(--primary))] border-none rounded-xl  hover:shadow-[0_0px_10px_0_var(--blue-primary)] p-[1px]'>
         <Card className='bg-[var(--gray-night)] border-none rounded-xl h-fit'>
           <CardContent className='p-6'>
             <h2 className='text-xl font-semibold text-white text-center mb-6'>
@@ -544,7 +657,7 @@ export function LaunchpadSideBar({
             </h2>
 
             {/* Countdown */}
-            {statusConfig.countdown && !countdownCompleted && (
+            {statusConfig.countdown && !countdownCompleted && !allChainsReachedTarget && (
               <div className='flex justify-center gap-2 mb-6'>
                 <div className='bg-[#2a3441] px-3 py-2 rounded text-white font-mono text-sm min-w-[50px] text-center'>
                   {countdown.days.toString().padStart(2, '0')}
@@ -573,6 +686,10 @@ export function LaunchpadSideBar({
 
                 const isContributing = contributingChains.has(chain.id);
                 const hasContributed = contributedChains.has(chain.id);
+                const isClaiming = claimingChains.has(chain.id);
+                const canClaim = canClaimFromChain(chain.id, index);
+                const hasClaimed = hasUserClaimed(chain.id, index);
+                const chainTargetReached = isChainTargetReached(index);
 
                 return (
                   <div key={chain.id}>
@@ -583,27 +700,30 @@ export function LaunchpadSideBar({
                       targetAmount={targetAmount}
                       amounts={amounts}
                       isContributing={isContributing}
-                      showInputs={statusConfig.showInputs}
+                      showInputs={statusConfig.showInputs && !chainTargetReached}
                       onAmountChange={handleAmountChange}
                       onMaxClick={handleMaxClick}
                     />
 
+
                     {/* Individual Chain Contribute Button */}
-                    {statusConfig.showChainButtons && (
+                    {statusConfig.showChainButtons && !chainTargetReached && (
                       <div className='mt-2'>
                         <Button
                           disabled={
                             hasContributed ||
                             isContributing ||
                             !amounts[chain.id] ||
-                            parseFloat(amounts[chain.id]) <= 0
+                            parseFloat(amounts[chain.id]) <= 0 ||
+                            chainTargetReached
                           }
                           onClick={() => handleChainContribute(chain)}
                           className={`w-full py-2 rounded-lg font-semibold transition-all text-sm ${
                             !hasContributed &&
                             !isContributing &&
                             amounts[chain.id] &&
-                            parseFloat(amounts[chain.id]) > 0
+                            parseFloat(amounts[chain.id]) > 0 &&
+                            !chainTargetReached
                               ? `bg-[linear-gradient(45deg,_var(--blue-primary),_var(--primary))]
                         shadow-[0_0px_5px_0_var(--blue-primary)]
                         border-none
@@ -625,6 +745,45 @@ export function LaunchpadSideBar({
                             `Contribute`
                           )}
                         </Button>
+                      </div>
+                    )}
+
+                    {/* Individual Chain Claim Button */}
+                    {statusConfig.showClaimButtons && hasContributed && (
+                      <div className='mt-2'>
+                        {hasClaimed ? (
+                          <Button
+                            disabled={true}
+                            className='w-full py-2 rounded-lg font-semibold transition-all text-sm !bg-[var(--gray-light)] !opacity-100 !text-[var(--gray-neutral)] !cursor-not-allowed'
+                          >
+                           Already Claimed
+                          </Button>
+                        ) : canClaim ? (
+                          <Button
+                            disabled={isClaiming || isClaimingGlobal}
+                            onClick={() => handleClaimTokens(chain, index)}
+                            className={`w-full py-2 rounded-lg font-semibold transition-all text-sm ${
+                              !isClaiming && !isClaimingGlobal
+                                ? `bg-[linear-gradient(45deg,_var(--green-primary),_var(--green-secondary))]
+                          shadow-[0_0px_5px_0_var(--green-primary)]
+                          border-none
+                          rounded-lg
+                          cursor-pointer
+                          hover:opacity-90
+                          hover:shadow-[0_0px_8px_0_var(--green-primary)] text-white`
+                                : '!bg-[var(--gray-light)] !opacity-100 !text-[var(--gray-neutral)] !cursor-not-allowed'
+                            }`}
+                          >
+                            {isClaiming ? (
+                              <div className='flex items-center gap-2'>
+                                <RefreshCw className='w-3 h-3 animate-spin' />
+                                Claiming...
+                              </div>
+                            ) : (
+                              `Claim`
+                            )}
+                          </Button>
+                        ) : null}
                       </div>
                     )}
                   </div>

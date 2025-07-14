@@ -132,6 +132,63 @@ export function useUserContributionTime(contractAddress: Address, abi: Abi, user
   };
 }
 
+export function useUserHasClaimed(contractAddress: Address, abi: Abi, userAddress?: Address, chainId?: number) {
+  const { data, isLoading, error } = useReadContract({
+    address: contractAddress,
+    abi,
+    functionName: 'hasClaimed',
+    args: userAddress ? [userAddress] : undefined,
+    chainId,
+    query: {
+      enabled: !!userAddress,
+    },
+  });
+
+  return {
+    data: (data as boolean) || false,
+    isLoading,
+    error
+  };
+}
+
+export function useUserTokensClaimed(contractAddress: Address, abi: Abi, userAddress?: Address, chainId?: number) {
+  const { data, isLoading, error } = useReadContract({
+    address: contractAddress,
+    abi,
+    functionName: 'tokensClaimed',
+    args: userAddress ? [userAddress] : undefined,
+    chainId,
+    query: {
+      enabled: !!userAddress,
+    },
+  });
+
+  return {
+    data: (data as bigint) || 0n,
+    isLoading,
+    error
+  };
+}
+
+export function useHasContributorClaimed(contractAddress: Address, abi: Abi, userAddress?: Address, chainId?: number) {
+  const { data, isLoading, error } = useReadContract({
+    address: contractAddress,
+    abi,
+    functionName: 'hasContributorClaimed',
+    args: userAddress ? [userAddress] : undefined,
+    chainId,
+    query: {
+      enabled: !!userAddress,
+    },
+  });
+
+  return {
+    data: (data as boolean) || false,
+    isLoading,
+    error
+  };
+}
+
 export function useCampaignTargetAmount(contractAddress: Address, abi: Abi, chainId: number) {
   const { data, isLoading, error } = useReadContract({
     address: contractAddress,
@@ -221,6 +278,60 @@ export function useMultipleCampaignSoftCap(
     data: data?.map(r => r.result as bigint | undefined) ?? [],
     loading: isLoading,
     error,
+  };
+}
+
+export function useMultipleUserHasClaimed(
+  contracts: { contractAddress: Address; abi: Abi; chainId: number }[],
+  userAddress?: Address
+) {
+  const calls = contracts.map(({ contractAddress, abi, chainId }) => ({
+    address: contractAddress,
+    abi,
+    functionName: 'hasClaimed',
+    args: userAddress ? [userAddress] : undefined,
+    chainId,
+  }));
+
+  const { data, isLoading, error, refetch } = useReadContracts({ 
+    contracts: calls,
+    query: {
+      enabled: !!userAddress,
+    },
+  });
+
+  return {
+    data: data?.map(r => (r.result as boolean) || false) ?? [],
+    loading: isLoading,
+    error,
+    refetch,
+  };
+}
+
+export function useMultipleUserTokensClaimed(
+  contracts: { contractAddress: Address; abi: Abi; chainId: number }[],
+  userAddress?: Address
+) {
+  const calls = contracts.map(({ contractAddress, abi, chainId }) => ({
+    address: contractAddress,
+    abi,
+    functionName: 'tokensClaimed',
+    args: userAddress ? [userAddress] : undefined,
+    chainId,
+  }));
+
+  const { data, isLoading, error, refetch } = useReadContracts({ 
+    contracts: calls,
+    query: {
+      enabled: !!userAddress,
+    },
+  });
+
+  return {
+    data: data?.map(r => (r.result as bigint) || 0n) ?? [],
+    loading: isLoading,
+    error,
+    refetch,
   };
 }
 
@@ -380,7 +491,7 @@ export function useFinalizeCampaign() {
         {
           address: contractAddress,
           abi,
-          functionName: 'finalizeCampaign',
+          functionName: 'finalize',
           chainId,
         }
       );
@@ -421,7 +532,7 @@ export function useCancelCampaign() {
         {
           address: contractAddress,
           abi,
-          functionName: 'cancelCampaign',
+          functionName: 'cancel',
           chainId,
         }
       );

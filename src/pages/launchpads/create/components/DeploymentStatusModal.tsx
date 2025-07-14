@@ -343,14 +343,6 @@ export function DeploymentStatusModal({
           {deploymentStarted && !deploymentError && !isDeploying && (
             <div className='flex flex-col items-center justify-center'>
               <Image src={MissileIcon} alt='missile-icon' />
-              <div className='mt-4 text-center'>
-                <h3 className='text-lg font-semibold text-green-600 mb-2'>
-                   Deployment Successful!
-                </h3>
-                <p className='text-sm text-gray-600'>
-                  Your launchpad has been deployed successfully. Choose your next action below.
-                </p>
-              </div>
             </div>
           )}
 
