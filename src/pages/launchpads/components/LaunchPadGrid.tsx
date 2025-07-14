@@ -90,7 +90,7 @@ const targetDate = useMemo(() => {
         </div>
         {/* {getStatusBadge(presale.status)} */}
       </div>
-
+      <div className='min-h-[65px]'>
       {/* Description */}
       <p className='text-sm text-muted-foreground mb-4 line-clamp-2'>
         {presale.description}
@@ -109,6 +109,7 @@ const targetDate = useMemo(() => {
           ))}
         </div>
       )}
+      </div>
 
       {/* Chains Progress - Sử dụng component ChainProgress */}
       <div className='space-y-3 mb-4'>
@@ -140,7 +141,7 @@ const targetDate = useMemo(() => {
           {presale.status === PresaleStatus.ACTIVE && timeRemaining && (
             <span className='text-foreground'>
               Sale Ends in{' '}
-              <span className='font-mono'>{formatCountdown(countdown)}</span>
+              <span className='font-mono text-[20px] font-semibold'>{formatCountdown(countdown)}</span>
             </span>
           )}
           {presale.status === PresaleStatus.ENDED && (
