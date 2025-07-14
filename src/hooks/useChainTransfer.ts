@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useSendTransaction, usePublicClient } from "wagmi";
-import { parseEther, type Address, erc20Abi, encodeFunctionData, parseUnits } from "viem";
+import { useSendTransaction } from "wagmi";
+import { parseEther, type Address, erc20Abi, encodeFunctionData, parseUnits, createPublicClient, http } from "viem";
 import { ChainType } from '@/utils/enums/chain';
+import { useConfig } from 'wagmi';
 
 export function useChainTransfer() {
   const { sendTransactionAsync } = useSendTransaction();
-  const publicClient = usePublicClient();
+  const config = useConfig();
 
   const transfer = async ({
     chainType,
@@ -23,8 +24,19 @@ export function useChainTransfer() {
     decimals?: number;
   }) => {
     if (chainType === ChainType.EVM) {
-      if (!publicClient) return { error: "Public client not available" };
+      const targetChain = chainId ? config.chains.find(chain => chain.id === chainId) : config.chains[0];
       
+      if (!targetChain) {
+        return { error: `Chain with ID ${chainId} not found in configuration` };
+      }
+
+      const publicClient = createPublicClient({ 
+        chain: targetChain, 
+        transport: http() 
+      });
+
+      if (!publicClient) return { error: "Public client not available" };
+
       try {
         let txHash;
         
@@ -50,14 +62,12 @@ export function useChainTransfer() {
         if (!txHash) {
           return { error: "Transaction failed" };
         }
-        console.log(txHash,'txHash')
-        // Wait for transaction confirmation synchronously
+        
         const receipt = await publicClient.waitForTransactionReceipt({
           hash: txHash,
           confirmations: 1, // Wait for at least 1 confirmation
+          timeout: 300_000, // 5 minutes timeout
         });
-        console.log(receipt,'receipt')
-
 
         if (receipt.status === 'reverted') {
           return { error: "Transaction reverted" };
@@ -74,7 +84,6 @@ export function useChainTransfer() {
         return { error: err.message || "Transaction failed" };
       }
     } else if (chainType === ChainType.Solana) {
-      // TODO: Implement Solana transfer with confirmation
       return { hash: "", success: false };
     }
     
