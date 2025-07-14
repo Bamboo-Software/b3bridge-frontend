@@ -60,7 +60,7 @@ export function useMultipleCampaignContributors(
   }));
 
   const { data, isLoading, error, refetch } = useReadContracts({ contracts: calls });
-
+  
   const contributors = data?.map(r =>
     Array.isArray(r.result)
       ? (r.result as IContributorInfo[]).map(contributor => ({

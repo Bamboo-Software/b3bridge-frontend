@@ -51,6 +51,7 @@ export function DeploymentStatusModal({
   const [deploymentStarted, setDeploymentStarted] = useState(false);
   const [deploymentError, setDeploymentError] = useState<string | null>(null);
   const [isDeploying, setIsDeploying] = useState(false);
+  const [paymentVerificationError, setPaymentVerificationError] = useState<string | null>(null);
 
   // Redux hooks
   const {
@@ -64,6 +65,7 @@ export function DeploymentStatusModal({
     data: paymentVerificationData,
     isLoading: isVerifyingPayment,
     refetch: refetchPaymentVerification,
+    error: paymentVerificationApiError,
   } = useVerifyPaymentPreSalesQuery(
     { presaleId },
     { skip: !open || !presaleId }
@@ -73,7 +75,19 @@ export function DeploymentStatusModal({
   const { data: presaleDetailData, refetch: refetchDetail } =
     useGetDetailPreSalesQuery({ presaleId }, { skip: !open || !presaleId });
 
-  const [deployContract, { isLoading: isDeploymentTriggering }] = useDeployContractPreSalesMutation();
+  const [deployContract, { isLoading: isDeploymentTriggering, isError: isDeploymentFailed }] = useDeployContractPreSalesMutation();
+
+  // Check if modal should be closable
+  const isModalClosable = !deploymentStarted || deploymentError || isDeploying;
+
+  // Handle modal close - only allow when closable
+  const handleModalOpenChange = (open: boolean) => {
+    if (!open && !isModalClosable) {
+      // Prevent closing when deployment is successful
+      return;
+    }
+    onOpenChange?.(open);
+  };
 
   // Reset states when modal closes
   useEffect(() => {
@@ -87,8 +101,27 @@ export function DeploymentStatusModal({
       setDeploymentStarted(false);
       setDeploymentError(null);
       setIsDeploying(false);
+      setPaymentVerificationError(null);
     }
   }, [open]);
+
+  // Handle payment verification API errors
+  useEffect(() => {
+    if (paymentVerificationApiError) {
+      const errorMessage = 
+        (paymentVerificationApiError as any)?.data?.message || 
+        (paymentVerificationApiError as any)?.message || 
+        'Failed to verify payment';
+      
+      setPaymentVerificationError(errorMessage);
+      setPaymentStatus(prev => ({
+        ...prev,
+        isVerifying: false,
+        error: errorMessage,
+      }));
+      toast.error(`Payment verification failed: ${errorMessage}`);
+    }
+  }, [paymentVerificationApiError]);
 
   // Process payment verification data
   useEffect(() => {
@@ -124,6 +157,9 @@ export function DeploymentStatusModal({
         isVerifying: false,
         error: undefined,
       }));
+      
+      // Clear payment verification error if successful
+      setPaymentVerificationError(null);
       
       if (allChainsReady && !deploymentStarted && !deploymentError && !isDeploying) {
         toast.success('All payments verified successfully!');
@@ -179,6 +215,8 @@ export function DeploymentStatusModal({
         isVerifying: true,
         error: undefined,
       }));
+      
+      setPaymentVerificationError(null);
 
       await refetchPaymentVerification();
       
@@ -189,12 +227,15 @@ export function DeploymentStatusModal({
       
     } catch (error: any) {
       console.error('Payment verification error:', error);
+      const errorMessage = error.message || 'Failed to verify payment';
+      
+      setPaymentVerificationError(errorMessage);
       setPaymentStatus((prev) => ({
         ...prev,
         isVerifying: false,
-        error: error.message || 'Failed to verify payment',
+        error: errorMessage,
       }));
-      toast.error('Failed to verify payment');
+      toast.error(`Payment verification failed: ${errorMessage}`);
     }
   }, [refetchPaymentVerification, open]);
 
@@ -217,11 +258,16 @@ export function DeploymentStatusModal({
       }
     } catch (error: any) {
       console.error('Trigger deployment error:', error);
-      const errorMessage = error.message || 'Failed to trigger deployment';
+      
+      const errorMessage = 
+        error?.data?.message || 
+        error?.message || 
+        'Failed to trigger deployment';
+      
       setDeploymentError(errorMessage);
       setDeploymentStarted(false);
       setIsDeploying(false);
-      toast.error(errorMessage);
+      toast.error(`Deployment failed: ${errorMessage}`);
     }
   }, [presaleId, deployContract, open]);
 
@@ -231,12 +277,18 @@ export function DeploymentStatusModal({
     handleTriggerDeployment();
   }, [handleTriggerDeployment]);
 
+  // Retry payment verification
+  const handleRetryPaymentVerification = useCallback(() => {
+    setPaymentVerificationError(null);
+    handleVerifyPayment();
+  }, [handleVerifyPayment]);
+
   // Effect to start verification when modal opens
   useEffect(() => {
-    if (open && presaleId && !paymentStatus.isVerified) {
+    if (open && presaleId && !paymentStatus.isVerified && !paymentVerificationError) {
       handleVerifyPayment();
     }
-  }, [open, presaleId, handleVerifyPayment, paymentStatus.isVerified]);
+  }, [open, presaleId, handleVerifyPayment, paymentStatus.isVerified, paymentVerificationError]);
 
   // Check when both payment and detail data are available
   useEffect(() => {
@@ -261,13 +313,24 @@ export function DeploymentStatusModal({
     open
   ]);
 
+  // Check for deployment failures from API
+  useEffect(() => {
+    if (isDeploymentFailed && !deploymentError) {
+      setDeploymentError('Deployment request failed. Please try again.');
+      setIsDeploying(false);
+      setDeploymentStarted(false);
+    }
+  }, [isDeploymentFailed, deploymentError]);
+
   return (
     <Dialog
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={(value)=> isModalClosable && handleModalOpenChange(value)}
     >
       <DialogContent
         className='sm:max-w-[600px] max-h-[80vh] overflow-y-auto'
+        // Disable close button when deployment is successful
+        showCloseButton={!!isModalClosable}
       >
         <DialogHeader>
           <DialogTitle className='flex items-center gap-2'>
@@ -280,6 +343,14 @@ export function DeploymentStatusModal({
           {deploymentStarted && !deploymentError && !isDeploying && (
             <div className='flex flex-col items-center justify-center'>
               <Image src={MissileIcon} alt='missile-icon' />
+              <div className='mt-4 text-center'>
+                <h3 className='text-lg font-semibold text-green-600 mb-2'>
+                   Deployment Successful!
+                </h3>
+                <p className='text-sm text-gray-600'>
+                  Your launchpad has been deployed successfully. Choose your next action below.
+                </p>
+              </div>
             </div>
           )}
 
@@ -305,8 +376,8 @@ export function DeploymentStatusModal({
 
           {/* Deployment Error */}
           {deploymentError && !isDeploying && (
-            <div className='border rounded-lg p-4'>
-              <h3 className='font-semibold mb-3 flex items-center gap-2'>
+            <div className='rounded-lg p-4'>
+              <h3 className='font-semibold mb-3 flex items-center gap-2 text-red-700'>
                 Deployment Failed
                 <XCircle className='w-4 h-4 text-red-500' />
               </h3>
@@ -316,12 +387,12 @@ export function DeploymentStatusModal({
                   <XCircle className='w-4 h-4' />
                   <span>Contract deployment failed</span>
                 </div>
-                <p className='text-sm text-red-500'>{deploymentError}</p>
                 <Button
                   size='sm'
                   onClick={handleRetryDeployment}
                   disabled={isDeploying || isDeploymentTriggering}
                   className='w-full mt-2'
+                  variant='destructive'
                 >
                   {isDeploying || isDeploymentTriggering ? (
                     <>
@@ -336,8 +407,44 @@ export function DeploymentStatusModal({
             </div>
           )}
 
+          {/* Payment Verification Error */}
+          {paymentVerificationError && !paymentStatus.isVerifying && !isVerifyingPayment && (
+            <div className='rounded-lg p-4'>
+              <h3 className='font-semibold mb-3 flex items-center gap-2 text-red-700'>
+                Payment Verification Failed
+                <XCircle className='w-4 h-4 text-red-500' />
+              </h3>
+              
+              <div className='space-y-3'>
+                <div className='flex items-center gap-2 text-red-600'>
+                  <XCircle className='w-4 h-4' />
+                  <span>Unable to verify payment status</span>
+                </div>
+                <p className='text-sm text-red-600 bg-red-100 p-2 rounded'>
+                  {paymentVerificationError}
+                </p>
+                <Button
+                  size='sm'
+                  onClick={handleRetryPaymentVerification}
+                  disabled={paymentStatus.isVerifying || isVerifyingPayment}
+                  className='w-full mt-2'
+                  variant='destructive'
+                >
+                  {paymentStatus.isVerifying || isVerifyingPayment ? (
+                    <>
+                      <RefreshCw className='w-4 h-4 animate-spin mr-2' />
+                      Retrying...
+                    </>
+                  ) : (
+                    'Retry Payment Verification'
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Payment Verification */}
-          {!deploymentStarted && !deploymentError && !isDeploying && (
+          {!deploymentStarted && !deploymentError && !isDeploying && !paymentVerificationError && (
             <div className='border rounded-lg p-4'>
               <h3 className='font-semibold mb-3 flex items-center gap-2'>
                 Payment Verification
@@ -362,13 +469,23 @@ export function DeploymentStatusModal({
                     <XCircle className='w-4 h-4' />
                     <span>Payment verification failed</span>
                   </div>
-                  <p className='text-sm text-red-500'>{paymentStatus.error}</p>
+                  <p className='text-sm text-red-500 bg-red-100 p-2 rounded'>
+                    {paymentStatus.error}
+                  </p>
                   <Button
                     size='sm'
                     onClick={handleVerifyPayment}
                     disabled={paymentStatus.isVerifying || isVerifyingPayment}
+                    variant='destructive'
                   >
-                    Retry Verification
+                    {paymentStatus.isVerifying || isVerifyingPayment ? (
+                      <>
+                        <RefreshCw className='w-4 h-4 animate-spin mr-2' />
+                        Retrying...
+                      </>
+                    ) : (
+                      'Retry Verification'
+                    )}
                   </Button>
                 </div>
               ) : paymentStatus.chainsStatus.length > 0 ? (
@@ -384,13 +501,37 @@ export function DeploymentStatusModal({
                     disabled={paymentStatus.isVerifying || isVerifyingPayment}
                     className='w-full mt-2'
                   >
-                    Retry Verification
+                    {paymentStatus.isVerifying || isVerifyingPayment ? (
+                      <>
+                        <RefreshCw className='w-4 h-4 animate-spin mr-2' />
+                        Retrying...
+                      </>
+                    ) : (
+                      'Retry Verification'
+                    )}
                   </Button>
                 </div>
               ) : (
-                <div className='flex items-center gap-2 text-gray-600'>
-                  <Clock className='w-4 h-4' />
-                  <span>Payment verification pending</span>
+                <div className='space-y-3'>
+                  <div className='flex items-center gap-2 text-gray-600'>
+                    <Clock className='w-4 h-4' />
+                    <span>Payment verification pending</span>
+                  </div>
+                  <Button
+                    size='sm'
+                    onClick={handleVerifyPayment}
+                    disabled={paymentStatus.isVerifying || isVerifyingPayment}
+                    className='w-full'
+                  >
+                    {paymentStatus.isVerifying || isVerifyingPayment ? (
+                      <>
+                        <RefreshCw className='w-4 h-4 animate-spin mr-2' />
+                        Verifying...
+                      </>
+                    ) : (
+                      'Start Verification'
+                    )}
+                  </Button>
                 </div>
               )}
             </div>
@@ -405,10 +546,10 @@ export function DeploymentStatusModal({
               onClick={onContinueCreate}
               className='flex-1'
             >
-              Create Launchpad
+              Create Another Launchpad
             </Button>
             <Button onClick={onSeeDetail} className='flex-1'>
-              See details
+              View Details
             </Button>
           </div>
         )}

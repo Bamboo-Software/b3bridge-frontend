@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
 import type {
   ContributorRow,
   PresaleDetailResponse,
+  PresaleSupportedChain,
 } from '@/utils/interfaces/launchpad';
 import { useAccount } from 'wagmi';
 import { WalletConnectModal } from '@/pages/common/ConnectWalletModal';
@@ -28,6 +29,7 @@ interface LaunchpadSideBarProps {
   contributorState: ContributorRow[];
   supportedChains: LaunchpadSupportedChain[];
   refetchContributors: () => void;
+  refetchLaunchpadDetail: () => void;
 }
 
 interface CountdownTime {
@@ -42,6 +44,7 @@ export function LaunchpadSideBar({
   contributorState,
   supportedChains,
   refetchContributors,
+  refetchLaunchpadDetail
 }: LaunchpadSideBarProps) {
   const [amounts, setAmounts] = useState<{ [key: string]: string }>({});
   const [countdown, setCountdown] = useState<CountdownTime>({
@@ -55,6 +58,10 @@ export function LaunchpadSideBar({
     new Set()
   );
   const [currentTime, setCurrentTime] = useState(new Date().getTime());
+  const [countdownCompleted, setCountdownCompleted] = useState(false);
+
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const hasRefetchedRef = useRef(false);
 
   const { useGetMeQuery } = preSaleAuthApi;
   const { useFinalizePreSalesMutation, useCancelPreSalesMutation } = preSaleApi;
@@ -253,12 +260,22 @@ export function LaunchpadSideBar({
     return null;
   };
 
+  const clearCountdownInterval = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
+
   const calculateCountdown = () => {
     const now = new Date().getTime();
-    setCurrentTime(now); // Update current time every second
+    setCurrentTime(now);
 
     const targetDate = getTargetDate();
-    if (!targetDate) return;
+    if (!targetDate) {
+      clearCountdownInterval();
+      return;
+    }
 
     const target = new Date(targetDate).getTime();
     const difference = target - now;
@@ -272,8 +289,21 @@ export function LaunchpadSideBar({
       const seconds = Math.floor((difference % (1000 * 60)) / 1000);
 
       setCountdown({ days, hours, minutes, seconds });
+      hasRefetchedRef.current = false; // Reset refetch flag when counting
     } else {
+      // Countdown reached 0
       setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+      setCountdownCompleted(true);
+      
+      // Only refetch once when countdown completes
+      if (!hasRefetchedRef.current) {
+        console.log('Countdown completed, refetching launchpad data...');
+        refetchLaunchpadDetail();
+        hasRefetchedRef.current = true;
+      }
+      
+      // Stop the interval since countdown is complete
+      clearCountdownInterval();
     }
   };
 
@@ -298,7 +328,7 @@ export function LaunchpadSideBar({
 
   const contribute = useContribute();
 
-  const handleChainContribute = async (chain: any) => {
+  const handleChainContribute = async (chain: PresaleSupportedChain) => {
     const chainId = chain.id;
     const amount = amounts[chainId];
 
@@ -314,21 +344,20 @@ export function LaunchpadSideBar({
 
     if (amountNum < minContrib) {
       toast.error(
-        `Amount must be at least ${minContrib} ${chain.paymentTokenSymbol}`
+        `Amount must be at least ${minContrib}`
       );
       return;
     }
 
     if (amountNum > maxContrib) {
       toast.error(
-        `Amount cannot exceed ${maxContrib} ${chain.paymentTokenSymbol}`
+        `Amount cannot exceed ${maxContrib}`
       );
       return;
     }
 
     try {
       setContributingChains((prev) => new Set(prev).add(chainId));
-
       // Convert amount to BigInt (assuming 18 decimals for now)
       const amountBigInt = BigInt(Math.floor(parseFloat(amount) * 10 ** 18));
       const chainData = launchpad.presaleChains.find(
@@ -343,10 +372,11 @@ export function LaunchpadSideBar({
         chainData.contractAbi,
         amountBigInt,
         Number(chain.chainId),
+        amountBigInt
       );
 
       toast.success(
-        `Successfully contributed ${amount} ${chain.paymentTokenSymbol}`
+        `Successfully contributed ${amount}`
       );
 
       // Reset amount for this chain
@@ -380,6 +410,7 @@ export function LaunchpadSideBar({
       }).unwrap();
       console.log(result, 'Presale finalized successfully');
       toast.success('Presale finalized successfully!');
+      refetchLaunchpadDetail(); // Refetch after finalize
     } catch (error: any) {
       console.error('Finalize error:', error);
       const errorMessage = getErrorMessage(error, 'Failed to finalize presale');
@@ -395,6 +426,7 @@ export function LaunchpadSideBar({
       }).unwrap();
       console.log(result, 'Presale cancelled successfully');
       toast.success('Presale cancelled successfully!');
+      refetchLaunchpadDetail(); // Refetch after cancel
     } catch (error: any) {
       console.error('Cancel error:', error);
       const errorMessage = getErrorMessage(error, 'Failed to cancel presale');
@@ -410,21 +442,55 @@ export function LaunchpadSideBar({
     setIsWalletModalOpen(false);
   };
 
+  // Main countdown effect
   useEffect(() => {
-    if (launchpad.status === PresaleStatus.CANCELLED) {
+    // Clear any existing interval
+    clearCountdownInterval();
+    
+    // Reset states when launchpad data changes
+    setCountdownCompleted(false);
+    hasRefetchedRef.current = false;
+
+    if (launchpad.status === PresaleStatus.CANCELLED || 
+        launchpad.status === PresaleStatus.FINALIZED) {
       setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
       return;
     }
 
-    calculateCountdown();
-    const interval = setInterval(calculateCountdown, 1000);
+    // Check if countdown should be active
+    const targetDate = getTargetDate();
+    if (!targetDate) return;
 
-    return () => clearInterval(interval);
-  }, [launchpad.status, launchpad.startTime, launchpad.endTime]);
+    const now = new Date().getTime();
+    const target = new Date(targetDate).getTime();
+    
+    // If target time has already passed, don't start interval
+    if (target <= now) {
+      setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+      setCountdownCompleted(true);
+      if (!hasRefetchedRef.current) {
+        console.log('Target time already passed, refetching...');
+        refetchLaunchpadDetail();
+        hasRefetchedRef.current = true;
+      }
+      return;
+    }
+
+    // Start countdown
+    calculateCountdown();
+    intervalRef.current = setInterval(calculateCountdown, 1000);
+
+    return () => clearCountdownInterval();
+  }, [launchpad.status, launchpad.startTime, launchpad.endTime, hasStarted, hasEnded]);
 
   useEffect(() => {
     if (isConnected) setIsWalletModalOpen(false);
   }, [isConnected]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => clearCountdownInterval();
+  }, []);
 
   const statusConfig = getStatusDisplay();
 
@@ -478,7 +544,7 @@ export function LaunchpadSideBar({
             </h2>
 
             {/* Countdown */}
-            {statusConfig.countdown && (
+            {statusConfig.countdown && !countdownCompleted && (
               <div className='flex justify-center gap-2 mb-6'>
                 <div className='bg-[#2a3441] px-3 py-2 rounded text-white font-mono text-sm min-w-[50px] text-center'>
                   {countdown.days.toString().padStart(2, '0')}

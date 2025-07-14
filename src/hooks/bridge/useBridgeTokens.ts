@@ -11,7 +11,7 @@ export const useBridgeTokens = (params: IBridgeParams) => {
   if (!params || !fromChain || !fromChain.source) {
     return () => Promise.resolve();
   }
-
+  
   const bridge =
     fromChain.source === ChainTokenSource.Stargate
       ? () => stargateBridge()

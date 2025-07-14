@@ -13,6 +13,7 @@ import { useAccount } from 'wagmi';
 import { useAuthToken } from '@/hooks/useAuthToken';
 import { DeploymentStatus } from '@/utils/enums/presale';
 import type { PresaleSupportedChain } from '@/utils/interfaces/launchpad';
+import type { Abi } from 'viem';
 
 export default function LaunchpadDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -56,6 +57,7 @@ export default function LaunchpadDetailPage() {
         contractAddress: chain.contractAddress,
         chainId: Number(chain.chainId),
         paymentTokenAddress: chain.paymentTokenAddress,
+        abi: chain.contractAbi,
       })) || [],
     [launchpad?.presaleChains, supportedChains.data]
   );
@@ -63,12 +65,14 @@ export default function LaunchpadDetailPage() {
   // Get contributors data from blockchain
   const { data: contributorsByChain = [], loading: contributorsLoading, refetch: refetchContributors } =
     useMultipleCampaignContributors(
-      chains.map(({ contractAddress, chainId }: {
+      chains.map(({ contractAddress, chainId,  abi}: {
         contractAddress: string;
         chainId: number;
+        abi: Abi;
       }) => ({
         contractAddress: contractAddress as `0x${string}`,
         chainId,
+        abi
       }))
     );
 
@@ -199,6 +203,7 @@ export default function LaunchpadDetailPage() {
             contributorState={mergedContributors}
             supportedChains={supportedChains.data}
             refetchContributors={refetchContributors}
+            refetchLaunchpadDetail={refetchLaunchpadDetail}
           />
         </div>
       </div>

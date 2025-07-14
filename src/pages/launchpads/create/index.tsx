@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Step1Info } from './components/StepInfo';
@@ -23,6 +23,8 @@ import { useAccount } from 'wagmi';
 import { isEvmChain } from '@/utils/blockchain/chain';
 import { useNavigate } from 'react-router-dom';
 import { routesPaths } from '@/utils/constants/routes';
+import { useAuthToken } from '@/hooks/useAuthToken';
+import { WalletConnectionRequired } from '@/pages/common/WalletConnectionRequired';
 
 enum LaunchpadStep {
   Info = 1,
@@ -98,7 +100,7 @@ export default function CreateLaunchpadPage() {
             minContribution: chain?.minBuy || '0',
             maxContribution: chain?.maxBuy || '0',
             totalTokens: chain?.numberOfTokens || '0',
-            userWalletAddress: address
+            userWalletAddress: address,
           };
         }) || [];
 
@@ -172,7 +174,6 @@ export default function CreateLaunchpadPage() {
   };
 
   const presaleId = watch('presaleId');
-
 
   const handleNext = async () => {
     let fields: string[] = [];
@@ -307,6 +308,7 @@ export default function CreateLaunchpadPage() {
     data: tokenRes,
     isLoading: isLoadingMyTokens,
     error,
+    refetch: refetchMyTokens,
   } = useGetMyTokenGroupsQuery({
     page,
     limit: appConfig.defaultLimit,
@@ -336,13 +338,38 @@ export default function CreateLaunchpadPage() {
       toast.error('Presale ID not found');
     }
   };
+  // Refetch all data
+  const refetchAll = useCallback(() => {
+    refetchMyTokens();
+  }, [refetchMyTokens]);
+  const { isConnected } = useAccount();
+  const { token } = useAuthToken();
+  // Auto-refetch when wallet connects
+  useEffect(() => {
+    if (token && isConnected) {
+      const timer = setTimeout(() => {
+        refetchAll();
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [token, isConnected, refetchAll]);
+
+  // Check wallet connection first
+  if (!isConnected || !token) {
+    return (
+      <div className='container mx-auto px-6 py-8'>
+        <WalletConnectionRequired
+          title='Connect Wallet to Create Launchpad'
+          description='Please connect your wallet to create launchpad.'
+        />
+      </div>
+    );
+  }
 
   return (
     <FormProvider {...methods}>
-      <form
-        className='max-w-2xl mx-auto py-10'
-        autoComplete='off'
-      >
+      <form className='max-w-2xl mx-auto py-10' autoComplete='off'>
         <div className='rounded-2xl shadow-lg p-6 border border-[color:var(--gray-charcoal)]'>
           <h2 className='text-2xl font-bold mb-6 text-foreground'>
             Create your Launchpad
@@ -441,9 +468,7 @@ export default function CreateLaunchpadPage() {
                     'Submit'
                   )}
                 </Button>
-              ))
-              }
-         
+              ))}
           </div>
         </div>
 
