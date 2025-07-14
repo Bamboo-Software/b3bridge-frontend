@@ -7,13 +7,10 @@ import { useChainTransfer } from '@/hooks/useChainTransfer';
 import { useFormContext, useWatch } from 'react-hook-form';
 import TokenInfoDisplay from './components/TokenInfoDisplay';
 import type { CreateTokenFormValues } from './CreateTokenFormValidation';
-import { useSwitchChain, useWalletClient } from 'wagmi';
+import { useSwitchChain,  } from 'wagmi';
 import { TransactionStatus } from '@/utils/enums/transaction';
 import { ChainType } from '@/utils/enums/chain';
-import { useVerifyPaymentOnSuccess } from '@/hooks/create-token/useVerifyPaymentOnSuccess ';
-import { useDeployTokenMutation } from '@/services/pre-sale/create-token';
-import { useMemo } from 'react';
-import { waitForTransactionReceipt } from 'viem/actions';
+import { useDeployTokenMutation,  } from '@/services/pre-sale/create-token';
 
 type Address = `0x${string}`;
 
@@ -22,75 +19,137 @@ interface ConfirmCreateTokenProps {
   formData: CreateTokenFormValues;
   next: () => void;
 }
-
-
-const ConfirmCreateToken: React.FC<ConfirmCreateTokenProps> = ({ next }) => {
-  const { setValue, watch } = useFormContext<CreateTokenFormValues>();
-  const { data: walletClient } = useWalletClient();
-  const formData = watch();
-  const [deployToken , {isLoading:isLoadingDeployToken}] = useDeployTokenMutation();
-  const { transfer } = useChainTransfer();
-  const { switchChainAsync } = useSwitchChain();
-const watchedChainFields = useWatch<CreateTokenFormValues>({
-  name: 'chainFields',
-});
-  const handlePay = async (
-    chainId: number,
-    chainType: ChainType,
-    to: string,
-    nativeAmount: string
-  ) => {
-    try {
-      await switchChainAsync({ chainId });
-      setValue(
-        `chainFields.${chainId}.transactions.native.payStatus`,
-        TransactionStatus.PENDING
-      );
-      setValue(`chainFields.${chainId}.transactions.native.payError`, '');
-      const nativeResult = await transfer({
-        chainType,
-        to: to as Address,
-        amount: nativeAmount,
-        chainId,
-      });
-      if (!nativeResult?.hash) {
-        throw new Error(nativeResult?.error || 'Native payment failed');
-      }
-      await waitForTransactionReceipt(walletClient!, {
-        hash: nativeResult?.hash as `0x${string}`,
-      })
-      setValue(
-        `chainFields.${chainId}.transactions.native.payStatus`,
-        TransactionStatus.SUCCESS
-      );
-      setValue(
-        `chainFields.${chainId}.transactions.native.payHash`,
-        nativeResult.hash
-      );
-      setValue(
-        `chainFields.${chainId}.transactions.native.amount`,
-        nativeAmount
-      );
-    } catch (error) {
-      console.error('Payment failed:', error);
-      setValue(
-        `chainFields.${chainId}.transactions.native.payStatus`,
-        TransactionStatus.ERROR
-      );
-      setValue(
-        `chainFields.${chainId}.transactions.native.payError`,
-        (error as Error).message
-      );
-    }
+type ChainFieldType = {
+  totalSupply: string;
+  systemWalletAddress?: string;
+  id?: string;
+  paymentTokenAddress?: string;
+  deployFee?: string;
+  platformFee?: string;
+  tokenAddress?: string;
+  transactions?: {
+    native?: {
+      payStatus?: string;
+      payError?: string;
+      payHash?: string;
+      isVerify?: boolean;
+      amount?: string;
+    };
+  };
 };
 
+const ConfirmCreateToken: React.FC<ConfirmCreateTokenProps> = ({ next }) => {
+ const { setValue, watch } = useFormContext<CreateTokenFormValues>();
+const formData = watch();
+const [deployToken, { isLoading: isLoadingDeployToken }] = useDeployTokenMutation();
+const { transfer } = useChainTransfer();
+const { switchChainAsync } = useSwitchChain();
+// const [verifyPayment] = useVerifyPaymentMutation();
+const watchedChainFields = useWatch<CreateTokenFormValues>({
+  name: 'chainFields',
+})as Record<string, ChainFieldType>;
+console.log("🚀 ~ watchedChainFields:", watchedChainFields)
+const handlePay = async (chainId: number, chainType: ChainType, to: string, nativeAmount: string) => {
+  console.log("🚀 ~ handlePay ~ chainId:", chainId)
+  try {
+    console.log(`Starting payment for chain ${chainId}`);
+    await switchChainAsync({ chainId })
+      .then(() => console.log(`Switched to chain ${chainId} successfully`))
+      .catch((error) => {
+        throw new Error(`Failed to switch chain ${chainId}: ${error.message}`);
+      });
+
+    setValue(
+      `chainFields.${chainId}.transactions.native.payStatus`,
+      TransactionStatus.PENDING,
+      { shouldValidate: true, shouldDirty: true }
+    );
+    setValue(`chainFields.${chainId}.transactions.native.payError`, '', {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+    console.log('before transfer', chainId)
+    const nativeResult = await transfer({ chainType, to: to as Address, amount: nativeAmount, chainId });
+    console.log(`Transfer result for chain ${chainId}:`, nativeResult);
+
+    if (!nativeResult?.hash) {
+      throw new Error(nativeResult?.error || 'Native payment failed');
+    }
+
+    // console.log(`Transaction receipt for chain ${chainId}:`, receipt);
+
+    // if (receipt.status === 'reverted') {
+    //   throw new Error('Transaction reverted');
+    // }
+
+    setValue(
+      `chainFields.${chainId}.transactions.native`,
+      {
+        payStatus: TransactionStatus.SUCCESS,
+        payHash: nativeResult.hash,
+        amount: nativeAmount,
+        isVerify: false,
+      },
+      { shouldValidate: true, shouldDirty: true }
+    );
+
+  } catch (error) {
+    console.error(`Payment failed for chain ${chainId}:`, error);
+    setValue(
+      `chainFields.${chainId}.transactions.native.payStatus`,
+      TransactionStatus.ERROR,
+      { shouldValidate: true, shouldDirty: true }
+    );
+    setValue(
+      `chainFields.${chainId}.transactions.native.payError`,
+      (error as Error).message,
+      { shouldValidate: true, shouldDirty: true }
+    );
+  }
+};
+// useEffect(() => {
+//   console.log('watchedChainFields:', watchedChainFields);
+//   const allChainsPaid = Object.values(watchedChainFields).every(
+//     (field) => field?.transactions?.native?.payStatus === TransactionStatus.SUCCESS
+//   );
+
+//   if (allChainsPaid) {
+//     console.log('All chains paid, verifying payments...');
+//     handleVerifyAllPayments();
+//   }
+// }, [watchedChainFields]);
+
+
+
+// const handleVerifyAllPayments = async () => {
+//   const tokenIds: string[] = Object.values(watchedChainFields)
+//   .map((field) => field?.id)
+//   .filter((id): id is string => Boolean(id));
+
+// for (const tokenId of tokenIds) {
+//   try {
+//     const { data } = await verifyPayment(tokenId).unwrap();
+//     const chainStatus = data.find((chain: any) => chain.tokenId === tokenId);
+
+//     if (chainStatus) {
+//       const { chainId, readyForDeployment, paymentStatus } = chainStatus;
+//       const isVerified = readyForDeployment && paymentStatus === PaymentStatus.COMPLETED;
+
+//       setValue(`chainFields.${chainId}.transactions.native.isVerify`, isVerified);
+//     }
+//   } catch (error) {
+//     console.error('Failed to verify token:', tokenId, error);
+//   }
+// }
+// };
+
+
 const onPay = (chainId: string, address: string, nativeAmount: string) => {
-    const chainType = ChainType.EVM;
-    const to: Address = address as `0x${string}`;
-    handlePay(Number(chainId), chainType, to, nativeAmount);
-  };
-  
-  const onSubmit = async (e: React.FormEvent) => {
+  const chainType = ChainType.EVM;
+  handlePay(Number(chainId), chainType, address, nativeAmount);
+};
+
+const onSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
 
   const tokenIds = Object.values(formData.chainFields || {})
@@ -105,27 +164,31 @@ const onPay = (chainId: string, address: string, nativeAmount: string) => {
 
   try {
     const result = await deployToken({ tokenIds }).unwrap();
-    console.log('Tokens deployed:', result.data);
-    for (const item of result.data) {
-        const chainId = item.chainId;
-        const tokenAddress = item.tokenAddress;
 
-        if (formData.chainFields?.[chainId]) {
-          formData.chainFields[chainId].tokenAddress = tokenAddress;
-        }
+    for (const item of result.data) {
+      const chainId = item.chainId;
+      const tokenAddress = item.tokenAddress;
+
+      if (formData.chainFields?.[chainId]) {
+        setValue(`chainFields.${chainId}.tokenAddress`, tokenAddress);
       }
+    }
+
     next();
   } catch (error) {
     console.error('Error deploying tokens:', error);
   }
 };
-  
-  useVerifyPaymentOnSuccess();
- const allVerified = useMemo(() => {
-  return Object.values(watchedChainFields || {}).every(
-    (field: any) => field?.transactions?.native?.isVerify === true
-  );
-}, [watchedChainFields]);
+// useEffect(() => {
+//   const allChainsPaid = Object.values(watchedChainFields).every(
+//     (field) => field?.transactions?.native?.payStatus === TransactionStatus.SUCCESS
+//   );
+//   console.log("🚀 ~ useEffect ~ allChainsPaid:", allChainsPaid)
+
+//   if (allChainsPaid) {
+//     handleVerifyAllPayments();
+//   }
+// }, [watchedChainFields]);
   
   return (
     <form onSubmit={onSubmit} className="w-full max-w-[670px] mx-auto">
@@ -152,7 +215,9 @@ const onPay = (chainId: string, address: string, nativeAmount: string) => {
               <div key={chainId} className="space-y-4">
                 <TokenInfoDisplay
                   formData={formData}
+                  watchedChainFields={watchedChainFields}
                   showFees={true}
+                  chainId={chainId}
                   nativeAmount={nativeAmount}
                   totalSupply={totalSupply}
                   showPayButton={!isVerified}
@@ -164,7 +229,7 @@ const onPay = (chainId: string, address: string, nativeAmount: string) => {
           })}
 
           <Button
-            disabled={!allVerified || isLoadingDeployToken}
+            disabled={isLoadingDeployToken}
             type="submit"
             className="w-full bg-[linear-gradient(45deg,_var(--blue-primary),_var(--primary))] shadow-[0_0px_10px_0_var(--blue-primary)] border-none rounded-lg cursor-pointer hover:opacity-90 hover:shadow-[0_0px_16px_0_var(--blue-primary)] text-foreground"
           >

@@ -122,28 +122,28 @@ useEffect(() => {
 
           {/* Total Supply per Chain */}
           {selectedChains && selectedChains.length !== 0 && (
-            <Label className="font-semibold text-[16px]">Total Supply</Label>
-          )}
-          {selectedChains && selectedChains.map((id) => {
-            const chainMeta = configLaunchPadsChains.find((c) => c.id.toString() === id.toString());
-            if (!chainMeta) return null;
-            return (
-              <div
-                key={id}
-                className="flex items-center justify-between p-3 rounded-md mb-2 bg-[#1b1e21]"
-              >
-                <div className="flex items-center gap-2">
-                  <img
-                    src={getChainImage({ chainId: chainMeta.id, source: ChainTokenSource.Local })}
-                    alt={chainMeta.name}
-                    className="w-5 h-5"
-                  />
-                  <span className="dark:text-white text-sm font-medium">{chainMeta.name}</span>
-                </div>
-                <Input
-                  type="number"
+  <Label className="font-semibold text-[16px]">Total Supply</Label>
+)}
+{selectedChains && selectedChains.map((id) => {
+  const chainMeta = configLaunchPadsChains.find((c) => c.id.toString() === id.toString());
+  if (!chainMeta) return null;
+  return (
+    <div
+      key={id}
+      className="flex items-center justify-between p-3 rounded-md mb-2 bg-[#1b1e21]"
+    >
+      <div className="flex items-center gap-2">
+        <img
+          src={getChainImage({ chainId: chainMeta.id, source: ChainTokenSource.Local })}
+          alt={chainMeta.name}
+          className="w-5 h-5"
+        />
+        <span className="dark:text-white text-sm font-medium">{chainMeta.name}</span>
+      </div>
+      <Input
+        type="number"
                   value={totalSupply[id] || ''}
-                  onChange={(e) => {
+        onChange={(e) => {
                     const newTotalSupply = {
                       ...totalSupply,
                       [id]: e.target.value,
@@ -153,13 +153,13 @@ useEffect(() => {
                       ...watch('chainFields'),
                       [id]: { totalSupply: e.target.value },
                     });
-                  }}
-                  placeholder="0.0"
-                  className="w-[120px] text-right bg-transparent border-none dark:text-white placeholder-gray-500 appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                />
-              </div>
-            );
-          })}
+        }}
+        placeholder="0.0"
+        className="w-[120px] text-right bg-transparent border-none dark:text-white placeholder-gray-500 appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+      />
+    </div>
+  );
+})}
           {errors.chainFields && (
             <p className="text-red-500 text-sm">
               {Object.entries(errors.chainFields).map(([chainId, error]) => (

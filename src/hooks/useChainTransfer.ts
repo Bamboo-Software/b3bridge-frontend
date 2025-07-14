@@ -50,12 +50,14 @@ export function useChainTransfer() {
         if (!txHash) {
           return { error: "Transaction failed" };
         }
-
+        console.log(txHash,'txHash')
         // Wait for transaction confirmation synchronously
         const receipt = await publicClient.waitForTransactionReceipt({
           hash: txHash,
           confirmations: 1, // Wait for at least 1 confirmation
         });
+        console.log(receipt,'receipt')
+
 
         if (receipt.status === 'reverted') {
           return { error: "Transaction reverted" };

@@ -228,6 +228,7 @@ const { isLoading: isTxPending } = useTransaction({ hash: currentTxHash });
     fromChain: IChainInfo,
   ): Promise<void> => {
     try {
+      console.log(`🚀 ~ useLocalBridge ~ functionName: "burnTokenVL",:`, "burnTokenVL",)
       setBridgeState({ isBridging: true, error: null });
       const amountInUnits = parseUnits(amount, decimals || 18);
       const result = await writeContractAsync({
