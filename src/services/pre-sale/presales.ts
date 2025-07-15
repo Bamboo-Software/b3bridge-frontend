@@ -23,7 +23,7 @@ export const preSaleApi = createApi({
         method: "PUT",
         body,
       }),
-      invalidatesTags: (result, error, arg) => [
+      invalidatesTags: (__, _, arg) => [
         'Presale',
         'PresaleExplore',
         { type: 'PresaleDetail', id: arg.presaleId }
@@ -47,7 +47,7 @@ export const preSaleApi = createApi({
         url: `/presales/${params.presaleId}`,
         method: "GET",
       }),
-      providesTags: (result, error, arg) => [
+      providesTags: (__, _, arg) => [
         { type: 'PresaleDetail', id: arg.presaleId }
       ],
     }),
@@ -65,7 +65,7 @@ export const preSaleApi = createApi({
         method: "POST",
         body
       }),
-      invalidatesTags: (result, error, arg) => [
+      invalidatesTags: (__, _, arg) => [
         'Presale',
         { type: 'PresaleDetail', id: arg.presaleId }
       ],
@@ -75,7 +75,7 @@ export const preSaleApi = createApi({
         url: `/presales/${params.presaleId}/finalize`,
         method: "POST",
       }),
-      invalidatesTags: (result, error, arg) => [
+      invalidatesTags: (__, _, arg) => [
         'Presale',
         { type: 'PresaleDetail', id: arg.presaleId }
       ],
