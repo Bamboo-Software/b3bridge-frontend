@@ -18,7 +18,6 @@ import { preSaleTokenManagementApi } from '@/services/pre-sale/pre-sale-token';
 import { appConfig } from '@/utils/constants/app';
 import { ConfirmModal } from '@/pages/common/ConfirmModal';
 import { preSaleApi } from '@/services/pre-sale/presales';
-import { DeploymentStatusModal } from './components/DeploymentStatusModal';
 import { useAccount } from 'wagmi';
 import { isEvmChain } from '@/utils/blockchain/chain';
 import { useNavigate } from 'react-router-dom';
@@ -118,15 +117,15 @@ export default function CreateLaunchpadPage() {
         whitelistEnabled: false,
         publicStartTime: validatedData.startTime?.toISOString() || undefined,
         chainConfigurations,
-        website: validatedData.website,
-        facebook: validatedData.facebook,
-        x: validatedData.x,
-        github: validatedData.github,
-        telegram: validatedData.telegram,
-        instagram: validatedData.instagram,
-        discord: validatedData.discord,
-        reddit: validatedData.reddit,
-        youtube: validatedData.youtube,
+        websiteURL: validatedData.website,
+        facebookURL: validatedData.facebook,
+        xURL: validatedData.x,
+        githubURL: validatedData.github,
+        telegramURL: validatedData.telegram,
+        instagramURL: validatedData.instagram,
+        discordURL: validatedData.discord,
+        redditURL: validatedData.reddit,
+        youtubeURL: validatedData.youtube,
       };
 
       const result = (await createPreSales(presaleData)) as any;
@@ -346,14 +345,14 @@ export default function CreateLaunchpadPage() {
   const { token } = useAuthToken();
   // Auto-refetch when wallet connects
   useEffect(() => {
-    if (token && isConnected) {
+    if (token) {
       const timer = setTimeout(() => {
         refetchAll();
       }, 100);
 
       return () => clearTimeout(timer);
     }
-  }, [token, isConnected, refetchAll]);
+  }, [token, refetchAll]);
 
   // Check wallet connection first
   if (!isConnected || !token) {
@@ -394,7 +393,14 @@ export default function CreateLaunchpadPage() {
             />
           )}
           {step === LaunchpadStep.Social && <Step2Social />}
-          {step === LaunchpadStep.Overview && <Step3Overview />}
+          {step === LaunchpadStep.Overview && <Step3Overview 
+            modalState={{
+              showDeploymentModal,
+              setShowDeploymentModal
+            }}
+            handleContinueCreate={handleContinueCreate}
+            handleSeeDetail={handleSeeDetail}
+            />}
 
           {/* Actions */}
           <div className='flex gap-2 mt-5'>
@@ -484,14 +490,6 @@ export default function CreateLaunchpadPage() {
           loading={processing}
           onConfirm={handleConfirmAction}
           onCancel={handleCancelAction}
-        />
-
-        <DeploymentStatusModal
-          open={showDeploymentModal}
-          onOpenChange={setShowDeploymentModal}
-          presaleId={presaleId}
-          onContinueCreate={handleContinueCreate}
-          onSeeDetail={handleSeeDetail}
         />
       </form>
     </FormProvider>

@@ -7,7 +7,7 @@ import type {
   ContributorRow,
   PresaleDetailResponse,
 } from '@/utils/interfaces/launchpad';
-import { useAccount } from 'wagmi';
+import { useAccount, useSwitchChain } from 'wagmi';
 import { WalletConnectModal } from '@/pages/common/ConnectWalletModal';
 import { PresaleStatus } from '@/utils/enums/presale';
 import { preSaleAuthApi } from '@/services/pre-sale/pre-sale-auth';
@@ -67,13 +67,12 @@ export function LaunchpadSideBar({
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const hasRefetchedRef = useRef(false);
+  const { switchChainAsync } = useSwitchChain();
 
   const { useGetMeQuery } = preSaleAuthApi;
   const { useFinalizePreSalesMutation, useCancelPreSalesMutation } = preSaleApi;
   const {
     data: userData,
-    isLoading: userLoading,
-    isError: userError,
     refetch: refetchGetMe,
   } = useGetMeQuery({});
   const { isConnected, address } = useAccount();
@@ -85,14 +84,14 @@ export function LaunchpadSideBar({
   const { token } = useAuthToken();
 
    useEffect(() => {
-      if (token && isConnected) {
+      if (token) {
         const timer = setTimeout(() => {
           refetchGetMe();
         }, 100);
   
         return () => clearTimeout(timer);
       }
-    }, [token, isConnected]);
+    }, [token]);
 
   const contracts = useMemo(
     () =>
@@ -106,22 +105,16 @@ export function LaunchpadSideBar({
 
   const {
     data: targetAmounts,
-    loading: targetLoading,
-    error: targetError,
     refetch: refetchTargetAmounts,
   } = useMultipleCampaignTargetAmount(contracts);
   const {
     data: totalRaisedAmounts,
-    loading: raisedLoading,
-    error: raisedError,
     refetch: refetchTotalRaised,
   } = useMultipleCampaignTotalRaised(contracts);
 
   // Check claimed status for all chains
   const {
     data: userClaimedStatus,
-    loading: claimedLoading,
-    error: claimedError,
     refetch: refetchClaimedStatus,
   } = useMultipleUserHasClaimed(contracts, address);
 
@@ -135,8 +128,7 @@ export function LaunchpadSideBar({
   
   // Check if all chains have reached their target
   const allChainsReachedTarget = useMemo(() => {
-    if (!targetAmounts || !totalRaisedAmounts) return false;
-    
+    if (!targetAmounts || !targetAmounts?.length || !totalRaisedAmounts || !totalRaisedAmounts?.length) return false;
     return targetAmounts.every((target, index) => {
       if (!target || !totalRaisedAmounts[index]) return false;
       return totalRaisedAmounts[index]! >= target;
@@ -159,7 +151,6 @@ export function LaunchpadSideBar({
     const startTime = new Date(launchpad.startTime).getTime();
     return currentTime >= startTime;
   }, [launchpad.startTime, currentTime]);
-
   const hasEnded = useMemo(() => {
     if (!launchpad.endTime) return false;
     const endTime = new Date(launchpad.endTime).getTime();
@@ -237,15 +228,18 @@ export function LaunchpadSideBar({
       if (!chainData?.contractAbi) {
         throw new Error('Contract ABI not found for this chain');
       }
+      await switchChainAsync({
+        chainId: Number(chain.chainId),
+      })
 
-      const hash = await claimTokensAsync(
+      await claimTokensAsync(
         chain.contractAddress as `0x${string}`,
         chainData.contractAbi,
         Number(chain.chainId)
       );
 
       toast.success(
-        `Successfully claimed tokens from ${chain.chainName}! Transaction: ${hash.slice(0, 10)}...`
+        `Successfully claimed tokens`
       );
 
       // Reload data after successful claim
@@ -363,17 +357,33 @@ export function LaunchpadSideBar({
           action: null,
         };
       case PresaleStatus.PENDING:
-        return {
-          title: 'Presale Starts In',
-          countdown: true,
-          showInputs: false,
-          showChainButtons: false,
-          showClaimButtons: false,
-          showMainButton: true,
-          buttonText: 'Coming Soon',
-          buttonEnabled: false,
-          action: null,
-        };
+        // Check if start time hasn't arrived yet
+        if (!hasStarted) {
+          return {
+            title: 'Presale Starts In',
+            countdown: true,
+            showInputs: false,
+            showChainButtons: false,
+            showClaimButtons: false,
+            showMainButton: true,
+            buttonText: 'Coming Soon',
+            buttonEnabled: false,
+            action: null,
+          };
+        } else {
+          // Start time has arrived but status is still PENDING
+          return {
+            title: 'Presale Starting...',
+            countdown: false,
+            showInputs: false,
+            showChainButtons: false,
+            showClaimButtons: false,
+            showMainButton: true,
+            buttonText: 'Coming Soon',
+            buttonEnabled: false,
+            action: null,
+          };
+        }
       default:
         return {
           title: 'Presale',
@@ -390,10 +400,10 @@ export function LaunchpadSideBar({
   };
 
   const getTargetDate = () => {
-    if (launchpad.status === PresaleStatus.PENDING) {
+    if (launchpad.status === PresaleStatus.PENDING || !hasStarted) {
       return launchpad.startTime;
-    } else if (launchpad.status === PresaleStatus.ACTIVE) {
-      return hasStarted ? launchpad.endTime : launchpad.startTime;
+    } else if (launchpad.status === PresaleStatus.ACTIVE && hasStarted) {
+      return launchpad.endTime;
     }
     return null;
   };
@@ -472,14 +482,14 @@ export function LaunchpadSideBar({
 
     if (amountNum < minContrib) {
       toast.error(
-        `Amount must be at least ${minContrib} ${chain.paymentTokenSymbol}`
+        `Amount must be at least ${minContrib}`
       );
       return;
     }
 
     if (amountNum > maxContrib) {
       toast.error(
-        `Amount cannot exceed ${maxContrib} ${chain.paymentTokenSymbol}`
+        `Amount cannot exceed ${maxContrib}`
       );
       return;
     }
@@ -495,6 +505,11 @@ export function LaunchpadSideBar({
       if (!chainData?.contractAbi) {
         throw new Error('Contract ABI not found for this chain');
       }
+
+      await switchChainAsync({
+        chainId: Number(chain.chainId),
+      })
+
       await contribute(
         chain.contractAddress as `0x${string}`,
         chainData.contractAbi,
@@ -504,7 +519,7 @@ export function LaunchpadSideBar({
       );
 
       toast.success(
-        `Successfully contributed ${amount} ${chain.paymentTokenSymbol}`
+        `Successfully contributed ${amount}`
       );
 
       setAmounts((prev) => ({
@@ -563,13 +578,12 @@ export function LaunchpadSideBar({
     setIsWalletModalOpen(false);
   };
 
-  // Main countdown effect
+  // Main countdown effect - updated to handle PENDING status countdown
   useEffect(() => {
     clearCountdownInterval();
     
     setCountdownCompleted(false);
     hasRefetchedRef.current = false;
-
     if (launchpad.status === PresaleStatus.CANCELLED || 
         launchpad.status === PresaleStatus.FINALIZED ||
         allChainsReachedTarget) {
@@ -582,6 +596,7 @@ export function LaunchpadSideBar({
 
     const now = new Date().getTime();
     const target = new Date(targetDate).getTime();
+
     
     if (target <= now) {
       setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -608,43 +623,6 @@ export function LaunchpadSideBar({
   }, []);
 
   const statusConfig = getStatusDisplay();
-
-  if (userLoading) {
-    return (
-      <div className='flex items-start justify-start min-h-[200px]'>
-        <span className='text-white'>Loading user info...</span>
-      </div>
-    );
-  }
-
-  if (userError) {
-    return (
-      <div className='flex items-start justify-start min-h-[200px]'>
-        <span className='text-red-500'>Failed to load user info.</span>
-      </div>
-    );
-  }
-
-  if (targetError || raisedError || claimedError) {
-    return (
-      <div className='flex items-start justify-start min-h-[200px]'>
-        <span className='text-red-500'>
-          Failed to load campaign data from blockchain.
-        </span>
-      </div>
-    );
-  }
-
-  if (targetLoading || raisedLoading || claimedLoading) {
-    return (
-      <div className='flex items-start justify-start min-h-[200px]'>
-        <div className='flex items-center gap-2'>
-          <RefreshCw className='w-4 h-4 animate-spin text-white' />
-          <span className='text-white'>Loading campaign data...</span>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <>

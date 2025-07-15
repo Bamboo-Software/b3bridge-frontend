@@ -2,6 +2,7 @@
 import type { Abi, Address } from 'viem';
 import type { Category, DeploymentStatus, PaymentStatus, PresaleStatus } from '../enums/presale';
 import type { ChainType } from '../enums/chain';
+import type { ITokenOFT } from './token';
 
 // raw data from contract
 export interface IContributorInfo {
@@ -61,7 +62,7 @@ export interface PresaleSupportedChain {
   id: string;
   presaleId: string;
   oftTokenId: string;
-  oftToken: any;
+  oftToken: ITokenOFT;
   chainType: ChainType;
   chainId: string;
   contractAddress: string;
@@ -139,6 +140,14 @@ export interface PresaleDetailResponse {
   createdAt: string;
   updatedAt: string;
   presaleChains: PresaleSupportedChain[];
+  discordURL?: string,
+  githubURL?: string,
+  instagramURL?: string,
+  redditURL?: string,
+  telegramURL?: string,
+  youtubeURL?: string,
+  xURL?: string
+  websiteURL?:string
 }
 
 // Presale list item interface (simplified for list view)
@@ -166,22 +175,23 @@ export interface PresaleListResponse {
   items: PresaleListItem[];
 }
 
-
+// Chain payment status interface
+export interface PresaleChainPaymentStatus {
+  chainId: string;
+  chainName: string;
+  paymentStatus: PaymentStatus;
+  readyForDeployment: boolean;
+  paymentProgress: number;
+  requiredAmount: string;
+  amount: string;
+}
 
 // Presale Component internal state interfaces
 export interface PresalePaymentVerificationStatus {
   isVerified: boolean;
   isVerifying: boolean;
   allChainsReady: boolean;
-  chainsStatus: Array<{
-    chainId: string;
-    chainName: string;
-    paymentStatus: PaymentStatus;
-    readyForDeployment: boolean;
-    paymentProgress: number;
-    requiredAmount: string;
-    amount: string;
-  }>;
+  chainsStatus: PresaleChainPaymentStatus[];
   error?: string;
 }
 

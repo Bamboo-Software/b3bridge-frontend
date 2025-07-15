@@ -26,14 +26,14 @@ export const ChainProgress: React.FC<ChainProgressProps> = ({
     parseInt(chain.chainId)
   );
 
- const totalRaised = parseFloat(chain.totalRaised);
-const hardCap = parseFloat(chain.hardCap);
-const softCap = parseFloat(chain.softCap);
+ const totalRaised = parseFloat(chain.totalRaised) / 10 ** (tokenData.decimals || 18);
+  const hardCap = parseFloat(chain.hardCap);
+  const softCap = parseFloat(chain.softCap);
 
-const progress =
+  const progress =
   hardCap > 0
-    ? (totalRaised * 100) / hardCap
-    : 0;
+  ? (totalRaised * 100) / hardCap
+  : 0;
 
 const totalRaisedFormatted = formatNumber(totalRaised);
 const hardCapFormatted = formatNumber(hardCap);

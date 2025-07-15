@@ -57,6 +57,8 @@ export interface ITokenOFT {
   minGasToTransfer: number;
   createdAt: string;
   updatedAt: string;
+  tokenAddress?:string;
+  contractAddress?: string;
 }
 export interface CreateTokenPayload {
   name: string;

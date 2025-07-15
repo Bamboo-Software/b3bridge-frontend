@@ -61,10 +61,6 @@ const ConfirmCreateToken: React.FC<ConfirmCreateTokenProps> = ({ next }) => {
       setProcessingChains(prev => new Set(prev).add(chainId));
 
       await switchChainAsync({ chainId })
-        .then(() => console.log(`Switched to chain ${chainId} successfully`))
-        .catch((error) => {
-          throw new Error(`Failed to switch chain ${chainId}: ${error.message}`);
-        });
 
       setValue(
         `chainFields.${chainId}.transactions.native.payStatus`,TransactionStatus.PENDING,{ shouldValidate: true, shouldDirty: true }

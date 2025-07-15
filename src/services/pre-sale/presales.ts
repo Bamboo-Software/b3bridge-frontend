@@ -17,6 +17,18 @@ export const preSaleApi = createApi({
       }),
       invalidatesTags: ['Presale'],
     }),
+    updatePreSales: builder.mutation({
+      query: ({ presaleId, ...body }) => ({
+        url: `/presales/${presaleId}`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: (result, error, arg) => [
+        'Presale',
+        'PresaleExplore',
+        { type: 'PresaleDetail', id: arg.presaleId }
+      ],
+    }),
     verifyPaymentPreSales: builder.query({
       query: (params) => ({
         url: `/presales/${params.presaleId}/verify-payment`,

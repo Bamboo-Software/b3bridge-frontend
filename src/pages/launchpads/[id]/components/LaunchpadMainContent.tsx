@@ -58,6 +58,29 @@ export const LaunchpadMainContent = ({
     return supportedChains.find((c) => c.chainId === chainId);
   };
 
+  // Social links mapping
+  const socialLinks = [
+    {
+      url: launchpad.githubURL,
+      icon: GithubIcon,
+      label: 'GitHub'
+    },
+    {
+      url: launchpad.telegramURL,
+      icon: TelegramIcon,
+      label: 'Telegram'
+    },
+    {
+      url: launchpad.xURL,
+      icon: XIcon,
+      label: 'X (Twitter)'
+    },
+    {
+      url: launchpad.websiteURL,
+      icon: GlobeIcon,
+      label: 'Website'
+    }
+  ].filter(link => link.url && link.url.trim() !== ''); // Only show links that have URLs
   return (
     <div className='lg:col-span-2 space-y-6'>
       {/* Header */}
@@ -93,13 +116,30 @@ export const LaunchpadMainContent = ({
             {launchpad.title}
           </h1>
 
-          {/* Social links (mock, chưa có field trong interface) */}
-          <div className='flex gap-3 justify-center pb-4 border-b border-[color:var(--gray-charcoal)]'>
-            <Image src={GithubIcon} alt='social icon' />
-            <Image src={TelegramIcon} alt='social icon' />
-            <Image src={XIcon} alt='social icon' />
-            <Image src={GlobeIcon} alt='social icon' />
-          </div>
+          {/* Social links - only show if there are any links */}
+          {socialLinks.length > 0 && (
+            <div className='flex gap-3 justify-center pb-4 border-b border-[color:var(--gray-charcoal)]'>
+              {socialLinks.map((social, index) => (
+                <TooltipProvider key={index}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <a
+                        href={social.url}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        className='hover:opacity-70 transition-opacity'
+                      >
+                        <Image src={social.icon} alt={`${social.label} icon`} />
+                      </a>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <span>{social.label}</span>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ))}
+            </div>
+          )}
 
           {/* About */}
           <div className='mt-4 mb-6'>

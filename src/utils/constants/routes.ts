@@ -10,4 +10,6 @@ export const routesPaths = {
     CREATE_LAUNCHPAD: createPath('/launchpads/create'),
     LAUNCHPAD_DETAIL: (id: string) => createPath(`/launchpads/${id}`),
     LAUNCHPAD_DETAIL_PATTERN: createPath('/launchpads/:id'),
+    LAUNCHPAD_EDIT: (id: string) => createPath(`/launchpads/${id}/edit`),
+    LAUNCHPAD_EDIT_PATTERN: createPath('/launchpads/:id/edit'),
 } as const;

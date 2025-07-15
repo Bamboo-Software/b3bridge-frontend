@@ -308,7 +308,7 @@ export function DeployTokenModal({
           setDeploymentState(prev => ({
             ...prev,
             tokensDeployment: prev.tokensDeployment.map(token => {
-              const deployedToken = deploymentData.find(d => d.tokenId === token.tokenId);
+              const deployedToken = deploymentData.find(d => d.id === token.tokenId);
               return deployedToken ? {
                 ...token,
                 deploying: false,
@@ -432,7 +432,6 @@ export function DeployTokenModal({
   };
 
   const currentStep = getCurrentStep();
-
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="!max-w-4xl bg-[var(--gray-night)] max-h-[90%] overflow-y-auto text-white">

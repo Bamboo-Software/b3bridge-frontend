@@ -22,6 +22,7 @@ const LaunchpadCard: React.FC<LaunchpadCardProps> = ({
   const navigate = useNavigate();
   
   const handleViewClick = () => {
+    if(presale.status === PresaleStatus.DRAFT) return navigate(routesPaths.LAUNCHPAD_EDIT(presale.id));
     navigate(routesPaths.LAUNCHPAD_DETAIL(presale.id));
   };
   
@@ -69,7 +70,7 @@ const targetDate = useMemo(() => {
   const primaryChain = presale.presaleChains?.[0];
 
   return (
-    <div className='bg-[color:var(--gray-night)] border border-[color:var(--gray-charcoal)] rounded-2xl p-6 hover:border-primary/30 transition-colors h-fit'>
+    <div className='bg-[color:var(--gray-night)] border border-[color:var(--gray-charcoal)] rounded-2xl p-6 hover:border-primary/30 transition-colors h-full'>
       {/* Header */}
       <div className='flex items-start justify-between mb-6'>
         <div className='flex w-full gap-3 items-start justify-between'>
@@ -88,7 +89,7 @@ const targetDate = useMemo(() => {
         </div>
         {/* {getStatusBadge(presale.status)} */}
       </div>
-      <div className='min-h-[65px]'>
+      <div>
       {/* Description */}
       <p className='text-sm text-muted-foreground mb-4 line-clamp-2'>
         {presale.description}
@@ -163,6 +164,7 @@ const targetDate = useMemo(() => {
             </span>
           )}
         </div>
+        
         <Button
           onClick={handleViewClick}
           className=' bg-[linear-gradient(45deg,_var(--blue-primary),_var(--primary))]

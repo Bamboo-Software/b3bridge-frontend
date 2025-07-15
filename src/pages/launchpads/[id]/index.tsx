@@ -24,13 +24,13 @@ export default function LaunchpadDetailPage() {
   // API hooks
   const { useGetSupportedChainPreSalesQuery } = preSaleGeneralApi;
   const { useGetDetailPreSalesQuery } = preSaleApi;
-  
+
   const {
     data: supportedChains = { data: [] },
     isLoading: isChainsLoading,
     refetch: refetchSupportedChains,
   } = useGetSupportedChainPreSalesQuery({});
-  
+
   const {
     data: launchpadDetail,
     isLoading: isLaunchpadLoading,
@@ -63,29 +63,34 @@ export default function LaunchpadDetailPage() {
   );
 
   // Get contributors data from blockchain
-  const { data: contributorsByChain = [], loading: contributorsLoading, refetch: refetchContributors } =
-    useMultipleCampaignContributors(
-      chains.map(({ contractAddress, chainId,  abi}: {
+  const {
+    data: contributorsByChain = [],
+    refetch: refetchContributors,
+  } = useMultipleCampaignContributors(
+    chains.map(
+      ({
+        contractAddress,
+        chainId,
+        abi,
+      }: {
         contractAddress: string;
         chainId: number;
         abi: Abi;
       }) => ({
         contractAddress: contractAddress as `0x${string}`,
         chainId,
-        abi
-      }))
-    );
+        abi,
+      })
+    )
+  )
 
   // Process contributors with proper token decimals
-  const { 
-    contributors: mergedContributors, 
-    loading: contributorsProcessing,
-    error: contributorsError 
-  } = useProcessedContributors({
-    chains,
-    contributorsByChain,
-    presaleChains: launchpad?.presaleChains || []
-  });
+  const { contributors: mergedContributors, } =
+    useProcessedContributors({
+      chains,
+      contributorsByChain,
+      presaleChains: launchpad?.presaleChains || [],
+    });
 
   // Refetch all data
   const refetchAll = useCallback(() => {
@@ -95,14 +100,14 @@ export default function LaunchpadDetailPage() {
 
   // Auto-refetch when wallet connects
   useEffect(() => {
-    if (token && isConnected) {
+    if (token) {
       const timer = setTimeout(() => {
         refetchAll();
       }, 100);
 
       return () => clearTimeout(timer);
     }
-  }, [token, isConnected, refetchAll]);
+  }, [token, refetchAll]);
 
   // Check wallet connection first
   if (!isConnected || !token) {
@@ -144,9 +149,7 @@ export default function LaunchpadDetailPage() {
                 </svg>
               </div>
             </div>
-            <h1 className='text-3xl font-bold mb-4'>
-              Launchpad Not Found
-            </h1>
+            <h1 className='text-3xl font-bold mb-4'>Launchpad Not Found</h1>
             <p className='text-lg text-gray-600 mb-8 max-w-md'>
               The launchpad you're looking for doesn't exist or is not yet
               available for public viewing.
@@ -163,18 +166,11 @@ export default function LaunchpadDetailPage() {
     );
   }
 
-  // Show error if contributors processing failed
-  if (contributorsError) {
-    console.error('Contributors processing error:', contributorsError);
-  }
-
   // Loading state
   if (
     !launchpad ||
     isChainsLoading ||
-    isLaunchpadLoading ||
-    contributorsLoading ||
-    contributorsProcessing
+    isLaunchpadLoading
   ) {
     return (
       <div className='flex items-center justify-center min-h-screen'>
@@ -185,6 +181,8 @@ export default function LaunchpadDetailPage() {
       </div>
     );
   }
+
+ 
 
   return (
     <div className='min-h-screen bg-background'>

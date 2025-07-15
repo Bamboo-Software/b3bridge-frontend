@@ -10,8 +10,9 @@ import CreateTokenPage from '@/pages/create-token';
 import CreateLaunchpadPage from '@/pages/launchpads/create';
 import LaunchpadsPage from '@/pages/launchpads';
 import LaunchpadDetailPage from '@/pages/launchpads/[id]';
+import EditLaunchpadPage from '@/pages/launchpads/edit';
 
-const { ROOT,CREATE_TOKEN,CREATE_LAUNCHPAD, LAUNCHPAD, LAUNCHPAD_DETAIL_PATTERN } = routesPaths;
+const { ROOT,CREATE_TOKEN,CREATE_LAUNCHPAD, LAUNCHPAD, LAUNCHPAD_DETAIL_PATTERN, LAUNCHPAD_EDIT_PATTERN } = routesPaths;
 
 const routes = createBrowserRouter([
   {
@@ -24,6 +25,7 @@ const routes = createBrowserRouter([
       { path:CREATE_LAUNCHPAD, element: <CreateLaunchpadPage /> },
       { path:LAUNCHPAD, element: <LaunchpadsPage /> },
       { path:LAUNCHPAD_DETAIL_PATTERN, element: <LaunchpadDetailPage /> },
+      { path:LAUNCHPAD_EDIT_PATTERN, element: <EditLaunchpadPage /> },
     ],
   },
 
