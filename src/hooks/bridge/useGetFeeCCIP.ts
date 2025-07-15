@@ -109,7 +109,6 @@ export function useGetFeeCCIP(params: IBridgeParams) {
     isNative,
     actionType,
     parsedAmount,
-    toToken.address,
     seiTokenId,
     receiver,
     toChain?.id,

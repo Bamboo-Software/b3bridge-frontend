@@ -128,13 +128,20 @@ const { isLoading: isTxPending } = useTransaction({ hash: currentTxHash });
         const amountTokenERC20 = parseUnits(amount, decimalsToken);
         await approveToken(tokenAddress as `0x${string}`, blockChainConfig.ethereumBridgeAddress, amount, decimalsToken, address as `0x${string}`, walletClient);
         const fee = parseUnits(formatUnits(ccipFee, decimals), decimals);
-        const result = await writeContractAsync({
-          address: blockChainConfig.ethereumBridgeAddress,
-          abi: blockChainConfig.ethereumBridgeAbi,
-          functionName: 'lockTokenCCIP',
-          args: [tokenAddress, BigInt(toChainSelector), blockChainConfig.seiBridgeAddress, receiver, amountTokenERC20],
-          value: fee,
-        });
+        const adjustedFee = (fee * 124n) / 100n;
+          const result = await writeContractAsync({
+            address: blockChainConfig.ethereumBridgeAddress,
+            abi: blockChainConfig.ethereumBridgeAbi,
+            functionName: 'lockTokenCCIP',
+            args: [
+              tokenAddress,
+              BigInt(toChainSelector),
+              blockChainConfig.seiBridgeAddress,
+              receiver,
+              amountTokenERC20
+            ],
+            value: adjustedFee,
+          });
         const receipt = await waitForTransactionReceipt(walletClient!, {
           hash: result,
         })
@@ -182,16 +189,14 @@ const { isLoading: isTxPending } = useTransaction({ hash: currentTxHash });
         args: [toToken.address],
         chainId: toChain.id,
       });
-     
 
       await approveToken(tokenAddress as `0x${string}`, blockChainConfig.seiBridgeAddress as `0x${string}`, amount, decimalsToken, address as `0x${string}`,walletClient);
-     
       const result = await writeContractAsync({
         address: blockChainConfig.seiBridgeAddress as `0x${string}`,
         abi: blockChainConfig.seiBridgeAbi,
         functionName: "burnTokenCCIP",
         args: [tokenId, amountTokenERC20],
-        value: ccipFee,
+        value: (ccipFee * 124n) / 100n,
       });
       const receipt= await waitForTransactionReceipt(walletClient!, { hash: result });
       setBridgeState({ currentTxHash: result, isBridging: false });

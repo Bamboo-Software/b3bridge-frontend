@@ -164,24 +164,28 @@ const targetDate = useMemo(() => {
             </span>
           )}
         </div>
-        
+
         <Button
           onClick={handleViewClick}
-          className=' bg-[linear-gradient(45deg,_var(--blue-primary),_var(--primary))]
-        shadow-[0_0px_10px_0_var(--blue-primary)]
-        border-none
-        rounded-lg
-        cursor-pointer
-        hover:opacity-90
-        hover:shadow-[0_0px_16px_0_var(--blue-primary)] text-foreground'
+          className={` 
+            ${presale.status === PresaleStatus.DRAFT 
+              ? 'bg-[linear-gradient(45deg,_#FF6B6B,_#FF8E53)] shadow-[0_0px_10px_0_#FF6B6B] hover:shadow-[0_0px_16px_0_#FF6B6B]'
+              : 'bg-[linear-gradient(45deg,_var(--blue-primary),_var(--primary))] shadow-[0_0px_10px_0_var(--blue-primary)] hover:shadow-[0_0px_16px_0_var(--blue-primary)]'
+            }
+            border-none
+            rounded-lg
+            cursor-pointer
+            hover:opacity-90
+            text-foreground
+          `}
           size='sm'
         >
-          View
+          {presale.status === PresaleStatus.DRAFT ? "Edit" : "View"}
         </Button>
-      </div>
-    </div>
-  );
-};
+              </div>
+            </div>
+          );
+        };
 
 interface LaunchpadGridProps {
   presales: PresaleListItem[];
