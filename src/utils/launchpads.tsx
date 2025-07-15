@@ -8,7 +8,7 @@ export const getStatusBadge = (status: string) => {
           ● Pending
         </Badge>
       );
-    case 'live':
+    case 'Active':
       return (
         <Badge className='bg-[color:var(--green-deep)] text-[color:var(--green-mint)] border-none rounded-full px-3 py-1 text-xs font-medium'>
           ● Sale live

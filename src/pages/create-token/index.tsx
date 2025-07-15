@@ -77,7 +77,7 @@ const handleCreateToken = async () => {
     targetChains: data.targetChains,
     tokenType: "OFT",
     totalSupply,
-    logo: typeof data.logoUrl === "string" ? data.logoUrl : "",
+    logoUrl: typeof data.logoUrl === "string" ? data.logoUrl : "",
   };
 
   try {

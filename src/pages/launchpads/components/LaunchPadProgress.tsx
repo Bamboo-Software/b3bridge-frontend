@@ -21,7 +21,6 @@ export const ChainProgress: React.FC<ChainProgressProps> = ({
   chain,
   getChainLogo,
 }) => {
-  console.log("🚀 ~ chain:", chain)
   const { tokenData, loading } = useTokenData(
     chain.paymentTokenAddress || ZeroAddress,
     parseInt(chain.chainId)
@@ -63,7 +62,7 @@ const softCapFormatted = formatNumber(softCap);
       
       <div className='flex justify-between text-xs text-muted-foreground'>
         <span>
-          {totalRaisedFormatted} {loading ? '...' : tokenData.symbol}
+          {softCapFormatted} {loading ? '...' : tokenData.symbol}
         </span>
         <span>
           {hardCapFormatted} {loading ? '...' : tokenData.symbol}

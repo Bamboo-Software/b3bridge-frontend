@@ -58,7 +58,6 @@ const ConfirmCreateToken: React.FC<ConfirmCreateTokenProps> = ({ next }) => {
     }
 
     try {
-      console.log(`Starting payment for chain ${chainId}`);
       setProcessingChains(prev => new Set(prev).add(chainId));
 
       await switchChainAsync({ chainId })

@@ -74,7 +74,7 @@ export interface CreateTokenPayload {
   targetChains: string[];
   tokenType: "OFT";
     totalSupply: string;
-  logo: string;
+  logoUrl: string;
   chainFields?: Record<
     string,
     {

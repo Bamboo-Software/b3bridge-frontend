@@ -25,7 +25,6 @@ const LaunchpadCard: React.FC<LaunchpadCardProps> = ({
     navigate(routesPaths.LAUNCHPAD_DETAIL(presale.id));
   };
   
-  console.log("🚀 ~ presale:", presale.status)
   // Format time remaining
   const getTimeRemaining = () => {
     const now = new Date();
@@ -63,12 +62,11 @@ const targetDate = useMemo(() => {
   // Get chain logo from supportedChains API data by chainId
   const getChainLogo = (chainId: string) => {
     const chainInfo = supportedChains.find(chain => chain.chainId === chainId);
-    console.log("🚀 ~ getChainLogo ~ chainInfo:", chainInfo)
     return chainInfo?.icon || '/images/default-coin-logo.jpg';
   };
 
   // Get primary token info from first chain
-  const primaryChain = presale.presaleChains[0];
+  const primaryChain = presale.presaleChains?.[0];
 
   return (
     <div className='bg-[color:var(--gray-night)] border border-[color:var(--gray-charcoal)] rounded-2xl p-6 hover:border-primary/30 transition-colors h-fit'>
@@ -77,7 +75,7 @@ const targetDate = useMemo(() => {
         <div className='flex w-full gap-3 items-start justify-between'>
           <div className="flex flex-col gap-2">
             <Image
-              src={primaryChain?.oftToken.logoUrl || '/images/default-coin-logo.jpg'}
+              src={primaryChain?.oftToken?.logoUrl || '/images/default-coin-logo.jpg'}
               fallbackSrc='/images/default-coin-logo.jpg'
               alt={presale.title}
               className='w-12 h-12 rounded-full'
@@ -112,8 +110,8 @@ const targetDate = useMemo(() => {
       </div>
 
       {/* Chains Progress - Sử dụng component ChainProgress */}
-      <div className='space-y-3 mb-4'>
-        {presale.presaleChains.map((chain) => (
+      <div className='space-y-3 mb-4 min-h-[160px] flex flex-col justify-start'>
+        {presale?.presaleChains?.map((chain) => (
           <ChainProgress
             key={chain.id}
             chain={{

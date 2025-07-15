@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { parseAbiItem } from "viem";
 import { watchContractEvent } from "@wagmi/core";
-import { blockChainConfig } from "@/utils/constants/chain";
+import { blockChainConfig, configChains } from "@/utils/constants/chain";
 import { wagmiConfig } from '@/utils/constants/wallet/wagmi';
 
 export const useWatchUnlockedTokenVL = ({
@@ -17,7 +17,7 @@ export const useWatchUnlockedTokenVL = ({
 
     const unwatch = watchContractEvent(wagmiConfig, {
       address: blockChainConfig.ethereumBridgeAddress,
-      chainId: Number(import.meta.env.VITE_ETH_CHAIN_ID),
+      chainId:Number(configChains?.[0].id || import.meta.env.VITE_ETH_CHAIN_ID),
       abi: [parseAbiItem("event UnlockedTokenVL(address indexed recipientAddr, uint256 amount)")],
       eventName: "UnlockedTokenVL",
       onLogs: (logs) => {

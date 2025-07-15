@@ -2,7 +2,6 @@ import { NavLink } from 'react-router-dom';
 import {
   ChevronRight,
   ChevronLeft,
-  HomeIcon,
   SquareArrowUpIcon,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -16,7 +15,7 @@ interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
   onCollapse?: (collapsed: boolean) => void;
 }
 
-const { ROOT, BRIDGE, CREATE_TOKEN, LAUNCHPAD, CREATE_LAUNCHPAD } = routesPaths;
+const { BRIDGE, CREATE_TOKEN, LAUNCHPAD, CREATE_LAUNCHPAD } = routesPaths;
 
 export function Sidebar({ className, onCollapse }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -31,11 +30,6 @@ export function Sidebar({ className, onCollapse }: SidebarProps) {
   };
 
   const sidebarItems = [
-    {
-      title: 'Home',
-      icon: <HomeIcon className='h-4 w-4' />,
-      href: ROOT,
-    },
     {
       title: 'Bridge',
       icon: <SquareArrowUpIcon className='h-4 w-4' />,

@@ -33,7 +33,6 @@ const TokenInfoDisplay: React.FC<TokenInfoDisplayProps> = ({
   totalSupply = '',
   watchedChainFields
 }) => {
-  console.log("🚀 ~ formData:", formData)
   const chain = configLaunchPadsChains.find((c) => c.id.toString() === chainId.toString());
   const [isOpen, setIsOpen] = useState(true);
   const [copied, setCopied] = useState(false);

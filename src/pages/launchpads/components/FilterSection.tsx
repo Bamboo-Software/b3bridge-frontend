@@ -41,7 +41,6 @@ export function FilterSection({
   // setOrderDirection,
   supportedChains
 }: FilterSectionProps) {
-  console.log("🚀 ~ supportedChains:", supportedChains)
   const formatDisplayValue = (value: string) => {
     if (value === 'All Status' || value === 'All Categories' || value === 'Chain') {
       return value;

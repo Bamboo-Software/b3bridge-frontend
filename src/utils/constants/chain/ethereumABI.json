@@ -18,12 +18,17 @@
       },
       {
         "internalType": "address",
-        "name": "link",
+        "name": "_chainlinkEthUsdFeed",
         "type": "address"
       }
     ],
     "stateMutability": "nonpayable",
     "type": "constructor"
+  },
+  {
+    "inputs": [],
+    "name": "AlreadyProcessed",
+    "type": "error"
   },
   {
     "inputs": [],
@@ -46,6 +51,11 @@
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "InsufficientBalance",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -63,6 +73,11 @@
   },
   {
     "inputs": [],
+    "name": "InvalidAmount",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "InvalidDestChainSelector",
     "type": "error"
   },
@@ -75,6 +90,11 @@
       }
     ],
     "name": "InvalidRouter",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "UnsupportedToken",
     "type": "error"
   },
   {
@@ -217,6 +237,68 @@
       {
         "indexed": true,
         "internalType": "address",
+        "name": "validator",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "txKey",
+        "type": "bytes32"
+      }
+    ],
+    "name": "FeeForValidator",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "chainId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "methodName",
+        "type": "string"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "txKey",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes[]",
+        "name": "signatures",
+        "type": "bytes[]"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "fee",
+        "type": "uint256"
+      }
+    ],
+    "name": "InterchainCall",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
         "name": "sender",
         "type": "address"
       },
@@ -258,9 +340,21 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "address",
         "name": "sender",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "receiverAddress",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "tokenAddr",
         "type": "address"
       },
       {
@@ -277,18 +371,25 @@
       },
       {
         "indexed": false,
-        "internalType": "address",
-        "name": "destWalletAddress",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "tokenAddr",
-        "type": "address"
+        "internalType": "uint256",
+        "name": "chainId",
+        "type": "uint256"
       }
     ],
     "name": "LockedTokenVL",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "newMaxFee",
+        "type": "uint64"
+      }
+    ],
+    "name": "MaxFeeUpdated",
     "type": "event"
   },
   {
@@ -339,6 +440,19 @@
       }
     ],
     "name": "MessageSent",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "newMinFee",
+        "type": "uint64"
+      }
+    ],
+    "name": "MinFeeUpdated",
     "type": "event"
   },
   {
@@ -588,7 +702,20 @@
   },
   {
     "inputs": [],
-    "name": "PAYLOAD_TYPEHASH",
+    "name": "TOKEN_ID_ETH",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "TOKEN_ID_USDC",
     "outputs": [
       {
         "internalType": "bytes32",
@@ -665,13 +792,60 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "domainSeparator",
-    "outputs": [
+    "inputs": [
       {
         "internalType": "bytes32",
-        "name": "",
+        "name": "txKey",
         "type": "bytes32"
+      },
+      {
+        "internalType": "bytes[]",
+        "name": "signs",
+        "type": "bytes[]"
+      },
+      {
+        "internalType": "uint256",
+        "name": "fee",
+        "type": "uint256"
+      }
+    ],
+    "name": "distributeFee",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getChainId",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "tokenAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "getFeeBridge",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -703,11 +877,6 @@
         "internalType": "uint256",
         "name": "amountToBridge",
         "type": "uint256"
-      },
-      {
-        "internalType": "enum NativeBridge.PayFeesIn",
-        "name": "payFeesIn",
-        "type": "uint8"
       }
     ],
     "name": "getFeeCCIP",
@@ -716,6 +885,45 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getLatestPrice",
+    "outputs": [
+      {
+        "internalType": "int256",
+        "name": "",
+        "type": "int256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getMaxFee",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getMinFee",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
       }
     ],
     "stateMutability": "view",
@@ -736,61 +944,15 @@
   },
   {
     "inputs": [],
-    "name": "getValidatorCount",
+    "name": "getValidators",
     "outputs": [
       {
-        "internalType": "uint256",
+        "internalType": "address[]",
         "name": "",
-        "type": "uint256"
+        "type": "address[]"
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "i_link",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "contract OFTV2",
-        "name": "oftToken",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amountToBridge",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint64",
-        "name": "destChainId",
-        "type": "uint64"
-      },
-      {
-        "internalType": "address",
-        "name": "destAddress",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "desWalletAddress",
-        "type": "address"
-      }
-    ],
-    "name": "lockOFT",
-    "outputs": [],
-    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -819,11 +981,6 @@
         "internalType": "uint256",
         "name": "amountToBridge",
         "type": "uint256"
-      },
-      {
-        "internalType": "enum NativeBridge.PayFeesIn",
-        "name": "payFeesIn",
-        "type": "uint8"
       }
     ],
     "name": "lockTokenCCIP",
@@ -841,22 +998,12 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "tokenAddr",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
         "name": "destAddress",
         "type": "address"
       },
       {
         "internalType": "address",
-        "name": "destWalletAddress",
+        "name": "receiverAddress",
         "type": "address"
       }
     ],
@@ -879,6 +1026,32 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "maxFee",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "minFee",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
       }
     ],
     "stateMutability": "view",
@@ -953,9 +1126,9 @@
         "type": "uint256"
       },
       {
-        "internalType": "uint8",
-        "name": "tokenType",
-        "type": "uint8"
+        "internalType": "uint256",
+        "name": "chainId",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -1027,6 +1200,60 @@
       }
     ],
     "name": "rescueTokenVL",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "tokenAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "newRate",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "newFixedFee",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint8",
+        "name": "newDecimals",
+        "type": "uint8"
+      }
+    ],
+    "name": "setFeeRate",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "newMaxFee",
+        "type": "uint64"
+      }
+    ],
+    "name": "setMaxFee",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "newMinFee",
+        "type": "uint64"
+      }
+    ],
+    "name": "setMinFee",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1126,6 +1353,30 @@
   {
     "inputs": [
       {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "signaturesOfValidator",
+    "outputs": [
+      {
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "bytes4",
         "name": "interfaceId",
         "type": "bytes4"
@@ -1169,6 +1420,45 @@
         "internalType": "bytes32",
         "name": "",
         "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "tokenMap",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "tokenAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "id",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "feeRate",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint8",
+        "name": "decimals",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint256",
+        "name": "fixedFee",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -1241,9 +1531,9 @@
             "type": "uint256"
           },
           {
-            "internalType": "uint8",
-            "name": "tokenType",
-            "type": "uint8"
+            "internalType": "uint256",
+            "name": "chainId",
+            "type": "uint256"
           }
         ],
         "internalType": "struct NativeBridge.Payload",
@@ -1261,6 +1551,25 @@
     "name": "unpause",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "usedTxKeys",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {

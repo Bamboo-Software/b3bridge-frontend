@@ -433,7 +433,6 @@ export function LaunchpadSideBar({
       setCountdownCompleted(true);
       
       if (!hasRefetchedRef.current) {
-        console.log('Countdown completed, refetching launchpad data...');
         refetchLaunchpadDetail();
         hasRefetchedRef.current = true;
       }
@@ -588,7 +587,6 @@ export function LaunchpadSideBar({
       setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
       setCountdownCompleted(true);
       if (!hasRefetchedRef.current) {
-        console.log('Target time already passed, refetching...');
         refetchLaunchpadDetail();
         hasRefetchedRef.current = true;
       }

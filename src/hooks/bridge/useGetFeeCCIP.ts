@@ -82,7 +82,7 @@ export function useGetFeeCCIP(params: IBridgeParams) {
         address: blockChainConfig.seiBridgeAddress,
         abi: blockChainConfig.seiBridgeAbi,
         functionName: 'getFeeCCIP',
-        args: [parsedAmount, seiTokenId],
+        args: [toToken.address,parsedAmount, seiTokenId],
       };
     }
 
@@ -98,7 +98,7 @@ export function useGetFeeCCIP(params: IBridgeParams) {
           blockChainConfig.seiBridgeAddress,
           receiver,
           parsedAmount,
-          0,
+          // 0,
         ],
       };
     }
@@ -109,6 +109,7 @@ export function useGetFeeCCIP(params: IBridgeParams) {
     isNative,
     actionType,
     parsedAmount,
+    toToken.address,
     seiTokenId,
     receiver,
     toChain?.id,
