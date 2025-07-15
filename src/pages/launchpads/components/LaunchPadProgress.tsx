@@ -35,7 +35,7 @@ export const ChainProgress: React.FC<ChainProgressProps> = ({
   ? (totalRaised * 100) / hardCap
   : 0;
 
-const totalRaisedFormatted = formatNumber(totalRaised);
+// const totalRaisedFormatted = formatNumber(totalRaised);
 const hardCapFormatted = formatNumber(hardCap);
 const softCapFormatted = formatNumber(softCap);
   

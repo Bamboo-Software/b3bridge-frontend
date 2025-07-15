@@ -35,7 +35,7 @@ export function useProcessedContributors({
   const chainsKey = useMemo(() => JSON.stringify(chains), [chains]);
   
   const contributorsKey = useMemo(() => {
-    return JSON.stringify(contributorsByChain, (key, value) => {
+    return JSON.stringify(contributorsByChain, (_, value) => {
       if (typeof value === 'bigint') {
         return value.toString();
       }
