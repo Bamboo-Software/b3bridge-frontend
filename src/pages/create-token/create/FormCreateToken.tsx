@@ -22,7 +22,7 @@ import { ChainTokenSource } from '@/utils/enums/chain';
 import { Controller, type Control, type FieldErrors, type SubmitHandler, type UseFormRegister, type UseFormReturn, type UseFormSetValue, type UseFormWatch } from 'react-hook-form';
 import type { Chain } from 'viem';
 import { useUploadFileMutation } from '@/services/upload';
-import { parseNumberWithCommas } from '@/utils';
+import { parseNumberWithCommas, slugifyFileName } from '@/utils';
 
 type FormValues = z.infer<typeof CreateTokenFormSchema>;
 
@@ -52,23 +52,26 @@ const FormCreateToken: React.FC<FormCreateTokenProps> = ({
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [uploadFile] = useUploadFileMutation();
-
   useEffect(() => {
-    const uploadLogo = async () => {
-      if (logoFile) {
-        try {
-          const res = await uploadFile(logoFile).unwrap();
-          const uploadedUrl = res.data.url;
-          setLogoUrl(uploadedUrl);
-          setValue('logoUrl', uploadedUrl);
-        } catch (error) {
-          console.error('Upload logo failed:', error);
-        }
+  const uploadLogo = async () => {
+    if (logoFile) {
+      try {
+        const cleanFileName = slugifyFileName(logoFile.name);
+        const sanitizedFile = new File([logoFile], cleanFileName, {
+          type: logoFile.type,
+        });
+        const res = await uploadFile(sanitizedFile).unwrap();
+        const uploadedUrl = res.data.url;
+        setLogoUrl(uploadedUrl);
+        setValue('logoUrl', uploadedUrl);
+      } catch (error) {
+        console.error('Upload logo failed:', error);
       }
-    };
+    }
+  };
 
-    uploadLogo();
-  }, [logoFile, setValue, uploadFile]);
+  uploadLogo();
+}, [logoFile, setValue, uploadFile]);
 
   const inputRef = useRef<HTMLInputElement | null>(null);
 const formatNumberWithCommas = (value: string): string => {
