@@ -24,6 +24,7 @@ import { useNavigate } from 'react-router-dom';
 import { routesPaths } from '@/utils/constants/routes';
 import { useAuthToken } from '@/hooks/useAuthToken';
 import { WalletConnectionRequired } from '@/pages/common/WalletConnectionRequired';
+import { parseFormattedNumber } from '@/utils';
 
 enum LaunchpadStep {
   Info = 1,
@@ -92,13 +93,13 @@ export default function CreateLaunchpadPage() {
             oftTokenId: oftToken?.id || '',
             chainType: 'Evm',
             chainId: chainKey,
-            presaleRate: chain?.presaleRate || '0',
+            presaleRate: parseFormattedNumber(chain?.presaleRate || '0'),
             listingRate: '0.001',
-            softCap: chain?.softcap || '0',
-            hardCap: chain?.hardcap || '0',
-            minContribution: chain?.minBuy || '0',
-            maxContribution: chain?.maxBuy || '0',
-            totalTokens: chain?.numberOfTokens || '0',
+            softCap: parseFormattedNumber(chain?.softcap || '0'),
+            hardCap: parseFormattedNumber(chain?.hardcap || '0'),
+            minContribution: parseFormattedNumber(chain?.minBuy || '0'),
+            maxContribution: parseFormattedNumber(chain?.maxBuy || '0'),
+            totalTokens: parseFormattedNumber(chain?.numberOfTokens || '0'),
             userWalletAddress: address,
           };
         }) || [];
@@ -117,15 +118,33 @@ export default function CreateLaunchpadPage() {
         whitelistEnabled: false,
         publicStartTime: validatedData.startTime?.toISOString() || undefined,
         chainConfigurations,
-        websiteURL: validatedData.website,
-        facebookURL: validatedData.facebook,
-        xURL: validatedData.x,
-        githubURL: validatedData.github,
-        telegramURL: validatedData.telegram,
-        instagramURL: validatedData.instagram,
-        discordURL: validatedData.discord,
-        redditURL: validatedData.reddit,
-        youtubeURL: validatedData.youtube,
+        ...(validatedData?.website && {
+          websiteURL: validatedData.website,
+        }),
+        ...(validatedData?.facebook && {
+          facebookURL: validatedData.facebook,
+        }),
+        ...(validatedData?.x && {
+          xURL: validatedData.x,
+        }),
+        ...(validatedData?.github && {
+          githubURL: validatedData.github,
+        }),
+        ...(validatedData?.telegram && {
+          telegramURL: validatedData.telegram,
+        }),
+        ...(validatedData?.instagram && {
+          instagramURL: validatedData.instagram,
+        }),
+        ...(validatedData?.discord && {
+          discordURL: validatedData.discord,
+        }),
+        ...(validatedData?.reddit && {
+          redditURL: validatedData.reddit,
+        }),
+        ...(validatedData?.youtube && {
+          youtubeURL: validatedData.youtube,
+        }),
       };
 
       const result = (await createPreSales(presaleData)) as any;
@@ -393,14 +412,16 @@ export default function CreateLaunchpadPage() {
             />
           )}
           {step === LaunchpadStep.Social && <Step2Social />}
-          {step === LaunchpadStep.Overview && <Step3Overview 
-            modalState={{
-              showDeploymentModal,
-              setShowDeploymentModal
-            }}
-            handleContinueCreate={handleContinueCreate}
-            handleSeeDetail={handleSeeDetail}
-            />}
+          {step === LaunchpadStep.Overview && (
+            <Step3Overview
+              modalState={{
+                showDeploymentModal,
+                setShowDeploymentModal,
+              }}
+              handleContinueCreate={handleContinueCreate}
+              handleSeeDetail={handleSeeDetail}
+            />
+          )}
 
           {/* Actions */}
           <div className='flex gap-2 mt-5'>
