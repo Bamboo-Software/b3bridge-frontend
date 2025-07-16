@@ -38,7 +38,9 @@ export function parseFormattedNumber(formattedValue: string | number): number {
   
   return isNaN(parsedNumber) ? 0 : parsedNumber;
 }
-
+export const parseNumberWithCommas = (value: string): string => {
+  return value.replace(/,/g, '');
+};
 export const formatTokenAmount = (amount: string | undefined, token?: ITokenInfo,
   minimumFractionDigits?: number, 
   maximumFractionDigits?: number, 
