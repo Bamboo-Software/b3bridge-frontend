@@ -29,6 +29,16 @@ export function formatNumber(
   });
 }
 
+export function parseFormattedNumber(formattedValue: string | number): number {
+  if (typeof formattedValue === 'number') return formattedValue;
+  if (!formattedValue || typeof formattedValue !== 'string') return 0;
+  
+  const cleanedValue = formattedValue.replace(/,/g, '');
+  const parsedNumber = Number(cleanedValue);
+  
+  return isNaN(parsedNumber) ? 0 : parsedNumber;
+}
+
 export const formatTokenAmount = (amount: string | undefined, token?: ITokenInfo,
   minimumFractionDigits?: number, 
   maximumFractionDigits?: number, 

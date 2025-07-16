@@ -271,7 +271,7 @@ export function LaunchpadSideBar({
         countdown: false,
         showInputs: false,
         showChainButtons: false,
-        showClaimButtons: true,
+        showClaimButtons: false,
         showMainButton: isCreator,
         buttonText: isCreator ? 'Finalize' : null,
         buttonEnabled: isCreator ? !isFinalizing && !isCancelling : false,
