@@ -400,7 +400,14 @@ export function Step1Info({
                   <AccordionContent className='mx-6 pt-3 pb-6 border-t border-[color:var(--gray-charcoal)]'>
                     <div className='flex flex-col gap-0'>
                       <div className='flex justify-between pb-3'>
-                        <label className='text-foreground'>Presale Rate</label>
+                        <div className='text-foreground flex flex-col'>
+                          <span>
+                            Presale Rate
+                          </span>
+                          <span className='text-xs text-primary'>
+                            If spend 1 {chain?.nativeCurrency?.symbol || ''} how many tokens will I receive?
+                          </span>
+                        </div>
                         <Controller
                           name={`chainFields.${chain.id}.presaleRate`}
                           control={control}

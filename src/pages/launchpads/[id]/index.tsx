@@ -36,6 +36,7 @@ export default function LaunchpadDetailPage() {
     isLoading: isLaunchpadLoading,
     error: launchpadError,
     refetch: refetchLaunchpadDetail,
+    isUninitialized
   } = useGetDetailPreSalesQuery({ presaleId: id });
 
   // Use launchpadDetail.data directly
@@ -84,7 +85,6 @@ export default function LaunchpadDetailPage() {
     )
   )
 
-  // Process contributors with proper token decimals
   const { contributors: mergedContributors, } =
     useProcessedContributors({
       chains,
@@ -92,18 +92,44 @@ export default function LaunchpadDetailPage() {
       presaleChains: launchpad?.presaleChains || [],
     });
 
-  // Refetch all data
-  const refetchAll = useCallback(() => {
-    refetchSupportedChains();
-    refetchLaunchpadDetail();
-  }, [refetchSupportedChains, refetchLaunchpadDetail]);
+  const safeRefetchLaunchpadDetail = useCallback(() => {
+    if (!isUninitialized && refetchLaunchpadDetail) {
+      try {
+        return refetchLaunchpadDetail();
+      } catch (error) {
+        return Promise.reject(error);
+      }
+    } else {
+      return Promise.resolve();
+    }
+  }, [isUninitialized, refetchLaunchpadDetail]);
 
-  // Auto-refetch when wallet connects
+  const safeRefetchSupportedChains = useCallback(() => {
+    if (refetchSupportedChains) {
+      try {
+        return refetchSupportedChains();
+      } catch (error) {
+        console.warn('Failed to refetch supported chains:', error);
+        return Promise.reject(error);
+      }
+    } else {
+      console.warn('Cannot refetch supported chains: refetch function not available');
+      return Promise.resolve();
+    }
+  }, [refetchSupportedChains]);
+
+  // Refetch all data safely
+  const refetchAll = useCallback(() => {
+    safeRefetchSupportedChains();
+    safeRefetchLaunchpadDetail();
+  }, [safeRefetchSupportedChains, safeRefetchLaunchpadDetail]);
+
+  // Auto-refetch when wallet connects with debounce
   useEffect(() => {
     if (token) {
       const timer = setTimeout(() => {
         refetchAll();
-      }, 100);
+      }, 500); // Increased delay to prevent multiple rapid calls
 
       return () => clearTimeout(timer);
     }
@@ -182,8 +208,6 @@ export default function LaunchpadDetailPage() {
     );
   }
 
- 
-
   return (
     <div className='min-h-screen bg-background'>
       <div className='container mx-auto px-6 py-8'>
@@ -201,7 +225,7 @@ export default function LaunchpadDetailPage() {
             contributorState={mergedContributors}
             supportedChains={supportedChains.data}
             refetchContributors={refetchContributors}
-            refetchLaunchpadDetail={refetchLaunchpadDetail}
+            refetchLaunchpadDetail={safeRefetchLaunchpadDetail}
           />
         </div>
       </div>

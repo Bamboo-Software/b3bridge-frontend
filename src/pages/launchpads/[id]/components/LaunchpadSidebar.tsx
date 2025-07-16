@@ -30,9 +30,10 @@ interface LaunchpadSideBarProps {
   launchpad: PresaleDetailResponse;
   contributorState: ContributorRow[];
   supportedChains: LaunchpadSupportedChain[];
-  refetchContributors: () => void;
-  refetchLaunchpadDetail: () => void;
+  refetchContributors: () => Promise<any>;
+  refetchLaunchpadDetail: () => Promise<any>;
 }
+
 
 interface CountdownTime {
   days: number;
@@ -424,7 +425,6 @@ export function LaunchpadSideBar({
       clearCountdownInterval();
       return;
     }
-
     const target = new Date(targetDate).getTime();
     const difference = target - now;
 
@@ -441,10 +441,14 @@ export function LaunchpadSideBar({
     } else {
       setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
       setCountdownCompleted(true);
-      
-      if (!hasRefetchedRef.current) {
-        refetchLaunchpadDetail();
-        hasRefetchedRef.current = true;
+      if (!hasRefetchedRef.current && refetchLaunchpadDetail) {
+        refetchLaunchpadDetail()
+          .then(() => {
+            hasRefetchedRef.current = true;
+          })
+          .catch(() => {
+            hasRefetchedRef.current = false; 
+          });
       }
       
       clearCountdownInterval();
@@ -579,7 +583,7 @@ export function LaunchpadSideBar({
   };
 
   // Main countdown effect - updated to handle PENDING status countdown
-  useEffect(() => {
+   useEffect(() => {
     clearCountdownInterval();
     
     setCountdownCompleted(false);
@@ -597,13 +601,18 @@ export function LaunchpadSideBar({
     const now = new Date().getTime();
     const target = new Date(targetDate).getTime();
 
-    
     if (target <= now) {
       setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
       setCountdownCompleted(true);
-      if (!hasRefetchedRef.current) {
-        refetchLaunchpadDetail();
-        hasRefetchedRef.current = true;
+      // Handle Promise with then/catch to check initialization
+      if (!hasRefetchedRef.current && refetchLaunchpadDetail) {
+        refetchLaunchpadDetail()
+          .then(() => {
+            hasRefetchedRef.current = true;
+          })
+          .catch(() => {
+            hasRefetchedRef.current = false;
+          });
       }
       return;
     }
@@ -612,7 +621,7 @@ export function LaunchpadSideBar({
     intervalRef.current = setInterval(calculateCountdown, 1000);
 
     return () => clearCountdownInterval();
-  }, [launchpad.status, launchpad.startTime, launchpad.endTime, hasStarted, hasEnded, allChainsReachedTarget]);
+  }, [launchpad.status, launchpad.startTime, launchpad.endTime, hasStarted, hasEnded, allChainsReachedTarget, refetchLaunchpadDetail]);
 
   useEffect(() => {
     if (isConnected) setIsWalletModalOpen(false);
