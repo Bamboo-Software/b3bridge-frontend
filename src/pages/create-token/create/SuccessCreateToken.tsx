@@ -59,22 +59,21 @@ const SuccessCreateToken: React.FC<SuccessCreateTokenProps> = ({ formData, next 
 
           {/* Submit Buttons */}
           <div className="flex justify-between items-center">
-            <Button
+            {/* <Button
               type="button"
               onClick={() => navigate('/list-token')}
               className="dark:bg-[#1E242D] text-white py-3 text-base font-medium"
             >
               View Transaction
-            </Button>
+            </Button> */}
 
             <Button
               type="button"
-              onClick={() => navigate('/create-token')}
+              onClick={() => window.location.reload()}
               className="dark:bg-[#1E242D] text-white py-3 text-base font-medium"
             >
               Create new token
             </Button>
-
             <Button
               type="button"
               onClick={() => navigate('/launchpads/create')}

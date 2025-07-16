@@ -102,7 +102,7 @@ const { isLoading: isTxPending } = useTransaction({ hash: currentTxHash });
           address: blockChainConfig.ethereumBridgeAddress as `0x${string}`,
           abi: blockChainConfig.ethereumBridgeAbi,
           functionName: "lockTokenVL",
-          args: [tokenAddress, amountNative, blockChainConfig.seiBridgeAddress, receiver],
+          args: [blockChainConfig.seiBridgeAddress, receiver],
           value: amountNative,
         });
          await waitForTransactionReceipt(walletClient!, {
@@ -128,7 +128,6 @@ const { isLoading: isTxPending } = useTransaction({ hash: currentTxHash });
         const amountTokenERC20 = parseUnits(amount, decimalsToken);
         await approveToken(tokenAddress as `0x${string}`, blockChainConfig.ethereumBridgeAddress, amount, decimalsToken, address as `0x${string}`, walletClient);
         const fee = parseUnits(formatUnits(ccipFee, decimals), decimals);
-        const adjustedFee = (fee * 124n) / 100n;
           const result = await writeContractAsync({
             address: blockChainConfig.ethereumBridgeAddress,
             abi: blockChainConfig.ethereumBridgeAbi,
@@ -140,7 +139,7 @@ const { isLoading: isTxPending } = useTransaction({ hash: currentTxHash });
               receiver,
               amountTokenERC20
             ],
-            value: adjustedFee,
+            value: fee,
           });
         const receipt = await waitForTransactionReceipt(walletClient!, {
           hash: result,
@@ -196,7 +195,7 @@ const { isLoading: isTxPending } = useTransaction({ hash: currentTxHash });
         abi: blockChainConfig.seiBridgeAbi,
         functionName: "burnTokenCCIP",
         args: [tokenId, amountTokenERC20],
-        value: (ccipFee * 124n) / 100n,
+        value: ccipFee,
       });
       const receipt= await waitForTransactionReceipt(walletClient!, { hash: result });
       setBridgeState({ currentTxHash: result, isBridging: false });
@@ -239,7 +238,7 @@ const { isLoading: isTxPending } = useTransaction({ hash: currentTxHash });
         address: blockChainConfig.seiBridgeAddress as `0x${string}`,
         abi: blockChainConfig.seiBridgeAbi,
         functionName: "burnTokenVL",
-        args: [amountInUnits, tokenAddress as `0x${string}`, receiver],
+        args: [amountInUnits, tokenAddress as `0x${string}`,blockChainConfig.ethereumBridgeAddress, receiver],
         value: amountInUnits
       });
       await waitForTransactionReceipt(walletClient!, { hash: result });
