@@ -22,6 +22,7 @@ import { ChainTokenSource } from '@/utils/enums/chain';
 import { Controller, type Control, type FieldErrors, type SubmitHandler, type UseFormRegister, type UseFormReturn, type UseFormSetValue, type UseFormWatch } from 'react-hook-form';
 import type { Chain } from 'viem';
 import { useUploadFileMutation } from '@/services/upload';
+import { parseNumberWithCommas } from '@/utils';
 
 type FormValues = z.infer<typeof CreateTokenFormSchema>;
 
@@ -45,30 +46,37 @@ const FormCreateToken: React.FC<FormCreateTokenProps> = ({
   onSubmit,
   handleSubmit
 }) => {
-  const selectedChains = watch('targetChains');
-  const totalSupply = watch('totalSupply');
- const [logoFile, setLogoFile] = useState<File | null>(null);
-const [logoUrl, setLogoUrl] = useState<string | null>(null);
-const [uploadFile] = useUploadFileMutation();
+  const selectedChains = watch('targetChains') || [];
+  const totalSupply = watch('totalSupply') || '';
+  const targetChainOptions = watch('targetChainOptions') || [];
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [uploadFile] = useUploadFileMutation();
 
-useEffect(() => {
-  const uploadLogo = async () => {
-    if (logoFile) {
-      try {
-        const res = await uploadFile(logoFile).unwrap();
-        const uploadedUrl = res.data.url;
-        setLogoUrl(uploadedUrl);
-        setValue('logoUrl', uploadedUrl);
-      } catch (error) {
-        console.error('Upload logo failed:', error);
+  useEffect(() => {
+    const uploadLogo = async () => {
+      if (logoFile) {
+        try {
+          const res = await uploadFile(logoFile).unwrap();
+          const uploadedUrl = res.data.url;
+          setLogoUrl(uploadedUrl);
+          setValue('logoUrl', uploadedUrl);
+        } catch (error) {
+          console.error('Upload logo failed:', error);
+        }
       }
-    }
-  };
+    };
 
-  uploadLogo();
-}, [logoFile]);
+    uploadLogo();
+  }, [logoFile, setValue, uploadFile]);
 
   const inputRef = useRef<HTMLInputElement | null>(null);
+const formatNumberWithCommas = (value: string): string => {
+  const numericValue = value.replace(/[^0-9.]/g, '');
+  const [integerPart, decimalPart = ''] = numericValue.split('.');
+  const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return decimalPart ? `${formattedInteger}.${decimalPart}` : formattedInteger;
+};
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
@@ -93,7 +101,20 @@ useEffect(() => {
                   variant="default"
                   badgeClassName="!bg-[color:var(--gray-night)]"
                   value={field.value || []}
-                  onValueChange={field.onChange}
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    if (value.length === 1) {
+                      setValue('totalSupply', '');
+                      setValue('targetChainOptions', []);
+                    } else if (value.length > 1) {
+                      setValue('totalSupply', '');
+                      setValue('targetChainOptions', value.map(chainId => ({
+                        chainId,
+                        totalSupply: '',
+                        decimals: 18,
+                      })));
+                    }
+                  }}
                   options={configLaunchPadsChains.map((chain: Chain) => ({
                     label: (
                       <div className="flex items-center gap-2">
@@ -121,54 +142,87 @@ useEffect(() => {
           </div>
 
           {/* Total Supply per Chain */}
-          {selectedChains && selectedChains.length !== 0 && (
-  <Label className="font-semibold text-[16px]">Total Supply</Label>
+          {selectedChains.length > 0 && (
+      <div className="space-y-2">
+        <Label className="font-semibold text-[16px]">Total Supply</Label>
+        {selectedChains.length === 1 ? (
+          <div className="flex items-center justify-between p-3 rounded-md mb-2 bg-[#1b1e21]">
+            <div className="flex items-center gap-2">
+              <img
+                src={getChainImage({
+                  chainId: parseInt(selectedChains[0]),
+                  source: ChainTokenSource.Local,
+                })}
+                alt={configLaunchPadsChains.find(c => c.id.toString() === selectedChains[0])?.name}
+                className="w-5 h-5"
+              />
+              <span className="dark:text-white text-sm font-medium">
+                {configLaunchPadsChains.find(c => c.id.toString() === selectedChains[0])?.name}
+              </span>
+            </div>
+            <Input
+              type="text"
+              {...register('totalSupply')}
+              value={formatNumberWithCommas(totalSupply || '0')}
+              placeholder="0.0"
+              className="w-[120px] text-right bg-transparent border-none dark:text-white placeholder-gray-500"
+              onChange={(e) => {
+                const rawValue = parseNumberWithCommas(e.target.value);
+                setValue('totalSupply', rawValue);
+                setValue(`chainFields.${selectedChains[0]}.totalSupply`, rawValue);
+              }}
+            />
+          </div>
+        ) : (
+          selectedChains.map((chainId, index) => {
+            const chainMeta = configLaunchPadsChains.find(c => c.id.toString() === chainId);
+            const chainOption = targetChainOptions[index] || { totalSupply: '0', chainId };
+            return (
+              <div
+                key={chainId}
+                className="flex items-center justify-between p-3 rounded-md mb-2 bg-[#1b1e21]"
+              >
+                <div className="flex items-center gap-2">
+                  <img
+                    src={getChainImage({ chainId: parseInt(chainId), source: ChainTokenSource.Local })}
+                    alt={chainMeta?.name}
+                    className="w-5 h-5"
+                  />
+                  <span className="dark:text-white text-sm font-medium">{chainMeta?.name}</span>
+                </div>
+                <Input
+                  type="text"
+                  {...register(`targetChainOptions.${index}.totalSupply`)}
+                  value={formatNumberWithCommas(chainOption.totalSupply || '0')}
+                  placeholder="0.0"
+                  className="w-[120px] text-right bg-transparent border-none dark:text-white placeholder-gray-500"
+                  onChange={(e) => {
+                    const rawValue = parseNumberWithCommas(e.target.value);
+                    setValue(`targetChainOptions.${index}.totalSupply`, rawValue);
+                    setValue(`chainFields.${chainId}.totalSupply`, rawValue);
+                    setValue(`targetChainOptions.${index}.chainId`, chainId);
+                  }}
+                />
+              </div>
+            );
+          })
+        )}
+    {errors.totalSupply && selectedChains.length === 1 && (
+      <p className="text-red-500 text-sm">{errors.totalSupply.message}</p>
+    )}
+    {errors.targetChainOptions && selectedChains.length > 1 && (
+      <p className="text-red-500 text-sm">
+        {Array.isArray(errors.targetChainOptions)
+          ? errors.targetChainOptions.map((err, idx) => (
+              <span key={idx}>
+                {err?.totalSupply?.message || `Invalid configuration for chain ${selectedChains[idx]}`}
+              </span>
+            ))
+          : errors.targetChainOptions?.message || 'Invalid configuration for chain'}
+      </p>
+    )}
+  </div>
 )}
-{selectedChains && selectedChains.map((id) => {
-  const chainMeta = configLaunchPadsChains.find((c) => c.id.toString() === id.toString());
-  if (!chainMeta) return null;
-  return (
-    <div
-      key={id}
-      className="flex items-center justify-between p-3 rounded-md mb-2 bg-[#1b1e21]"
-    >
-      <div className="flex items-center gap-2">
-        <img
-          src={getChainImage({ chainId: chainMeta.id, source: ChainTokenSource.Local })}
-          alt={chainMeta.name}
-          className="w-5 h-5"
-        />
-        <span className="dark:text-white text-sm font-medium">{chainMeta.name}</span>
-      </div>
-      <Input
-        type="number"
-                  value={totalSupply[id] || ''}
-        onChange={(e) => {
-                    const newTotalSupply = {
-                      ...totalSupply,
-                      [id]: e.target.value,
-                    };
-                    setValue('totalSupply', newTotalSupply);
-                    setValue('chainFields', {
-                      ...watch('chainFields'),
-                      [id]: { totalSupply: e.target.value },
-                    });
-        }}
-        placeholder="0.0"
-        className="w-[120px] text-right bg-transparent border-none dark:text-white placeholder-gray-500 appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-      />
-    </div>
-  );
-})}
-          {errors.chainFields && (
-            <p className="text-red-500 text-sm">
-              {Object.entries(errors.chainFields).map(([chainId, error]) => (
-                <span key={chainId}>
-                  {error?.totalSupply?.message || `Invalid configuration for chain ${chainId}`}
-                </span>
-              ))}
-            </p>
-          )}
 
           {/* Name */}
           <div className="space-y-2">
@@ -239,28 +293,31 @@ useEffect(() => {
                 </>
               )}
             />
-        <div className="w-full flex justify-center">
-          {logoUrl && (
-            <div className="mt-2">
-              <img
-                src={logoUrl}
-                alt="Preview"
-                className="h-[100px] rounded-md border dark:border-[#4e4e4e] object-contain"
-              />
+            <div className="w-full flex justify-center">
+              {logoUrl && (
+                <div className="mt-2">
+                  <img
+                    src={logoUrl}
+                    alt="Preview"
+                    className="h-[100px] rounded-md border dark:border-[#4e4e4e] object-contain"
+                  />
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </div>
-          {selectedChains && selectedChains.length > 0 && (
+          </div>
+
+          {selectedChains.length > 0 && (
             <div className="text-sm rounded-md p-3 flex flex-wrap gap-4 justify-start">
               <span className="font-semibold text-[#34D3FF]">Creation fees:</span>
-              {selectedChains && selectedChains.map((id, index) => {
+              {selectedChains.map((id, index) => {
                 const chainMeta = configLaunchPadsChains.find((c) => c.id.toString() === id.toString());
                 if (!chainMeta) return null;
-
+                const supply = selectedChains.length === 1
+                  ? totalSupply
+                  : targetChainOptions.find(opt => opt.chainId === id)?.totalSupply || '0';
                 return (
                   <span key={id} className="text-[#34D3FF]">
-                    {totalSupply[id] || 0} {chainMeta.name}
+                    {supply} {chainMeta.name}
                     {index !== selectedChains.length - 1 && (
                       <span className="mx-1 text-[#6B7280]">|</span>
                     )}
@@ -276,7 +333,7 @@ useEffect(() => {
             type="submit"
             className="w-full bg-[linear-gradient(45deg,_var(--blue-primary),_var(--primary))] shadow-[0_0px_10px_0_var(--blue-primary)] border-none rounded-lg cursor-pointer hover:opacity-90 hover:shadow-[0_0px_16px_0_var(--blue-primary)] text-foreground"
           >
-            Next
+             Next
           </Button>
         </CardFooter>
       </Card>

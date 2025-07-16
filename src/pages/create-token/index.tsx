@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useMemo, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,6 +10,7 @@ import { useCreateTokenMutation } from '@/services/pre-sale/create-token';
 import type { CreateTokenPayload } from '@/utils/interfaces/token';
 import { WalletConnectionRequired } from '../common/WalletConnectionRequired';
 import { useAccount } from 'wagmi';
+import { parseNumberWithCommas } from '@/utils';
 
 const CreateTokenPage: React.FC = () => {
   const [createToken] = useCreateTokenMutation();
@@ -28,83 +30,80 @@ const CreateTokenPage: React.FC = () => {
       discord: "https://discord.gg/mytoken",
       github: "https://github.com/mytoken/contracts",
       category: "defi",
-      tags: [ "defi",
-        "gaming",
-        "cross-chain"],
+      tags: ["defi", "gaming", "cross-chain"],
       targetChains: [],
       tokenType: "OFT",
-      totalSupply: {},
+      totalSupply: "0",
+      targetChainOptions: [],
       logoUrl: "",
       chainFields: {},
     },
   });
+ const { register, watch, control, setValue, formState: { errors }, handleSubmit, getValues } = methods;
+  const formData = useMemo(() => watch(), [watch]);
 
-  const {register,watch,control,setValue,formState: { errors },handleSubmit}=methods
-  const formData = useMemo(() => watch(), [watch()]);
   const next = () => {
     setCurrent(current + 1);
   };
 
-
-const handleCreateToken = async () => {
-  const data = formData;
+  const handleCreateToken = async () => {
+  const data = getValues();
 
   const chainFields: CreateTokenPayload["chainFields"] = {};
-  let totalSupply = "0";
+  const normalizedTargetChainOptions = data.targetChainOptions?.map(opt => ({
+    ...opt,
+    totalSupply: opt.totalSupply ? parseNumberWithCommas(opt.totalSupply) : "0"
+  })) || [];
 
-  for (const chainId of data.targetChains) {
-    const supply = data.chainFields?.[chainId]?.totalSupply || "0";
-    chainFields[chainId] = { totalSupply: supply };
-
-    if (totalSupply === "0") {
-      totalSupply = supply;
+  if (data.targetChains.length === 1) {
+    const totalSupply = data.totalSupply || "0";
+    chainFields[data.targetChains[0]] = { totalSupply };
+  } else if (data.targetChains.length > 1) {
+    for (const chainId of data.targetChains) {
+      const chainOption = data.targetChainOptions?.find(opt => opt.chainId === chainId);
+      const supply = chainOption?.totalSupply || "0";
+      chainFields[chainId] = { totalSupply: supply };
     }
   }
 
-  const payload: CreateTokenPayload = {
-    name: data.name,
-    symbol: data.symbol,
-    decimals: data.decimals,
-    description: data.description,
-    website: data.website,
-    whitepaper: data.whitepaper,
-    telegram: data.telegram,
-    twitter: data.twitter,
-    discord: data.discord,
-    github: data.github,
-    category: data.category,
-    tags: data.tags,
-    targetChains: data.targetChains,
-    tokenType: "OFT",
-    totalSupply,
-    logoUrl: typeof data.logoUrl === "string" ? data.logoUrl : "",
-  };
+      const {
+      chainFields: _,
+      ...cleanedData
+    } = data;
+
+    if (data.targetChains.length > 1) {
+      delete cleanedData.totalSupply;
+    }
+
+    const payload: CreateTokenPayload = {
+      ...cleanedData,
+      ...(data.targetChains.length === 1
+        ? { totalSupply: parseNumberWithCommas(data.totalSupply || "0") }
+        : { targetChainOptions: normalizedTargetChainOptions }),
+      logoUrl: typeof data.logoUrl === "string" ? data.logoUrl : "",
+    };
 
   try {
     const result = await createToken(payload).unwrap();
-
-    const chainFieldsFromResult = (result?.data || []).reduce(
-      (acc, item) => {
-        acc[item.chainId] = {
-          totalSupply: item.totalSupply || "0",
-          id: item.id || "0",
-          systemWalletAddress: item.systemWalletAddress || "0",
-          paymentTokenAddress: item.paymentTokenAddress || "0",
-          deployFee: item.deployFee || "0",
-          platformFee: item.platformFee || "0",
-          transactions: {
-            native: {
-              payStatus: "",
-              payHash: item?.deployTxHash || "",
-              amount: item.deployFee || "0",
-              gasEstimate: "",
-            },
+    const chainFieldsFromResult = (result?.data || []).reduce((acc, item) => {
+      acc[item.chainId] = {
+        totalSupply: item.totalSupply || "0",
+        id: item.id || "0",
+        systemWalletAddress: item.systemWalletAddress || "0",
+        paymentTokenAddress: item.paymentTokenAddress || "0",
+        deployFee: item.deployFee || "0",
+        platformFee: item.platformFee || "0",
+        transactions: {
+          native: {
+            payStatus: "",
+            payHash: item?.deployTxHash || "",
+            amount: item.deployFee || "0",
+            gasEstimate: "",
           },
-        };
-        return acc;
-      },
-      {} as CreateTokenFormValues["chainFields"]
-    );
+        },
+      };
+      return acc;
+    }, {} as CreateTokenFormValues["chainFields"]);
 
     setValue("chainFields", chainFieldsFromResult);
     next();
@@ -112,26 +111,25 @@ const handleCreateToken = async () => {
     console.error("❌ Failed to create token:", err);
   }
 };
+
+
   const steps = [
     {
       content: (
-       <FormCreateToken
-        register={register}
-        control={control}
-        setValue={setValue}
-        watch={watch}
-        errors={errors}
-        onSubmit={handleCreateToken}
-        handleSubmit={handleSubmit}
-        next={next}
-      />
+        <FormCreateToken
+          register={register}
+          control={control}
+          setValue={setValue}
+          watch={watch}
+          errors={errors}
+          onSubmit={handleCreateToken}
+          handleSubmit={handleSubmit}
+          next={next}
+        />
       ),
     },
     {
-      content:
-        <ConfirmCreateToken
-        formData={watch()}
-        next={next} />,
+      content: <ConfirmCreateToken formData={watch()} next={next} />,
     },
     {
       content: <SuccessCreateToken formData={formData} next={next} />,
