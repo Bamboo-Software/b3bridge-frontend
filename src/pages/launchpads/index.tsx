@@ -166,6 +166,8 @@ export default function LaunchpadsPage() {
 
       {(activeTab === 'all' || subTab === "contributions" || subTab === "launchpads") && (
         <FilterSection
+          activeTab={activeTab}
+          subTab={subTab}
           searchTerm={filters.searchTerm}
           setSearchTerm={(searchTerm) =>
             setFilters((prev) => ({ ...prev, searchTerm }))

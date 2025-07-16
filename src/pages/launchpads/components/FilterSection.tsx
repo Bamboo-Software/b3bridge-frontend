@@ -35,12 +35,14 @@ export function FilterSection({
   setChainFilter,
   statusFilter,
   setStatusFilter,
+  activeTab,
+  subTab,
   // orderField,
   // setOrderField,
   // orderDirection,
   // setOrderDirection,
   supportedChains
-}: FilterSectionProps) {
+}: FilterSectionProps & { activeTab: string; subTab: string }) {
   const formatDisplayValue = (value: string) => {
     if (value === 'All Status' || value === 'All Categories' || value === 'Chain') {
       return value;
@@ -153,7 +155,11 @@ const selectedChainName =
             {/* <DropdownMenuItem onClick={() => setStatusFilter(PresaleStatus.ENDED)}>Ended</DropdownMenuItem> */}
             <DropdownMenuItem onClick={() => setStatusFilter(PresaleStatus.CANCELLED)}>Cancelled</DropdownMenuItem>
             <DropdownMenuItem onClick={() => setStatusFilter(PresaleStatus.FINALIZED)}>Finalized</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setStatusFilter(PresaleStatus.DRAFT)}>Draft</DropdownMenuItem>
+            {!(activeTab === 'all' || subTab === 'contributions') && (
+            <DropdownMenuItem onClick={() => setStatusFilter(PresaleStatus.DRAFT)}>
+              Draft
+            </DropdownMenuItem>
+          )}
           </DropdownMenuContent>
         </DropdownMenu>
 

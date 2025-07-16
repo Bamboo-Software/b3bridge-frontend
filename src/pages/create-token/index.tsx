@@ -41,6 +41,7 @@ const CreateTokenPage: React.FC = () => {
   });
  const { register, watch, control, setValue, formState: { errors }, handleSubmit, getValues } = methods;
   const formData = useMemo(() => watch(), [watch]);
+  console.log("🚀 ~ formData:", formData)
 
   const next = () => {
     setCurrent(current + 1);
@@ -48,6 +49,7 @@ const CreateTokenPage: React.FC = () => {
 
   const handleCreateToken = async () => {
   const data = getValues();
+  console.log("🚀 ~ handleCreateToken ~ data:", data)
 
   const chainFields: CreateTokenPayload["chainFields"] = {};
   const normalizedTargetChainOptions = data.targetChainOptions?.map(opt => ({
@@ -82,6 +84,7 @@ const CreateTokenPage: React.FC = () => {
         : { targetChainOptions: normalizedTargetChainOptions }),
       logoUrl: typeof data.logoUrl === "string" ? data.logoUrl : "",
     };
+    console.log("🚀 ~ handleCreateToken ~ payload:", payload)
 
   try {
     const result = await createToken(payload).unwrap();
