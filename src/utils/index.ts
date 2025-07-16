@@ -41,6 +41,10 @@ export function parseFormattedNumber(formattedValue: string | number): number {
 export const parseNumberWithCommas = (value: string): string => {
   return value.replace(/,/g, '');
 };
+
+export function slugifyFileName(originalName: string): string {
+  return originalName.replace(/\s\(\d+\)(?=\.[^.]+$)/, '');
+}
 export const formatTokenAmount = (amount: string | undefined, token?: ITokenInfo,
   minimumFractionDigits?: number, 
   maximumFractionDigits?: number, 
