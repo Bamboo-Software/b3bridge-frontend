@@ -10,6 +10,7 @@ import { getBridgeActionType, getIsOrigin } from '@/utils';
 import type { IBridgeParams } from '@/utils/interfaces/bridge';
 import { BridgeActionType } from '@/utils/enums/bridge';
 import { wagmiConfig } from '@/utils/constants/wallet/wagmi';
+import { ChainTokenSource } from '@/utils/enums/chain';
 
 export function useGetFeeCCIP(params: IBridgeParams) {
   const { fromToken, toToken, tokenList, toChain, fromChain, amount, receiver } = params;
@@ -74,9 +75,8 @@ export function useGetFeeCCIP(params: IBridgeParams) {
   }, [isReady, isNative, actionType, fromToken?.address, toToken?.address, toChain?.id]);
 
   const bridgeConfig = useMemo(() => {
-    if (!isReady || isNative) return null;
-
-    if (actionType === BridgeActionType.BurnUnlock) {
+    if (!isReady || isNative || fromChain.source===ChainTokenSource.Stargate) return null;
+    if (actionType === BridgeActionType.BurnUnlock && fromChain.source===ChainTokenSource.Local) {
       if (!seiTokenId) return null;
       return {
         address: blockChainConfig.seiBridgeAddress,
@@ -86,7 +86,8 @@ export function useGetFeeCCIP(params: IBridgeParams) {
       };
     }
 
-    if (actionType === BridgeActionType.LockMint) {
+   
+    if (actionType === BridgeActionType.LockMint && fromChain.source===ChainTokenSource.Local) {
       if (!receiver || !fromChain?.id || !toChain?.id) return null;
       return {
         address: blockChainConfig.ethereumBridgeAddress,
