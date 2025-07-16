@@ -24,6 +24,7 @@ import { getStatusBadge } from '@/utils/launchpads';
 import { LaunchpadContributor } from './LaunchpadContributor';
 import type { ContributorRow, PresaleDetailResponse } from '@/utils/interfaces/launchpad';
 import type { LaunchpadSupportedChain } from '@/utils/interfaces/chain';
+import { getAddressExplorerLink } from '@/utils/blockchain/explorer';
 
 interface LaunchpadMainContentProps {
   launchpad: PresaleDetailResponse;
@@ -81,6 +82,7 @@ export const LaunchpadMainContent = ({
       label: 'Website'
     }
   ].filter(link => link.url && link.url.trim() !== ''); // Only show links that have URLs
+  
   return (
     <div className='lg:col-span-2 space-y-6'>
       {/* Header */}
@@ -229,30 +231,66 @@ export const LaunchpadMainContent = ({
                           <div className='flex flex-col'>
                             <div className='flex items-center justify-between py-2'>
                               <span className='text-foreground'>
+                                Contract Address
+                              </span>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div
+                                      className='flex items-center gap-2 font-semibold text-primary cursor-pointer truncate max-w-[220px]'
+                                      onClick={() =>
+                                        handleCopy(`contract-${chain.id}`, chain.contractAddress)
+                                      }
+                                    >
+                                      <span>
+                                        {shortenAddress(chain.contractAddress) ||
+                                          '-'}
+                                      </span>
+                                      {copied[`contract-${chain.id}`] ? (
+                                        <CheckIcon className='text-green-500 w-[20px] h-[20px]' />
+                                      ) : (
+                                        <Image src={CopyIcon} alt='copy' />
+                                      )}
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <span className='cursor-pointer' onClick={()=> {
+                                        window.open(getAddressExplorerLink(chain.contractAddress, Number(chain.chainId)), '_blank')
+                                      }}>{chain.contractAddress}</span>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                            <div className='flex items-center justify-between py-2 border-t border-[color:var(--gray-charcoal)]'>
+                              <span className='text-foreground'>
                                 Token Address
                               </span>
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <span
+                                    <div
                                       className='flex items-center gap-2 font-semibold text-primary cursor-pointer truncate max-w-[220px]'
                                       onClick={() =>
-                                        handleCopy(chain.id, chain.tokenAddress)
+                                        handleCopy(`token-${chain.id}`, chain.tokenAddress)
                                       }
                                     >
                                       <span>
                                         {shortenAddress(chain.tokenAddress) ||
                                           '-'}
                                       </span>
-                                      {copied[chain.id] ? (
+                                      {copied[`token-${chain.id}`] ? (
                                         <CheckIcon className='text-green-500 w-[20px] h-[20px]' />
                                       ) : (
                                         <Image src={CopyIcon} alt='copy' />
                                       )}
-                                    </span>
+                                    </div>
                                   </TooltipTrigger>
                                   <TooltipContent>
-                                    <span>{chain.tokenAddress}</span>
+                                    <span className='cursor-pointer'
+                                    onClick={()=> 
+                                        window.open(getAddressExplorerLink(chain.tokenAddress, Number(chain.chainId)), '_blank')
+                                    }
+                                    >{chain.tokenAddress}</span>
                                   </TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>

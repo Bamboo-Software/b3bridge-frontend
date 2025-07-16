@@ -25,6 +25,7 @@ import { routesPaths } from '@/utils/constants/routes';
 import { useAuthToken } from '@/hooks/useAuthToken';
 import { WalletConnectionRequired } from '@/pages/common/WalletConnectionRequired';
 import { parseFormattedNumber } from '@/utils';
+import { TokenStatus } from '@/utils/enums/token';
 
 enum LaunchpadStep {
   Info = 1,
@@ -331,6 +332,7 @@ export default function CreateLaunchpadPage() {
     page,
     limit: appConfig.defaultLimit,
     q,
+    status: TokenStatus.DEPLOYED
   });
 
   const confirmModalContent = getConfirmModalContent();

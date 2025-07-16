@@ -25,6 +25,7 @@ import { ChainProgressBar } from './LaunchpadProgressBar';
 import type { LaunchpadSupportedChain } from '@/utils/interfaces/chain';
 import { getErrorMessage } from '@/utils/errors';
 import { useAuthToken } from '@/hooks/useAuthToken';
+import { cn } from '@/utils';
 
 interface LaunchpadSideBarProps {
   launchpad: PresaleDetailResponse;
@@ -33,7 +34,6 @@ interface LaunchpadSideBarProps {
   refetchContributors: () => Promise<any>;
   refetchLaunchpadDetail: () => Promise<any>;
 }
-
 
 interface CountdownTime {
   days: number;
@@ -136,7 +136,6 @@ export function LaunchpadSideBar({
     });
   }, [targetAmounts, totalRaisedAmounts]);
 
-
   // Check if a specific chain has reached its target
   const isChainTargetReached = (chainIndex: number) => {
     if (!targetAmounts || !totalRaisedAmounts) return false;
@@ -157,6 +156,19 @@ export function LaunchpadSideBar({
     const endTime = new Date(launchpad.endTime).getTime();
     return currentTime >= endTime;
   }, [launchpad.endTime, currentTime]);
+
+  const getUserContributionAmount = (chainId: string): number => {
+    if (!address) return 0;
+
+    const userContribution = contributorState.find(
+      (row) => row.address?.toLowerCase() === address.toLowerCase()
+    );
+
+    if (!userContribution) return 0;
+
+    const chainContribution = userContribution[chainId];
+    return chainContribution ? Number(chainContribution) : 0;
+  };
 
   // Check which chains user has contributed to
   const contributedChains = useMemo(() => {
@@ -286,7 +298,7 @@ export function LaunchpadSideBar({
         countdown: false,
         showInputs: false,
         showChainButtons: false,
-        showClaimButtons: true,
+        showClaimButtons: false,
         showMainButton: isCreator,
         buttonText: isCreator ? 'Finalize' : null,
         buttonEnabled: isCreator ? !isFinalizing && !isCancelling : false,
@@ -300,8 +312,8 @@ export function LaunchpadSideBar({
           return {
             title: hasStarted ? 'Presale Ends In' : 'Presale Starts In',
             countdown: true,
-            showInputs: hasStarted,
-            showChainButtons: hasStarted,
+            showInputs: false, // Changed from hasStarted to false when not connected
+            showChainButtons: false, // Changed from hasStarted to false when not connected
             showClaimButtons: false,
             showMainButton: true,
             buttonText: hasStarted ? 'Connect Wallet' : 'Coming Soon',
@@ -632,7 +644,7 @@ export function LaunchpadSideBar({
   }, []);
 
   const statusConfig = getStatusDisplay();
-
+  
   return (
     <>
       <div className='h-fit bg-[linear-gradient(45deg,_var(--blue-primary),_var(--primary))] border-none rounded-xl  hover:shadow-[0_0px_10px_0_var(--blue-primary)] p-[1px]'>
@@ -676,9 +688,11 @@ export function LaunchpadSideBar({
                 const canClaim = canClaimFromChain(chain.id, index);
                 const hasClaimed = hasUserClaimed(chain.id, index);
                 const chainTargetReached = isChainTargetReached(index);
-
+                const userContributionAmount = getUserContributionAmount(chain.chainId);
                 return (
-                  <div key={chain.id}>
+                  <div key={chain.id} className={cn(
+                    index && 'border-t border-[color:var(--gray-charcoal)] pt-3'
+                  )}>
                     <ChainProgressBar
                       supportedChains={supportedChains}
                       chain={chain}
@@ -686,14 +700,15 @@ export function LaunchpadSideBar({
                       targetAmount={targetAmount}
                       amounts={amounts}
                       isContributing={isContributing}
-                      showInputs={statusConfig.showInputs && !chainTargetReached}
+                      showInputs={statusConfig.showInputs && !chainTargetReached && isConnected}
                       onAmountChange={handleAmountChange}
                       onMaxClick={handleMaxClick}
+                      hasContributed ={hasContributed}
+                      userContributionAmount ={userContributionAmount}
                     />
 
-
-                    {/* Individual Chain Contribute Button */}
-                    {statusConfig.showChainButtons && !chainTargetReached && (
+                    {/* Individual Chain Contribute Button - Only show when connected */}
+                    {statusConfig.showChainButtons && !chainTargetReached && isConnected && (
                       <div className='mt-2'>
                         <Button
                           disabled={
@@ -734,8 +749,8 @@ export function LaunchpadSideBar({
                       </div>
                     )}
 
-                    {/* Individual Chain Claim Button */}
-                    {statusConfig.showClaimButtons && hasContributed && (
+                    {/* Individual Chain Claim Button - Only show when connected */}
+                    {statusConfig.showClaimButtons && hasContributed && isConnected && (
                       <div className='mt-2'>
                         {hasClaimed ? (
                           <Button

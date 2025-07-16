@@ -30,6 +30,106 @@ import type {
   PresaleDetailResponse,
 } from '@/utils/interfaces/launchpad';
 import type { LaunchpadSupportedChain } from '@/utils/interfaces/chain';
+import { useMultipleUserHasClaimed } from '@/hooks/usePreSaleContract';
+import { formatNumber } from '@/utils';
+import type { Abi } from 'viem';
+
+// Separate component to handle claim status for a single contributor
+interface ContributorClaimStatusProps {
+  contributor: ContributorRow;
+  chains: Array<{
+    key: string;
+    label: string;
+    contractAddress: string;
+    chainId: number;
+  }>;
+  contracts: Array<{
+    contractAddress: `0x${string}`;
+    abi: Abi;
+    chainId: number;
+  }>;
+}
+
+function ContributorClaimStatus({ contributor, chains, contracts }: ContributorClaimStatusProps) {
+  // Hook can be used safely here at component level
+  const { data: claimStatuses, loading } = useMultipleUserHasClaimed(
+    contracts, 
+    contributor.address as `0x${string}`
+  );
+
+  // Check if user has contributed to a specific chain
+  const hasContributedToChain = (chainKey: string) => {
+    const contribution = contributor[chainKey];
+    return contribution && Number(contribution) > 0;
+  };
+
+  // Get claim status badge
+  const getClaimStatusBadge = (chainIndex: number, hasContributed: boolean) => {
+    if (!hasContributed) return null;
+    
+    if (loading) {
+      return (
+        <span className='text-xs text-gray-400 ml-1'>
+          Loading...
+        </span>
+      );
+    }
+
+    const hasClaimed = claimStatuses?.[chainIndex] || false;
+    
+    if (hasClaimed) {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className='text-xs text-green-400 ml-1 cursor-help'>
+                ✓ Claimed
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <span>User has claimed tokens from this chain</span>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className='text-xs text-yellow-400 ml-1 cursor-help'>
+              ⏳ Pending
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>
+            <span>User has not claimed tokens yet</span>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  };
+
+  return (
+    <>
+      {chains.map((chain, chainIndex) => {
+        const contributionAmount = contributor[chain.key];
+        const hasContributed = hasContributedToChain(chain.key);
+        
+        return (
+          <TableCell key={chain.key} className='text-center'>
+            <div className='flex flex-col items-center gap-1'>
+              <span className='text-white font-medium'>
+                {contributionAmount ? formatNumber(Number(contributionAmount)) : '0'}
+              </span>
+              {getClaimStatusBadge(chainIndex, !!hasContributed)}
+            </div>
+          </TableCell>
+        );
+      })}
+    </>
+  );
+}
 
 export function LaunchpadContributor({
   launchpad,
@@ -43,13 +143,22 @@ export function LaunchpadContributor({
   const [currentPage, setCurrentPage] = useState(1);
   const [copied, setCopied] = useState<{ [key: string]: boolean }>({});
   const itemsPerPage = 10;
+  
   const getChainInfo = (chainId: string) => {
     return supportedChains.find((c) => c.chainId === chainId);
   };
+  
   const chains = launchpad.presaleChains.map((chain) => ({
     key: chain.chainId,
     label: getChainInfo(chain.chainId)?.name || chain.chainId,
     contractAddress: chain.contractAddress,
+    chainId: Number(chain.chainId),
+  }));
+
+  // Prepare contracts for hook
+  const contracts = launchpad.presaleChains.map((chain) => ({
+    contractAddress: chain.contractAddress as `0x${string}`,
+    abi: chain.contractAbi,
     chainId: Number(chain.chainId),
   }));
 
@@ -130,13 +239,13 @@ export function LaunchpadContributor({
                     </Tooltip>
                   </TooltipProvider>
                 </TableCell>
-                {chains.map((chain) => (
-                  <TableCell key={chain.key} className='text-center'>
-                    <span className='text-white font-medium'>
-                      {contributor[chain.key] || 0}
-                    </span>
-                  </TableCell>
-                ))}
+                
+                {/* Use separate component for claim status */}
+                <ContributorClaimStatus 
+                  contributor={contributor}
+                  chains={chains}
+                  contracts={contracts}
+                />
               </TableRow>
             ))}
           </TableBody>
