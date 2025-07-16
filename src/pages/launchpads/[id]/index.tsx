@@ -8,8 +8,6 @@ import { preSaleApi } from '@/services/pre-sale/presales';
 import { useMultipleCampaignContributors } from '@/hooks/usePreSaleContract';
 import { useProcessedContributors } from '@/hooks/useProcessedContributors';
 import type { LaunchpadSupportedChain } from '@/utils/interfaces/chain';
-import { WalletConnectionRequired } from '@/pages/common/WalletConnectionRequired';
-import { useAccount } from 'wagmi';
 import { useAuthToken } from '@/hooks/useAuthToken';
 import { DeploymentStatus } from '@/utils/enums/presale';
 import type { PresaleSupportedChain } from '@/utils/interfaces/launchpad';
@@ -18,7 +16,6 @@ import type { Abi } from 'viem';
 export default function LaunchpadDetailPage() {
   const { id } = useParams<{ id: string }>();
 
-  const { isConnected } = useAccount();
   const { token } = useAuthToken();
 
   // API hooks
@@ -134,18 +131,6 @@ export default function LaunchpadDetailPage() {
       return () => clearTimeout(timer);
     }
   }, [token, refetchAll]);
-
-  // Check wallet connection first
-  if (!isConnected || !token) {
-    return (
-      <div className='container mx-auto px-6 py-8'>
-        <WalletConnectionRequired
-          title='Connect Wallet to View Launchpad'
-          description='Please connect your wallet to browse and participate in this token presale.'
-        />
-      </div>
-    );
-  }
 
   // Check for error or draft status
   if (

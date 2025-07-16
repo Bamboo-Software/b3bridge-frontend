@@ -27,6 +27,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { PresaleStatus } from '@/utils/enums/presale';
 import type { PresaleSupportedChain } from '@/utils/interfaces/launchpad';
+import { TokenStatus } from '@/utils/enums/token';
 
 enum LaunchpadStep {
   Info = 1,
@@ -203,15 +204,33 @@ export default function EditLaunchpadPage() {
         title: validatedData.token?.name || presaleDetail.title,
         description: validatedData.description || presaleDetail.description,
         bannerUrl: validatedData.logoUrl || presaleDetail.bannerUrl,
-        websiteURL: validatedData.website,
-        facebookURL: validatedData.facebook,
-        xURL: validatedData.x,
-        githubURL: validatedData.github,
-        telegramURL: validatedData.telegram,
-        instagramURL: validatedData.instagram,
-        discordURL: validatedData.discord,
-        redditURL: validatedData.reddit,
-        youtubeURL: validatedData.youtube,
+          ...(validatedData?.website && {
+          websiteURL: validatedData.website,
+        }),
+        ...(validatedData?.facebook && {
+          facebookURL: validatedData.facebook,
+        }),
+        ...(validatedData?.x && {
+          xURL: validatedData.x,
+        }),
+        ...(validatedData?.github && {
+          githubURL: validatedData.github,
+        }),
+        ...(validatedData?.telegram && {
+          telegramURL: validatedData.telegram,
+        }),
+        ...(validatedData?.instagram && {
+          instagramURL: validatedData.instagram,
+        }),
+        ...(validatedData?.discord && {
+          discordURL: validatedData.discord,
+        }),
+        ...(validatedData?.reddit && {
+          redditURL: validatedData.reddit,
+        }),
+        ...(validatedData?.youtube && {
+          youtubeURL: validatedData.youtube,
+        }),
       };
 
       await updatePresale(updateData).unwrap();
@@ -323,6 +342,7 @@ export default function EditLaunchpadPage() {
     page,
     limit: appConfig.defaultLimit,
     q,
+    status: TokenStatus.DEPLOYED
   });
 
   const confirmModalContent = getConfirmModalContent();
