@@ -16,7 +16,6 @@ import { useTransactionStore } from '../useTransactionStore';
 import { ChainTokenSource } from '@/utils/enums/chain';
 import { CCIPTransactionStatus } from '@/utils/enums/transaction';
 import { wagmiConfig } from '@/utils/constants/wallet/wagmi';
-// import type { WalletClient } from 'viem';
 export const useLocalBridge = () => {
   const {
     isBridging,
@@ -86,7 +85,7 @@ const { isLoading: isTxPending } = useTransaction({ hash: currentTxHash });
     decimalsToken: number,
     tokenAddress: string,
     receiver: string,
-    ccipFee: bigint,
+    fee: bigint,
     isNative: boolean,
     fromChain: IChainInfo,
     toChain: IChainInfo,
@@ -96,14 +95,13 @@ const { isLoading: isTxPending } = useTransaction({ hash: currentTxHash });
     try {
       if (!writeContractAsync) throw new Error("Contract write not available");
       if (isNative) {
-        const amountNative = parseUnits(amount, decimals);
         setBridgeState({ isBridging: true, error: null });
         const result = await writeContractAsync({
           address: blockChainConfig.ethereumBridgeAddress as `0x${string}`,
           abi: blockChainConfig.ethereumBridgeAbi,
           functionName: "lockTokenVL",
           args: [blockChainConfig.seiBridgeAddress, receiver],
-          value: amountNative,
+          value: fee,
         });
          await waitForTransactionReceipt(walletClient!, {
           hash: result,
@@ -127,7 +125,7 @@ const { isLoading: isTxPending } = useTransaction({ hash: currentTxHash });
       else {
         const amountTokenERC20 = parseUnits(amount, decimalsToken);
         await approveToken(tokenAddress as `0x${string}`, blockChainConfig.ethereumBridgeAddress, amount, decimalsToken, address as `0x${string}`, walletClient);
-        const fee = parseUnits(formatUnits(ccipFee, decimals), decimals);
+        const feeValue = parseUnits(formatUnits(fee, decimals), decimals);
           const result = await writeContractAsync({
             address: blockChainConfig.ethereumBridgeAddress,
             abi: blockChainConfig.ethereumBridgeAbi,
@@ -139,7 +137,7 @@ const { isLoading: isTxPending } = useTransaction({ hash: currentTxHash });
               receiver,
               amountTokenERC20
             ],
-            value: fee,
+            value: feeValue,
           });
         const receipt = await waitForTransactionReceipt(walletClient!, {
           hash: result,
@@ -203,7 +201,7 @@ const { isLoading: isTxPending } = useTransaction({ hash: currentTxHash });
           txHash:result,
           userAddress: address!,
           status:CCIPTransactionStatus.CCIP,
-          messageId:receipt?.logs[12]?.topics[1],
+          messageId:receipt?.logs[8]?.topics[1],
           fromChain,
           toChain,
           fromToken,
@@ -226,12 +224,15 @@ const { isLoading: isTxPending } = useTransaction({ hash: currentTxHash });
     decimals: number,
     tokenAddress: string,
     receiver: string,
-      toToken: ITokenInfo,
+    toToken: ITokenInfo,
+    decimalsToken: number,
     toChain: IChainInfo,
     fromToken: ITokenInfo,
     fromChain: IChainInfo,
+    fee: bigint
   ): Promise<void> => {
     try {
+      await approveToken(tokenAddress as `0x${string}`, blockChainConfig.seiBridgeAddress, amount, decimalsToken, address as `0x${string}`, walletClient);
       setBridgeState({ isBridging: true, error: null });
       const amountInUnits = parseUnits(amount, decimals || 18);
       const result = await writeContractAsync({
@@ -239,7 +240,7 @@ const { isLoading: isTxPending } = useTransaction({ hash: currentTxHash });
         abi: blockChainConfig.seiBridgeAbi,
         functionName: "burnTokenVL",
         args: [amountInUnits, tokenAddress as `0x${string}`,blockChainConfig.ethereumBridgeAddress, receiver],
-        value: amountInUnits
+        value:  fee
       });
       await waitForTransactionReceipt(walletClient!, { hash: result });
       setBridgeState({ currentTxHash: result, isBridging: false });
@@ -267,7 +268,7 @@ const { isLoading: isTxPending } = useTransaction({ hash: currentTxHash });
   const handleBridge = async (params: IBridgeParams): Promise<void> => {
     try {
       setBridgeState({ isBridging: true, error: null });
-      const { fromToken, toToken, fromChain, amount, receiver, ccipFee, toChain } = params;
+      const { fromToken, toToken, fromChain, amount, receiver, fee, toChain } = params;
 
 
       const enrichedFrom = { ...fromToken, isOrigin: getIsOrigin(fromToken) };
@@ -284,13 +285,13 @@ const { isLoading: isTxPending } = useTransaction({ hash: currentTxHash });
       const decimalsToken = fromToken.decimals
       const tokenAddress = fromToken.address;
       if (actionType === BridgeActionType.BurnUnlock && !isNativeBurnUnlock) {
-        await handleBurnUnlockCCIP(amount,decimalsToken, toToken, toChain,fromToken,fromChain, tokenAddress, ccipFee!)
+        await handleBurnUnlockCCIP(amount,decimalsToken, toToken, toChain,fromToken,fromChain, tokenAddress, fee!)
       }
       else if (actionType === BridgeActionType.BurnUnlock && isNativeBurnUnlock) {
-        await handleBurnUnlockVL(amount, decimals!,tokenAddress, receiver,toToken, toChain,fromToken,fromChain)
+        await handleBurnUnlockVL(amount, decimals!,tokenAddress, receiver,toToken,decimalsToken, toChain,fromToken,fromChain,fee!)
       }
       else {
-        await handleLockMint(amount, toChainSelector, decimals!, decimalsToken, tokenAddress, receiver, ccipFee!, isNative,fromChain,toChain,fromToken,toToken)
+        await handleLockMint(amount, toChainSelector, decimals!, decimalsToken, tokenAddress, receiver, fee!, isNative,fromChain,toChain,fromToken,toToken)
       }
       setBridgeState({ isBridging: false, error: null });
     } catch (err) {
