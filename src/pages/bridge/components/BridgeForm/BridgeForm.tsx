@@ -9,7 +9,7 @@ import { useTokenList } from '@/hooks/useTokenList';
 import { useChainList } from '@/hooks/useChainList';
 import { useUserTokenBalance } from '@/hooks/useUserBalance';
 import { useDestinationToken } from '@/hooks/useDestinationToken';
-import type { Address } from 'viem';
+import { parseUnits, type Address } from 'viem';
 import {
   bridgeFormSchema,
   type BridgeFormValues,
@@ -37,6 +37,7 @@ import { useLocalStorage } from 'react-use';
 import { useBridgeStatusStore } from '@/stores/bridge/useBridgeStatusStore';
 import { LocalStorageKey } from '@/utils/enums/local-storage';
 import { WalletConnectModal } from '@/pages/common/ConnectWalletModal';
+import { useGetFeeBridge } from '@/hooks/bridge/useGetFeeBridge';
 
 const validateReceiver = (value: string) =>
   value ? /^0x[a-fA-F0-9]{40}$/.test(value) : null;
@@ -233,6 +234,7 @@ function BridgeForm() {
     form.setValue('toWalletAddress', fromWallet, { shouldValidate: true });
   };
   // --- Handlers ---
+  
   const {ccipFee}= useGetFeeCCIP({
     amount: watchedAmount,
     toAmount: watchedAmount,
@@ -244,6 +246,41 @@ function BridgeForm() {
     quote: watchedQuote,
     tokenList:tokenList
   })
+  
+ const isReady = isConnected && !!selectedFromChain && !!selectedToChain && !!watchedToken?.address && !!watchedAmount
+
+const {  feeBridge } = useGetFeeBridge({
+  tokenAddress: watchedToken?.address,
+  amount: watchedAmount,
+  fromChain: selectedFromChain,
+  fromToken: watchedToken,
+  toToken: destinationToken!,
+  isReady,
+})
+ const decimal = destinationToken?.decimals ?? 18;
+
+let parsedToAmount: bigint | undefined = undefined;
+
+if (watchedAmount && !isNaN(Number(watchedAmount))) {
+  try {
+    parsedToAmount = parseUnits(watchedAmount.toString(), decimal);
+  } catch (e) {
+    console.error("❌ Failed to parse toAmount:", watchedAmount, e);
+  }
+}
+
+let fee: bigint | undefined;
+
+if (typeof ccipFee === 'bigint') {
+  fee = ccipFee ;
+} else if (typeof feeBridge === 'bigint' && typeof parsedToAmount === 'bigint') {
+  fee = feeBridge + parsedToAmount;
+} else if (typeof feeBridge === 'bigint') {
+  fee = feeBridge;
+} else {
+  fee = undefined;
+}
+
   const bridge  = useBridgeTokens({
     amount: watchedAmount,
     toAmount: toAmount,
@@ -254,7 +291,7 @@ function BridgeForm() {
     toToken: destinationToken as ITokenInfo,
     quote: watchedQuote,
     tokenList: tokenList,
-    ccipFee: ccipFee as bigint
+    fee: fee
   });
   const handleOpenConnectModal = useCallback(
     () => setConnectWalletModalOpen(true),
@@ -350,7 +387,7 @@ const shouldUpdate = useBridgeStatusStore((s) => s.shouldUpdateState);
           }
             estTime={watchedQuote?.duration?.estimated}
             totalFeeStargateUsd={totalFeeStargateUsd}
-            ccipFee={ccipFee as bigint}
+            fee={fee ?? 0n}
             route={watchedQuote?.route}
             enable={isBridgeEnabled}
             isTransactionInfoLoading={isTransactionInfoLoading}

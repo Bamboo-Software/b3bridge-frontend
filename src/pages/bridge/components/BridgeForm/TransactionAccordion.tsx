@@ -21,20 +21,20 @@ interface TransactionAccordionProps {
   isTransactionInfoLoading?: boolean;
   enable?: boolean;
   totalFeeStargateUsd?: string;
-  ccipFee: bigint;
+  fee: bigint;
   selectedFromChain: IChainInfo;
   setQuoteModalOpen: (value:boolean)=> void
   destinationToken?:ITokenInfo
 }
 
 export default function TransactionAccordion({
-  receiveAmount = '',
+  receiveAmount,
   route = '',
   estTime = '',
   isTransactionInfoLoading = false,
   enable = false,
   totalFeeStargateUsd,
-  ccipFee,
+  fee,
   setQuoteModalOpen,
   destinationToken,
   selectedFromChain
@@ -44,7 +44,7 @@ export default function TransactionAccordion({
     receiveAmount ||
     estTime !== '—' ||
     estTime ||
-    totalFeeStargateUsd || ccipFee;
+    totalFeeStargateUsd || fee;
   return (
     <>
       {enable &&
@@ -78,8 +78,8 @@ export default function TransactionAccordion({
                     <div className="flex items-center gap-1" title="Total Fee">
                       <Receipt className="w-4 h-4 text-primary" />
                       <span>
-                      {ccipFee && ccipFee !== BigInt(0) ? (
-                        `${formatNumber(Number(formatEther(ccipFee)))} ${selectedFromChain.name || ''}`
+                      {fee && fee !== BigInt(0) ? (
+                        `${formatNumber(Number(formatEther(fee)))} ${selectedFromChain.name || ''}`
                       ) : totalFeeStargateUsd ? (
                         `$${formatNumber(Number(totalFeeStargateUsd))}`
                       ) : (
@@ -87,7 +87,7 @@ export default function TransactionAccordion({
                       )}
                     </span>
                     </div>
-                      {ccipFee && ccipFee === BigInt(0) && (
+                      {fee && fee === BigInt(0) && (
                         <>
                         <span className="text-muted-foreground select-none">|</span>
                         <div className="flex items-center gap-1" title="Estimated Time">
@@ -129,7 +129,7 @@ export default function TransactionAccordion({
                           </div>
                         </div>
                         )}
-                      {ccipFee && ccipFee === BigInt(0) && (
+                      {fee && fee === BigInt(0) && (
                         <div className='flex justify-between'>
                           <span>Est. Time</span>
                           <span>{estTime}s</span>
@@ -141,8 +141,8 @@ export default function TransactionAccordion({
                             {totalFeeStargateUsd
                               ? <span> ${formatNumber(Number(totalFeeStargateUsd))}</span> : 
                               <span>
-                                {ccipFee != null
-                                  ? `${formatNumber(formatEther(ccipFee))}`
+                                {fee != null
+                                  ? `${formatNumber(formatEther(fee))}`
                                   : receiveAmount}{" "}
                                 {selectedFromChain.name ?selectedFromChain.name  : ''}
                               </span>

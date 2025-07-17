@@ -22,6 +22,7 @@ export function useGetFeeCCIP(params: IBridgeParams) {
   const isReady = !!fromToken && !!toToken && !!tokenList?.length && !!fromChain?.id && !!toChain?.id && !!amount?.trim() && !!receiver;
 
   const isNative = fromToken?.address === ethers.ZeroAddress;
+  const isNativeBurnUnlock = toToken?.address === ethers.ZeroAddress;
 
   const parsedAmount = useMemo(() => {
     if (!amount || !fromToken?.decimals) return BigInt(0);
@@ -76,7 +77,7 @@ export function useGetFeeCCIP(params: IBridgeParams) {
 
   const bridgeConfig = useMemo(() => {
     if (!isReady || isNative || fromChain.source===ChainTokenSource.Stargate) return null;
-    if (actionType === BridgeActionType.BurnUnlock && fromChain.source===ChainTokenSource.Local) {
+    if (actionType === BridgeActionType.BurnUnlock && fromChain.source===ChainTokenSource.Local && !isNativeBurnUnlock) {
       if (!seiTokenId) return null;
       return {
         address: blockChainConfig.seiBridgeAddress,

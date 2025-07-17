@@ -33,7 +33,7 @@ export const useWatchUnlockedTokenVL = ({
     });
 
     return () => {
-      unwatch(); // Clean up when component unmounts or recipient changes
+      unwatch();
     };
   }, [onUnlocked]);
 };
