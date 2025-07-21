@@ -2,7 +2,9 @@ import { z } from "zod";
 
 export const CreateTokenFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  symbol: z.string().min(1, "Symbol is required"),
+   symbol: z.string()
+    .min(3, "Symbol must be at least 3 characters")
+    .nonempty("Symbol is required"),
   decimals: z.coerce.number().positive("Decimals must be a positive number"),
 
   description: z.string().optional(),

@@ -33,7 +33,6 @@ export function useUserTokenBalance(
           chainId,
           args: [userAddress],
         }) as bigint
-
           const formatted = formatUnits(rawBalance, token.decimals)
         setBalance(formatted)
       } catch (err) {
