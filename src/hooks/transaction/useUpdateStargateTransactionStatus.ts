@@ -14,8 +14,7 @@ export function useStargateTransaction(tx: ITransaction, enabled = true) {
   const [status, setStatus] = useState<StargateTransactionStatus | CCIPTransactionStatus>(tx.status);
   const [hash, setHash] = useState(tx.txHash);
   const { address } = useAccount();
-  const allTx = useTransactionStore(state => state.allTx);
-  const setAllTx = useTransactionStore(state => state.setAllTx);
+  const updateTransactionByTxHash = useTransactionStore(state => state.updateTransactionByTxHash);
 
   const isDelivered = status === StargateTransactionStatus.DELIVERED;
   const [triggerGetBusQueue] = useLazyGetBusQueueQuery();
@@ -23,17 +22,7 @@ export function useStargateTransaction(tx: ITransaction, enabled = true) {
 
   const updateTx = (updates: Partial<ITransaction>) => {
     if (!address || !tx.txHash) return;
-    const prev = allTx || {};
-    const userTxs = prev[address] || [];
-
-    const updated = userTxs.map((t) =>
-      t.txHash === tx.txHash ? { ...t, ...updates } : t
-    );
-
-    setAllTx({
-      ...prev,
-      [address]: updated,
-    });
+    updateTransactionByTxHash(address, tx.txHash, updates);
   };
 
   useEffect(() => {
