@@ -1,5 +1,5 @@
 import type { IBridgeParams } from '@/utils/interfaces/bridge';
-import { useAccount, useWalletClient } from 'wagmi';
+import { useAccount, useWalletClient, usePublicClient } from 'wagmi';
 import { type Address } from 'viem';
 import { StargateStepName } from '@/utils/enums/bridge';
 import { toast } from 'sonner';
@@ -12,8 +12,8 @@ import { useTransactionStore } from '../useTransactionStore';
 import { selectedChains } from '@/utils/constants/wallet/wagmi';
 
 export const useStargateBridge = (params: IBridgeParams) => {
-  const allTx = useTransactionStore(state => state.allTx)
-  const setAllTx = useTransactionStore(state => state.setAllTx)
+  const addTransaction = useTransactionStore(state => state.addTransaction);
+  const updateTransactionByTxHash = useTransactionStore(state => state.updateTransactionByTxHash);
   const { quote, fromChain, toChain, fromToken, toToken, amount, toAmount } = params;
   const selectedNetwork = selectedChains?.find(
     (chain) => chain.id === fromChain?.id
@@ -22,9 +22,11 @@ export const useStargateBridge = (params: IBridgeParams) => {
   const { data: walletClient } = useWalletClient({
     chainId: selectedNetwork?.id,
   });
+  
+  const publicClient = usePublicClient({ chainId: selectedNetwork?.id });
   const bridge = async () => {
-    
     if (!walletClient) throw new Error('Wallet not connected');
+    if (!publicClient) throw new Error('Public client not available');
     if (!quote || !quote.steps || !Array.isArray(quote.steps)) {
       throw new Error('Invalid quote steps');
     }
@@ -50,6 +52,9 @@ export const useStargateBridge = (params: IBridgeParams) => {
           account: address,
         });
 
+        // Wait for transaction confirmation using publicClient
+        await publicClient.waitForTransactionReceipt({ hash: txHash });
+
         const userAddr = address as string;
         const newTx: ITransaction = {
           userAddress: userAddr,
@@ -64,16 +69,13 @@ export const useStargateBridge = (params: IBridgeParams) => {
           fromAmount: amount,
           toAmount: formatTokenAmount(toAmount, toToken),
         };
-        const prev = allTx || {};
-        setAllTx({
-          ...prev,
-          [userAddr]: [newTx, ...(prev[userAddr] || [])],
-        });
+        addTransaction(userAddr, newTx);
+        updateTransactionByTxHash(userAddr, txHash, { status: StargateTransactionStatus.CREATED });
 
         toast.success(
           <div className='flex flex-col gap-1'>
             <span className='font-semibold'>
-              Transaction sent! Hash:  {shortenAddress(txHash)}
+              Transaction confirmed! Hash:  {shortenAddress(txHash)}
             </span>
             <a
               href={getLayerZeroScanLink(txHash)}
