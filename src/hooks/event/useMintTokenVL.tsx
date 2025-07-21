@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { watchContractEvent } from "@wagmi/core";
 import { parseAbiItem } from "viem";
-import { blockChainConfig, configChains } from "@/utils/constants/chain";
+import { blockChainConfig } from "@/utils/constants/chain";
 import { wagmiConfig } from '@/utils/constants/wallet/wagmi';
 
 export const useWatchMintedTokenVL = ({
@@ -23,7 +23,7 @@ export const useWatchMintedTokenVL = ({
         ),
       ],
       eventName: "MintedTokenVL",
-      chainId:Number(configChains?.[1].id || import.meta.env.VITE_SEI_CHAIN_ID),
+      chainId:Number(import.meta.env.VITE_SEI_CHAIN_ID),
       onLogs: (logs) => {
         for (const log of logs) {
           const { recipientAddr, token, amount } = log.args as {

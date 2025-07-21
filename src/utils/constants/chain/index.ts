@@ -34,9 +34,10 @@ export const seiBridgeAddress = import.meta.env.VITE_SEI_BRIDGE_ADDRESS || "";
 export const seiRouterAddress = import.meta.env.VITE_SEI_CHAIN_ROUTER || "";
 export const seiBridgeAbi = import.meta.env.VITE_SEI_BRIDGE_ABI || seiABI;
 export const chainSelectors: Record<number, string> = {
-  [sepolia.id]: ethereumChainSelector,
-  [seiTestnet.id]: seiChainSelector,
+  [mainnet.id]: ethereumChainSelector,
+  [sei.id]: seiChainSelector,
 };
+console.log("🚀 ~ chainSelectors:", chainSelectors)
 
 // router CCIP
 export const routerCCIPAbi =

@@ -79,11 +79,13 @@ export default function TransactionAccordion({
                       <Receipt className="w-4 h-4 text-primary" />
                       <span>
                       {fee && fee !== BigInt(0) ? (
-                        `${formatNumber(Number(formatEther(fee)))} ${selectedFromChain.name || ''}`
+                        <span>
+                          {`${formatNumber(Number(formatEther(fee)))} ${selectedFromChain.name || ''}`}
+                        </span>
                       ) : totalFeeStargateUsd ? (
-                        `$${formatNumber(Number(totalFeeStargateUsd))}`
-                      ) : (
-                        formatNumber(Number(receiveAmount))
+                        <span>{`$${formatNumber(Number(totalFeeStargateUsd))}`}</span>
+                      ) : fee === BigInt(0) ? null : (
+                        <span>{formatNumber(Number(receiveAmount))}</span>
                       )}
                     </span>
                     </div>

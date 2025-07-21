@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { parseAbiItem } from "viem";
 import { watchContractEvent } from "@wagmi/core";
-import { blockChainConfig, configChains } from "@/utils/constants/chain";
+import { blockChainConfig } from "@/utils/constants/chain";
 import { wagmiConfig } from '@/utils/constants/wallet/wagmi';
 
 interface UseWatchMintTokenCCIPParams {
@@ -24,7 +24,7 @@ export function useWatchMintTokenCCIP({
     // const bridgeAddress = getBridgeAddress("sei");
 
     const unwatch = watchContractEvent(wagmiConfig, {
-      chainId:Number(configChains?.[1].id || import.meta.env.VITE_SEI_CHAIN_ID),
+      chainId:Number(import.meta.env.VITE_SEI_CHAIN_ID),
       address: blockChainConfig.seiBridgeAddress,
       abi: [
         parseAbiItem(

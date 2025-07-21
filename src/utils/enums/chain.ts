@@ -10,8 +10,8 @@ export enum ChainId {
 
 
 export enum BlockchainNameEnum {
-  ethereum = 'ETH',
-  sei = 'SEI',
+  ethereum = 'ethereum',
+  sei = 'sei',
 }
 
 export enum CryptoCurrencyEnum {

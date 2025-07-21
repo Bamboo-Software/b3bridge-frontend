@@ -88,19 +88,25 @@ export function useGetFeeCCIP(params: IBridgeParams) {
     }
 
    
-    if (actionType === BridgeActionType.LockMint && fromChain.source===ChainTokenSource.Local) {
+    if (actionType === BridgeActionType.LockMint && fromChain.source === ChainTokenSource.Local) {
       if (!receiver || !fromChain?.id || !toChain?.id) return null;
+
+      const selector = chainSelectors?.[toChain?.id];
+      if (!selector) {
+        console.error(`Missing chainSelector for chain ID ${toChain.id}`);
+        return null;
+      }
+
       return {
         address: blockChainConfig.ethereumBridgeAddress,
         abi: blockChainConfig.ethereumBridgeAbi,
         functionName: 'getFeeCCIP',
         args: [
           fromToken.address,
-          BigInt(chainSelectors[toChain.id]),
+          BigInt(selector),
           blockChainConfig.seiBridgeAddress,
           receiver,
           parsedAmount,
-          // 0,
         ],
       };
     }
@@ -110,10 +116,13 @@ export function useGetFeeCCIP(params: IBridgeParams) {
     isReady,
     isNative,
     actionType,
+    fromChain?.source,
+    isNativeBurnUnlock,
+    toToken?.address,
     parsedAmount,
     seiTokenId,
     receiver,
-    toChain?.id,
+    // toChain?.id,
     fromToken?.address,
     fromChain?.id,
   ]);

@@ -90,7 +90,7 @@ function BridgeForm() {
   // --- Balances ---
   const { balance: userSourceBalance, loading: userSourceBalanceLoading } =
     useUserTokenBalance(address, watchedToken, selectedFromChain?.id);
-  const { balance: userDesBalance, loading: userDesBalanceLoading } =
+    const { balance: userDesBalance, loading: userDesBalanceLoading } =
     useUserTokenBalance(
       watchedToWallet as Address,
       destinationToken,
@@ -223,16 +223,17 @@ function BridgeForm() {
   
   // --- Handlers Swap---
   const handleSwap = () => {
-    const fromChain = form.getValues('fromChain');
-    const toChain = form.getValues('toChain');
-    const fromWallet = form.getValues('fromWalletAddress');
-    const toWallet = form.getValues('toWalletAddress');
-    form.setValue('fromChain', toChain, { shouldValidate: true });
-    form.setValue('toChain', fromChain, { shouldValidate: true });
-    form.setValue('token', destinationToken, { shouldValidate: true });
-    form.setValue('fromWalletAddress', toWallet, { shouldValidate: true });
-    form.setValue('toWalletAddress', fromWallet, { shouldValidate: true });
-  };
+  const fromChain = form.getValues('fromChain');
+  const toChain = form.getValues('toChain');
+  const fromWallet = form.getValues('fromWalletAddress');
+  const toWallet = form.getValues('toWalletAddress');
+
+  form.setValue('fromChain', toChain, { shouldValidate: true });
+  form.setValue('toChain', fromChain, { shouldValidate: true });
+  form.setValue('fromWalletAddress', toWallet, { shouldValidate: true });
+  form.setValue('toWalletAddress', fromWallet, { shouldValidate: true });
+  form.setValue('token', undefined, { shouldValidate: true });
+};
   // --- Handlers ---
   
   const {ccipFee}= useGetFeeCCIP({
@@ -280,7 +281,6 @@ if (typeof ccipFee === 'bigint') {
 } else {
   fee = undefined;
 }
-
   const bridge  = useBridgeTokens({
     amount: watchedAmount,
     toAmount: toAmount,
@@ -321,22 +321,32 @@ const shouldUpdate = useBridgeStatusStore((s) => s.shouldUpdateState);
 
 
   useEffect(() => {
-    if (!shouldUpdate || !address) return;
+  if (!shouldUpdate || !address) return;
 
-    const userTxs = allTx?.[address] || [];
-    const updatedTxs = userTxs.map((tx) => {
-      if (
+  const userTxs = allTx?.[address] || [];
+  const indexToUpdate = [...userTxs]
+    .reverse()
+    .findIndex(
+      (tx) =>
         tx.source === ChainTokenSource.Local &&
         tx.status !== CCIPTransactionStatus.TARGET
-      ) {
-        return { ...tx, status: CCIPTransactionStatus.TARGET };
-      }
-      return tx;
-    });
+    );
 
-    setAllTx({ ...allTx, [address]: updatedTxs });
+  if (indexToUpdate === -1) {
     clearUpdateFlag();
-  }, [shouldUpdate, address, allTx, setAllTx, clearUpdateFlag]);
+    return;
+  }
+  const realIndex = userTxs.length - 1 - indexToUpdate;
+
+  const updatedTxs = userTxs.map((tx, idx) =>
+    idx === realIndex
+      ? { ...tx, status: CCIPTransactionStatus.TARGET }
+      : tx
+  );
+
+  setAllTx({ ...allTx, [address]: updatedTxs });
+  clearUpdateFlag();
+}, [shouldUpdate, address, allTx, setAllTx, clearUpdateFlag]);
   // --- Render ---
   return (
     <>
